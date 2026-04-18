@@ -1,2 +1,0 @@
-# FitLife
-Fitness Web Application
