@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
+import 'core/theme/app_theme.dart';
+import 'screens/splash/splash_screen.dart';
 
 void main() {
-  runApp(const MainApp());
+  runApp(const FitLifeApp());
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class FitLifeApp extends StatelessWidget {
+  const FitLifeApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
-      ),
+    return MaterialApp(
+      title: 'FitLife',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.darkTheme,
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const SplashScreen(),
+      },
     );
   }
 }

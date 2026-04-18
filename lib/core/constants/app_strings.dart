@@ -96,4 +96,7 @@ class AppStrings {
   static const String settingsAbout = 'About';
 
   // Errors
-  static const String errorGeneral = 'Something went wrong.
+  static const String errorGeneral = 'Something went wrong. Please try again.';
+  static const String errorNetwork = 'No internet connection.';
+  static const String errorEmpty = 'This field cannot be empty.';
+}
