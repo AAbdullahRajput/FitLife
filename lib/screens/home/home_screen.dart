@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/utils/helpers.dart';
+import 'package:provider/provider.dart';
+import '../../core/theme/theme_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -252,6 +254,35 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
           ],
+        ),
+
+        // Add this inside the header Row, after the avatar Column:
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: () {
+            Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
+          },
+          child: Consumer<ThemeProvider>(
+            builder: (context, theme, _) {
+              return Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary.withOpacity(0.12),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.3),
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    theme.isDark ? '☀️' : '🌙',
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                ),
+              );
+            },
+          ),
         ),
       ],
     );
