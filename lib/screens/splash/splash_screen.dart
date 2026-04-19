@@ -16,41 +16,52 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _logoController;
   late AnimationController _ringController;
   late AnimationController _textController;
-  late AnimationController _particleController;
+  late AnimationController _loadingController;
+  late AnimationController _bgController;
 
   late Animation<double> _logoScale;
   late Animation<double> _logoFade;
   late Animation<double> _ringExpand;
   late Animation<double> _textFade;
   late Animation<double> _textSlide;
+  late Animation<double> _bgFade;
+
+  // Background gym image URLs (free Unsplash)
+  final List<String> _bgImages = [
+    'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1200&q=80',
+  ];
+
+  int _currentBg = 0;
+  Timer? _bgTimer;
 
   @override
   void initState() {
     super.initState();
 
-    // Logo animation
     _logoController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
 
-    // Ring pulse animation
     _ringController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     )..repeat();
 
-    // Text animation
     _textController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
 
-    // Particle animation
-    _particleController = AnimationController(
+    _loadingController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3000),
-    )..repeat();
+      duration: const Duration(milliseconds: 2000),
+    )..forward();
+
+    _bgController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
 
     _logoScale = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _logoController, curve: Curves.elasticOut),
@@ -75,12 +86,28 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _textController, curve: Curves.easeOut),
     );
 
-    // Start sequence
-    _logoController.forward().then((_) {
-      _textController.forward();
+    _bgFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _bgController, curve: Curves.easeInOut),
+    );
+
+    // Start animations
+    _bgController.forward();
+    _logoController.forward().then((_) => _textController.forward());
+
+    // Cycle background images
+    _bgTimer = Timer.periodic(const Duration(milliseconds: 800), (timer) {
+      if (mounted) {
+        _bgController.reverse().then((_) {
+          setState(() {
+            _currentBg = (_currentBg + 1) % _bgImages.length;
+          });
+          _bgController.forward();
+        });
+      }
     });
 
-    Timer(const Duration(seconds: 4), () {
+    // Navigate after 4 seconds
+    Timer(const Duration(milliseconds: 2500), () {
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/onboarding');
       }
@@ -89,10 +116,12 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
+    _bgTimer?.cancel();
     _logoController.dispose();
     _ringController.dispose();
     _textController.dispose();
-    _particleController.dispose();
+    _loadingController.dispose();
+    _bgController.dispose();
     super.dispose();
   }
 
@@ -103,25 +132,60 @@ class _SplashScreenState extends State<SplashScreen>
     return Scaffold(
       backgroundColor: const Color(0xFF050A05),
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // Background grid lines (3D feel)
+          // --- Layer 1: Cycling gym background image ---
+          AnimatedBuilder(
+            animation: _bgFade,
+            builder: (context, child) {
+              return Opacity(
+                opacity: _bgFade.value * 0.35,
+                child: Image.network(
+                  _bgImages[_currentBg],
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  errorBuilder: (context, error, stackTrace) =>
+                      Container(color: const Color(0xFF050A05)),
+                ),
+              );
+            },
+          ),
+
+          // --- Layer 2: Dark gradient overlay ---
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  const Color(0xFF050A05).withOpacity(0.7),
+                  const Color(0xFF050A05).withOpacity(0.5),
+                  const Color(0xFF050A05).withOpacity(0.85),
+                  const Color(0xFF050A05),
+                ],
+              ),
+            ),
+          ),
+
+          // --- Layer 3: Grid lines ---
           CustomPaint(
             size: Size(size.width, size.height),
             painter: GridPainter(),
           ),
 
-          // Floating particles
+          // --- Layer 4: Floating particles ---
           AnimatedBuilder(
-            animation: _particleController,
+            animation: _ringController,
             builder: (context, child) {
               return CustomPaint(
                 size: Size(size.width, size.height),
-                painter: ParticlePainter(_particleController.value),
+                painter: ParticlePainter(_ringController.value),
               );
             },
           ),
 
-          // Main content
+          // --- Layer 5: Main content ---
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -132,22 +196,22 @@ class _SplashScreenState extends State<SplashScreen>
                       [_ringController, _logoController]),
                   builder: (context, child) {
                     return SizedBox(
-                      width: 220,
-                      height: 220,
+                      width: 240,
+                      height: 240,
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          // Outer ring 3
+                          // Ring 3 - outermost
                           Transform.scale(
                             scale: _ringExpand.value * 1.1,
                             child: Container(
-                              width: 200,
-                              height: 200,
+                              width: 210,
+                              height: 210,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: AppColors.primary.withOpacity(
-                                    0.1 * (2 - _ringExpand.value),
+                                    0.08 * (2 - _ringExpand.value),
                                   ),
                                   width: 1,
                                 ),
@@ -155,17 +219,17 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                           ),
 
-                          // Outer ring 2
+                          // Ring 2
                           Transform.scale(
                             scale: _ringExpand.value * 0.85,
                             child: Container(
-                              width: 200,
-                              height: 200,
+                              width: 210,
+                              height: 210,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: AppColors.primary.withOpacity(
-                                    0.2 * (2 - _ringExpand.value),
+                                    0.18 * (2 - _ringExpand.value),
                                   ),
                                   width: 1.5,
                                 ),
@@ -173,17 +237,17 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                           ),
 
-                          // Inner ring
+                          // Ring 1 - innermost
                           Transform.scale(
                             scale: _ringExpand.value * 0.65,
                             child: Container(
-                              width: 200,
-                              height: 200,
+                              width: 210,
+                              height: 210,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: AppColors.primary.withOpacity(
-                                    0.4 * (2 - _ringExpand.value),
+                                    0.35 * (2 - _ringExpand.value),
                                   ),
                                   width: 2,
                                 ),
@@ -191,47 +255,47 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                           ),
 
-                          // Glow circle
+                          // Outer glow
                           Container(
-                            width: 120,
-                            height: 120,
+                            width: 130,
+                            height: 130,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withOpacity(0.3),
-                                  blurRadius: 40,
-                                  spreadRadius: 10,
+                                  color: AppColors.primary.withOpacity(0.25),
+                                  blurRadius: 50,
+                                  spreadRadius: 15,
                                 ),
                               ],
                             ),
                           ),
 
-                          // Logo container
+                          // Logo
                           Transform.scale(
                             scale: _logoScale.value,
                             child: FadeTransition(
                               opacity: _logoFade,
                               child: Container(
-                                width: 110,
-                                height: 110,
+                                width: 115,
+                                height: 115,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   gradient: RadialGradient(
                                     colors: [
-                                      AppColors.primary.withOpacity(0.3),
+                                      AppColors.primary.withOpacity(0.35),
                                       AppColors.primary.withOpacity(0.05),
                                     ],
                                   ),
                                   border: Border.all(
-                                    color: AppColors.primary.withOpacity(0.6),
+                                    color: AppColors.primary.withOpacity(0.7),
                                     width: 2,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
                                       color:
-                                          AppColors.primary.withOpacity(0.4),
-                                      blurRadius: 25,
+                                          AppColors.primary.withOpacity(0.5),
+                                      blurRadius: 30,
                                       spreadRadius: 5,
                                     ),
                                   ],
@@ -239,7 +303,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 child: const Center(
                                   child: Text(
                                     '🏋️',
-                                    style: TextStyle(fontSize: 52),
+                                    style: TextStyle(fontSize: 54),
                                   ),
                                 ),
                               ),
@@ -251,9 +315,9 @@ class _SplashScreenState extends State<SplashScreen>
                   },
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 28),
 
-                // App name with glow
+                // App name
                 AnimatedBuilder(
                   animation: _textController,
                   builder: (context, child) {
@@ -264,7 +328,8 @@ class _SplashScreenState extends State<SplashScreen>
                         child: Column(
                           children: [
                             ShaderMask(
-                              shaderCallback: (bounds) => const LinearGradient(
+                              shaderCallback: (bounds) =>
+                                  const LinearGradient(
                                 colors: [
                                   Color(0xFF5EFC82),
                                   Color(0xFF00C853),
@@ -274,23 +339,35 @@ class _SplashScreenState extends State<SplashScreen>
                               child: const Text(
                                 'FitLife',
                                 style: TextStyle(
-                                  fontSize: 48,
+                                  fontSize: 52,
                                   fontWeight: FontWeight.w900,
                                   color: Colors.white,
-                                  letterSpacing: 3,
+                                  letterSpacing: 4,
                                 ),
                               ),
                             ),
-
                             const SizedBox(height: 8),
-
-                            Text(
-                              AppStrings.splashTagline,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary.withOpacity(0.7),
-                                letterSpacing: 2.5,
-                                fontWeight: FontWeight.w300,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: AppColors.primary.withOpacity(0.3),
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                color: AppColors.primary.withOpacity(0.08),
+                              ),
+                              child: Text(
+                                AppStrings.splashTagline.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color:
+                                      AppColors.textSecondary.withOpacity(0.8),
+                                  letterSpacing: 3,
+                                  fontWeight: FontWeight.w300,
+                                ),
                               ),
                             ),
                           ],
@@ -300,16 +377,16 @@ class _SplashScreenState extends State<SplashScreen>
                   },
                 ),
 
-                const SizedBox(height: 80),
+                const SizedBox(height: 70),
 
-                // Loading bar
+                // Progress bar
                 AnimatedBuilder(
-                  animation: _particleController,
+                  animation: _loadingController,
                   builder: (context, child) {
                     return Column(
                       children: [
                         Container(
-                          width: 120,
+                          width: 160,
                           height: 2,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(2),
@@ -317,7 +394,7 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                           child: FractionallySizedBox(
                             alignment: Alignment.centerLeft,
-                            widthFactor: _particleController.value,
+                            widthFactor: _loadingController.value,
                             child: Container(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(2),
@@ -329,8 +406,8 @@ class _SplashScreenState extends State<SplashScreen>
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary.withOpacity(0.6),
-                                    blurRadius: 6,
+                                    color: AppColors.primary.withOpacity(0.7),
+                                    blurRadius: 8,
                                   ),
                                 ],
                               ),
@@ -339,11 +416,11 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Loading...',
+                          'LOADING...',
                           style: TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textHint.withOpacity(0.5),
-                            letterSpacing: 1.5,
+                            fontSize: 10,
+                            color: AppColors.textHint.withOpacity(0.4),
+                            letterSpacing: 3,
                           ),
                         ),
                       ],
@@ -353,13 +430,38 @@ class _SplashScreenState extends State<SplashScreen>
               ],
             ),
           ),
+
+          // --- Layer 6: Image indicator dots ---
+          Positioned(
+            bottom: 40,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                _bgImages.length,
+                (index) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: _currentBg == index ? 20 : 6,
+                  height: 3,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(2),
+                    color: _currentBg == index
+                        ? AppColors.primary
+                        : AppColors.primary.withOpacity(0.25),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-// Grid background painter (3D perspective feel)
+// Grid background
 class GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -367,21 +469,17 @@ class GridPainter extends CustomPainter {
       ..color = const Color(0xFF00C853).withOpacity(0.04)
       ..strokeWidth = 0.5;
 
-    // Vertical lines
     for (double x = 0; x < size.width; x += 40) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
-
-    // Horizontal lines
     for (double y = 0; y < size.height; y += 40) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
 
-    // Center glow
     final glowPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          const Color(0xFF00C853).withOpacity(0.08),
+          const Color(0xFF00C853).withOpacity(0.07),
           Colors.transparent,
         ],
       ).createShader(
@@ -402,7 +500,7 @@ class GridPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// Floating particles painter
+// Floating particles
 class ParticlePainter extends CustomPainter {
   final double progress;
   final Random random = Random(42);
@@ -413,13 +511,13 @@ class ParticlePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..style = PaintingStyle.fill;
 
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 25; i++) {
       final x = random.nextDouble() * size.width;
       final baseY = random.nextDouble() * size.height;
       final speed = 0.3 + random.nextDouble() * 0.7;
       final y = (baseY - progress * speed * 80) % size.height;
       final radius = 1.0 + random.nextDouble() * 2;
-      final opacity = 0.1 + random.nextDouble() * 0.3;
+      final opacity = 0.08 + random.nextDouble() * 0.25;
 
       paint.color = const Color(0xFF00C853).withOpacity(opacity);
       canvas.drawCircle(Offset(x, y), radius, paint);

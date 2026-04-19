@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
 import 'screens/splash/splash_screen.dart';
+import 'screens/onboarding/onboarding_screen.dart';
 
 void main() {
   runApp(const FitLifeApp());
@@ -18,6 +19,7 @@ class FitLifeApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
+        '/onboarding': (context) => const OnboardingScreen(),
       },
     );
   }
