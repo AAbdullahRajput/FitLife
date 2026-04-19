@@ -5,6 +5,7 @@ import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/onboarding/user_info_screen.dart';
 import 'screens/onboarding/goal_selection_screen.dart';
 import 'screens/onboarding/equipment_selection_screen.dart';
+import 'screens/home/home_screen.dart';
 
 void main() {
   runApp(const FitLifeApp());
@@ -26,6 +27,7 @@ class FitLifeApp extends StatelessWidget {
         '/user-info': (context) => const UserInfoScreen(),
         '/goal-selection': (context) => const GoalSelectionScreen(),
         '/equipment-selection': (context) => const EquipmentSelectionScreen(),
+        '/home': (context) => const HomeScreen(),
       },
     );
   }
