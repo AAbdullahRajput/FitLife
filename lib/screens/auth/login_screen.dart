@@ -564,129 +564,131 @@ class _LoginScreenState extends State<LoginScreen>
         opacity: _fadeAnim,
         child: Row(
           children: [
-            // ── Left panel — branding ──
+            // ── Left panel — branding (flex: 1, properly centered) ──
             Expanded(
+              flex: 1,
               child: Container(
                 color: sidebarColor,
-                padding: const EdgeInsets.all(48),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLogo(size: 44, fontSize: 22),
-                    const Spacer(),
-
-                    // Big headline
-                    ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [Color(0xFF5EFC82), Color(0xFF00C853)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ).createShader(bounds),
-                      child: const Text(
-                        'Train smarter.\nEat better.\nLive stronger.',
-                        style: TextStyle(
-                          fontSize: 38,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          height: 1.25,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-                    Text(
-                      'Join thousands of athletes tracking\ntheir fitness journey with FitLife.',
-                      style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.5),
-                          height: 1.6),
-                    ),
-
-                    const SizedBox(height: 48),
-
-                    // Feature list
-                    ...[
-                      ('💪', '200+ exercises with variations'),
-                      ('🥗', 'Personalised daily meal plans'),
-                      ('📊', 'Real-time progress tracking'),
-                      ('☁️', 'Cloud sync across all devices'),
-                    ].map((item) => Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color:
-                                      AppColors.primary.withOpacity(0.1),
-                                  border: Border.all(
-                                      color:
-                                          AppColors.primary.withOpacity(0.2)),
-                                ),
-                                child: Center(
-                                    child: Text(item.$1,
-                                        style: const TextStyle(
-                                            fontSize: 16))),
-                              ),
-                              const SizedBox(width: 14),
-                              Text(item.$2,
-                                  style: TextStyle(
-                                      fontSize: 13,
-                                      color:
-                                          Colors.white.withOpacity(0.7),
-                                      fontWeight: FontWeight.w500)),
-                            ],
-                          ),
-                        )),
-
-                    const Spacer(),
-
-                    // Social proof
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
-                        color: Colors.white.withOpacity(0.04),
-                        border: Border.all(
-                            color: Colors.white.withOpacity(0.08)),
-                      ),
-                      child: Row(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 48, vertical: 48),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Avatar stack
-                          SizedBox(
-                            width: 74,
-                            height: 32,
-                            child: Stack(
-                              children: [
-                                _buildAvatarCircle('🏋️', 0),
-                                _buildAvatarCircle('🧘', 24),
-                                _buildAvatarCircle('🚴', 48),
-                              ],
+                          _buildLogo(size: 44, fontSize: 22),
+                          const SizedBox(height: 56),
+
+                          // Big headline
+                          ShaderMask(
+                            shaderCallback: (bounds) => const LinearGradient(
+                              colors: [Color(0xFF5EFC82), Color(0xFF00C853)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ).createShader(bounds),
+                            child: const Text(
+                              'Train smarter.\nEat better.\nLive stronger.',
+                              style: TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                height: 1.25,
+                                letterSpacing: -0.5,
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: List.generate(
-                                      5,
-                                      (_) => const Icon(Icons.star_rounded,
-                                          size: 12,
-                                          color: Color(0xFFFFD600))),
+
+                          const SizedBox(height: 16),
+                          Text(
+                            'Join thousands of athletes tracking\ntheir fitness journey with FitLife.',
+                            style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white.withOpacity(0.5),
+                                height: 1.6),
+                          ),
+
+                          const SizedBox(height: 40),
+
+                          // Feature list
+                          ...[
+                            ('💪', '200+ exercises with variations'),
+                            ('🥗', 'Personalised daily meal plans'),
+                            ('📊', 'Real-time progress tracking'),
+                            ('☁️', 'Cloud sync across all devices'),
+                          ].map((item) => Padding(
+                                padding: const EdgeInsets.only(bottom: 14),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: AppColors.primary.withOpacity(0.1),
+                                        border: Border.all(
+                                            color: AppColors.primary.withOpacity(0.2)),
+                                      ),
+                                      child: Center(
+                                          child: Text(item.$1,
+                                              style: const TextStyle(fontSize: 16))),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Text(item.$2,
+                                        style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.white.withOpacity(0.7),
+                                            fontWeight: FontWeight.w500)),
+                                  ],
                                 ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  '10,000+ athletes trust FitLife',
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      color:
-                                          Colors.white.withOpacity(0.5)),
+                              )),
+
+                          const Spacer(),
+
+                          // Social proof
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(14),
+                              color: Colors.white.withOpacity(0.04),
+                              border: Border.all(
+                                  color: Colors.white.withOpacity(0.08)),
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 74,
+                                  height: 32,
+                                  child: Stack(
+                                    children: [
+                                      _buildAvatarCircle('🏋️', 0),
+                                      _buildAvatarCircle('🧘', 24),
+                                      _buildAvatarCircle('🚴', 48),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: List.generate(
+                                            5,
+                                            (_) => const Icon(Icons.star_rounded,
+                                                size: 12,
+                                                color: Color(0xFFFFD600))),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        '10,000+ athletes trust FitLife',
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.white.withOpacity(0.5)),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
@@ -694,93 +696,100 @@ class _LoginScreenState extends State<LoginScreen>
                         ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
 
-            // ── Right panel — form ──
-            SizedBox(
-              width: 480,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 52, vertical: 48),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Back to home
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+            // ── Right panel — form (flex: 1, properly centered) ──
+            Expanded(
+              flex: 1,
+              child: Container(
+                color: bgColor,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 40, vertical: 48),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.arrow_back_ios_new_rounded,
-                              size: 13, color: textSecondary),
-                          const SizedBox(width: 6),
-                          Text('Back',
+                          // Back button
+                          GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.arrow_back_ios_new_rounded,
+                                    size: 13, color: textSecondary),
+                                const SizedBox(width: 6),
+                                Text('Back',
+                                    style: TextStyle(
+                                        fontSize: 13, color: textSecondary)),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 40),
+
+                          Text('Welcome back 👋',
                               style: TextStyle(
-                                  fontSize: 13, color: textSecondary)),
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w800,
+                                  color: textPrimary,
+                                  height: 1.2)),
+                          const SizedBox(height: 8),
+                          Text('Sign in to your FitLife account.',
+                              style: TextStyle(fontSize: 14, color: textSecondary)),
+
+                          const SizedBox(height: 32),
+
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              color: cardColor,
+                              border: Border.all(color: borderColor),
+                              boxShadow: isDark
+                                  ? []
+                                  : [
+                                      BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 24,
+                                          offset: const Offset(0, 4))
+                                    ],
+                            ),
+                            child: _buildFormContent(
+                              isDark: isDark,
+                              textPrimary: textPrimary,
+                              textSecondary: textSecondary,
+                              cardColor: isDark
+                                  ? const Color(0xFF1E1E1E)
+                                  : const Color(0xFFF8F8F8),
+                              borderColor: borderColor,
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          Center(
+                            child: GestureDetector(
+                              onTap: () => Navigator.pushReplacementNamed(
+                                  context, '/home'),
+                              child: Text(
+                                'Continue as Guest →',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: textSecondary,
+                                    fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
-
-                    const SizedBox(height: 40),
-
-                    Text('Welcome back 👋',
-                        style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            color: textPrimary,
-                            height: 1.2)),
-                    const SizedBox(height: 8),
-                    Text('Sign in to your FitLife account.',
-                        style: TextStyle(
-                            fontSize: 14, color: textSecondary)),
-
-                    const SizedBox(height: 36),
-
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        color: cardColor,
-                        border: Border.all(color: borderColor),
-                        boxShadow: isDark
-                            ? []
-                            : [
-                                BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 24,
-                                    offset: const Offset(0, 4))
-                              ],
-                      ),
-                      child: _buildFormContent(
-                        isDark: isDark,
-                        textPrimary: textPrimary,
-                        textSecondary: textSecondary,
-                        cardColor: isDark
-                            ? const Color(0xFF1E1E1E)
-                            : const Color(0xFFF8F8F8),
-                        borderColor: borderColor,
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    Center(
-                      child: GestureDetector(
-                        onTap: () =>
-                            Navigator.pushReplacementNamed(context, '/home'),
-                        child: Text(
-                          'Continue as Guest →',
-                          style: TextStyle(
-                              fontSize: 13,
-                              color: textSecondary,
-                              fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
