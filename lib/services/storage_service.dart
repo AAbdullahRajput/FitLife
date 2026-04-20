@@ -1,9 +1,9 @@
 import 'dart:convert';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageService {
-  static void saveUserInfo({
+  static Future<void> saveUserInfo({
     required String name,
     required int age,
     required double weight,
@@ -11,7 +11,8 @@ class StorageService {
     required String gender,
     required String goal,
     required String equipment,
-  }) {
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
     final data = {
       'name': name,
       'age': age,
@@ -21,39 +22,45 @@ class StorageService {
       'goal': goal,
       'equipment': equipment,
       'isSetup': true,
+      'isLoggedIn': false,
     };
-    html.window.localStorage['fitlife_user'] = jsonEncode(data);
+    await prefs.setString('fitlife_user', jsonEncode(data));
   }
 
-  static Map<String, dynamic>? getUserInfo() {
-    final raw = html.window.localStorage['fitlife_user'];
+  static Future<Map<String, dynamic>?> getUserInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('fitlife_user');
     if (raw == null) return null;
     return jsonDecode(raw);
   }
 
-  static bool isSetupDone() {
-    final raw = html.window.localStorage['fitlife_user'];
+  static Future<bool> isSetupDone() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('fitlife_user');
     if (raw == null) return false;
     final data = jsonDecode(raw);
     return data['isSetup'] == true;
   }
 
-  static bool isLoggedIn() {
-    final raw = html.window.localStorage['fitlife_user'];
+  static Future<bool> isLoggedIn() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('fitlife_user');
     if (raw == null) return false;
     final data = jsonDecode(raw);
     return data['isLoggedIn'] == true;
   }
 
-  static void setLoggedIn(bool value) {
-    final raw = html.window.localStorage['fitlife_user'];
+  static Future<void> setLoggedIn(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('fitlife_user');
     if (raw == null) return;
     final data = jsonDecode(raw);
     data['isLoggedIn'] = value;
-    html.window.localStorage['fitlife_user'] = jsonEncode(data);
+    await prefs.setString('fitlife_user', jsonEncode(data));
   }
 
-  static void clearAll() {
-    html.window.localStorage.remove('fitlife_user');
+  static Future<void> clearAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('fitlife_user');
   }
 }

@@ -75,7 +75,7 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
     super.dispose();
   }
 
-  void _continue() {
+  void _continue() async {
   if (_selectedEquipment == null) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -90,12 +90,11 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
     return;
   }
 
-  // Save to local storage
-  StorageService.saveUserInfo(
-    name: 'Abdullah',       // we'll make this dynamic later
+  await StorageService.saveUserInfo(
+    name: 'Abdullah',
     age: 24,
-    weight: 55.0,
-    height: 165.0,
+    weight: 75.0,
+    height: 175.0,
     gender: 'Male',
     goal: 'Build Muscle',
     equipment: _selectedEquipment!,

@@ -108,9 +108,10 @@ class _SplashScreenState extends State<SplashScreen>
     });
 
     // Navigate after 4 seconds
-    Timer(const Duration(milliseconds: 2500), () {
+    Timer(const Duration(milliseconds: 2500), () async {
   if (mounted) {
-    if (StorageService.isSetupDone()) {
+    final setupDone = await StorageService.isSetupDone();
+    if (setupDone) {
       Navigator.pushReplacementNamed(context, '/home');
     } else {
       Navigator.pushReplacementNamed(context, '/onboarding');
