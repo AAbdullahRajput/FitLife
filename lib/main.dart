@@ -11,6 +11,11 @@ import 'screens/onboarding/goal_selection_screen.dart';
 import 'screens/onboarding/equipment_selection_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/workout/exercise_detail_screen.dart';
+import 'screens/workout/workout_screen.dart';
+import 'screens/meals/meals_screen.dart';
+import 'screens/meals/meal_detail_screen.dart';
+import 'screens/progress/progress_screen.dart';
+import 'screens/profile/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,17 +47,39 @@ class FitLifeApp extends StatelessWidget {
       themeMode: themeProvider.themeMode,
       initialRoute: '/',
       routes: {
+        // ── Core ──
         '/': (context) => const SplashScreen(),
+        '/home': (context) => const HomeScreen(),
+
+        // ── Onboarding ──
         '/onboarding': (context) => const OnboardingScreen(),
         '/user-info': (context) => const UserInfoScreen(),
         '/goal-selection': (context) => const GoalSelectionScreen(),
         '/equipment-selection': (context) => const EquipmentSelectionScreen(),
-        '/home': (context) => const HomeScreen(),
+
+        // ── Workout ──
+        '/workout': (context) => WorkoutScreen(
+              userTier: 'guest', // TODO: replace with real tier from Supabase
+            ),
         '/exercise-detail': (context) => ExerciseDetailScreen(
               exercise: ModalRoute.of(context)!.settings.arguments
                   as Map<String, dynamic>,
-              userTier: 'guest',
+              userTier: 'guest', // TODO: replace with real tier from Supabase
             ),
+
+        // ── Meals / Diet ──
+        '/diet': (context) => MealsScreen(
+              userTier: 'guest', // TODO: replace with real tier from Supabase
+            ),
+        '/meal-detail': (context) => MealDetailScreen(
+              meal: ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>,
+              userTier: 'guest', // TODO: replace with real tier from Supabase
+            ),
+
+        // ── Other tabs ──
+        '/progress': (context) => const ProgressScreen(),
+        '/profile': (context) => const ProfileScreen(),
       },
     );
   }
