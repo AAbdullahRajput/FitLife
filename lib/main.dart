@@ -16,6 +16,8 @@ import 'screens/meals/meals_screen.dart';
 import 'screens/meals/meal_detail_screen.dart';
 import 'screens/progress/progress_screen.dart';
 import 'screens/profile/profile_screen.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/register_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,6 +53,10 @@ class FitLifeApp extends StatelessWidget {
         '/': (context) => const SplashScreen(),
         '/home': (context) => const HomeScreen(),
 
+        // ── Auth ──
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
+
         // ── Onboarding ──
         '/onboarding': (context) => const OnboardingScreen(),
         '/user-info': (context) => const UserInfoScreen(),
@@ -59,23 +65,29 @@ class FitLifeApp extends StatelessWidget {
 
         // ── Workout ──
         '/workout': (context) => WorkoutScreen(
-              userTier: 'guest', // TODO: replace with real tier from Supabase
+              userTier: 'guest',
             ),
-        '/exercise-detail': (context) => ExerciseDetailScreen(
-              exercise: ModalRoute.of(context)!.settings.arguments
-                  as Map<String, dynamic>,
-              userTier: 'guest', // TODO: replace with real tier from Supabase
-            ),
+        '/exercise-detail': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments;
+          if (args == null) return const HomeScreen();
+          return ExerciseDetailScreen(
+            exercise: args as Map<String, dynamic>,
+            userTier: 'guest',
+          );
+        },
 
         // ── Meals / Diet ──
         '/diet': (context) => MealsScreen(
-              userTier: 'guest', // TODO: replace with real tier from Supabase
+              userTier: 'guest',
             ),
-        '/meal-detail': (context) => MealDetailScreen(
-              meal: ModalRoute.of(context)!.settings.arguments
-                  as Map<String, dynamic>,
-              userTier: 'guest', // TODO: replace with real tier from Supabase
-            ),
+        '/meal-detail': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments;
+          if (args == null) return const HomeScreen();
+          return MealDetailScreen(
+            meal: args as Map<String, dynamic>,
+            userTier: 'guest',
+          );
+        },
 
         // ── Other tabs ──
         '/progress': (context) => const ProgressScreen(),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../core/theme/app_colors.dart';
+import '../../core/data/app_data.dart';
 import 'meal_detail_screen.dart';
 
 class MealsScreen extends StatefulWidget {
@@ -15,79 +16,22 @@ class _MealsScreenState extends State<MealsScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
-  String _selectedTab = 'Plan'; // 'Plan' or 'Library'
+  String _selectedTab = 'Plan';
   String _selectedMealTime = 'All';
 
   final List<String> _mealTimes = [
     'All', 'Breakfast', 'Lunch', 'Snack', 'Dinner'
   ];
 
-  bool _isTierUnlocked(String required) {
-    const order = {'guest': 0, 'free': 1, 'premium': 2};
-    return (order[widget.userTier] ?? 0) >= (order[required] ?? 0);
-  }
-
-  // ── TODAY'S MEAL PLAN ──
-  final List<Map<String, dynamic>> _mealPlan = [
-    {
-      'meal': 'Breakfast',
-      'time': '8:00 AM',
-      'items': 'Oats + Eggs + Milk',
-      'calories': 450,
-      'protein': 28,
-      'carbs': 55,
-      'fat': 12,
-      'emoji': '🥣',
-      'color': Color(0xFFFFD600),
-      'tier': 'guest',
-      'desc': 'High-protein morning start to fuel your day.',
-    },
-    {
-      'meal': 'Lunch',
-      'time': '1:00 PM',
-      'items': 'Chicken Rice + Salad',
-      'calories': 650,
-      'protein': 45,
-      'carbs': 70,
-      'fat': 14,
-      'emoji': '🍗',
-      'color': Color(0xFF00C853),
-      'tier': 'free',
-      'desc': 'Lean protein with complex carbs for sustained energy.',
-    },
-    {
-      'meal': 'Snack',
-      'time': '4:00 PM',
-      'items': 'Banana + Protein Shake',
-      'calories': 280,
-      'protein': 30,
-      'carbs': 32,
-      'fat': 4,
-      'emoji': '🍌',
-      'color': Color(0xFFFF6D00),
-      'tier': 'free',
-      'desc': 'Quick pre-workout fuel — fast carbs and protein.',
-    },
-    {
-      'meal': 'Dinner',
-      'time': '8:00 PM',
-      'items': 'Fish + Vegetables + Rice',
-      'calories': 520,
-      'protein': 40,
-      'carbs': 50,
-      'fat': 10,
-      'emoji': '🐟',
-      'color': Color(0xFF2979FF),
-      'tier': 'premium',
-      'desc': 'Light and nutrient-dense dinner for overnight recovery.',
-    },
-  ];
+  // ── TODAY'S MEAL PLAN — pulled from AppData ──
+  late final List<Map<String, dynamic>> _mealPlan;
 
   // ── FOOD LIBRARY ──
   final List<Map<String, dynamic>> _foodLibrary = [
     // Breakfast
     {
       'name': 'Oatmeal Bowl',
+      'meal': 'Oatmeal Bowl',
       'mealTime': 'Breakfast',
       'calories': 320,
       'protein': 12,
@@ -101,6 +45,7 @@ class _MealsScreenState extends State<MealsScreen>
     },
     {
       'name': 'Egg White Omelette',
+      'meal': 'Egg White Omelette',
       'mealTime': 'Breakfast',
       'calories': 180,
       'protein': 26,
@@ -114,6 +59,7 @@ class _MealsScreenState extends State<MealsScreen>
     },
     {
       'name': 'Avocado Toast',
+      'meal': 'Avocado Toast',
       'mealTime': 'Breakfast',
       'calories': 420,
       'protein': 14,
@@ -128,6 +74,7 @@ class _MealsScreenState extends State<MealsScreen>
     // Lunch
     {
       'name': 'Chicken Rice Bowl',
+      'meal': 'Chicken Rice Bowl',
       'mealTime': 'Lunch',
       'calories': 580,
       'protein': 42,
@@ -141,6 +88,7 @@ class _MealsScreenState extends State<MealsScreen>
     },
     {
       'name': 'Tuna Pasta',
+      'meal': 'Tuna Pasta',
       'mealTime': 'Lunch',
       'calories': 520,
       'protein': 38,
@@ -154,6 +102,7 @@ class _MealsScreenState extends State<MealsScreen>
     },
     {
       'name': 'Steak Salad',
+      'meal': 'Steak Salad',
       'mealTime': 'Lunch',
       'calories': 490,
       'protein': 48,
@@ -168,6 +117,7 @@ class _MealsScreenState extends State<MealsScreen>
     // Snack
     {
       'name': 'Protein Shake',
+      'meal': 'Protein Shake',
       'mealTime': 'Snack',
       'calories': 200,
       'protein': 30,
@@ -181,6 +131,7 @@ class _MealsScreenState extends State<MealsScreen>
     },
     {
       'name': 'Greek Yogurt + Nuts',
+      'meal': 'Greek Yogurt + Nuts',
       'mealTime': 'Snack',
       'calories': 260,
       'protein': 18,
@@ -194,6 +145,7 @@ class _MealsScreenState extends State<MealsScreen>
     },
     {
       'name': 'Rice Cake + Peanut Butter',
+      'meal': 'Rice Cake + Peanut Butter',
       'mealTime': 'Snack',
       'calories': 220,
       'protein': 8,
@@ -208,6 +160,7 @@ class _MealsScreenState extends State<MealsScreen>
     // Dinner
     {
       'name': 'Grilled Fish + Veg',
+      'meal': 'Grilled Fish + Veg',
       'mealTime': 'Dinner',
       'calories': 450,
       'protein': 38,
@@ -221,6 +174,7 @@ class _MealsScreenState extends State<MealsScreen>
     },
     {
       'name': 'Chicken Stir-fry',
+      'meal': 'Chicken Stir-fry',
       'mealTime': 'Dinner',
       'calories': 520,
       'protein': 44,
@@ -234,6 +188,7 @@ class _MealsScreenState extends State<MealsScreen>
     },
     {
       'name': 'Beef & Sweet Potato',
+      'meal': 'Beef & Sweet Potato',
       'mealTime': 'Dinner',
       'calories': 620,
       'protein': 50,
@@ -246,6 +201,45 @@ class _MealsScreenState extends State<MealsScreen>
       'items': 'Lean beef mince, sweet potato, spinach, garlic',
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Pull today's meals from AppData and add tier info
+    _mealPlan = AppData.getTodayMeals().asMap().entries.map((e) {
+      final tiers = ['guest', 'free', 'free', 'premium'];
+      return {
+        ...e.value,
+        'tier': tiers[e.key],
+        'desc': _planDescs[e.key],
+      };
+    }).toList();
+
+    _animController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 600));
+    _fadeAnim = Tween<double>(begin: 0, end: 1).animate(
+        CurvedAnimation(parent: _animController, curve: Curves.easeIn));
+    _animController.forward();
+  }
+
+  // Descriptions for the plan meals
+  final List<String> _planDescs = [
+    'High-protein morning start to fuel your day.',
+    'Lean protein with complex carbs for sustained energy.',
+    'Quick pre-workout fuel — fast carbs and protein.',
+    'Light and nutrient-dense dinner for overnight recovery.',
+  ];
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  bool _isTierUnlocked(String required) {
+    const order = {'guest': 0, 'free': 1, 'premium': 2};
+    return (order[widget.userTier] ?? 0) >= (order[required] ?? 0);
+  }
 
   List<Map<String, dynamic>> get _filteredLibrary {
     if (_selectedMealTime == 'All') return _foodLibrary;
@@ -281,7 +275,8 @@ class _MealsScreenState extends State<MealsScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: isDark ? const Color(0xFF141414) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('🔒 Locked'),
         content: Text(
           requiredTier == 'premium'
@@ -301,28 +296,12 @@ class _MealsScreenState extends State<MealsScreen>
               Navigator.pushNamed(context,
                   requiredTier == 'premium' ? '/premium' : '/register');
             },
-            child:
-                Text(requiredTier == 'premium' ? 'Upgrade' : 'Sign Up Free'),
+            child: Text(
+                requiredTier == 'premium' ? 'Upgrade' : 'Sign Up Free'),
           ),
         ],
       ),
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 600));
-    _fadeAnim = Tween<double>(begin: 0, end: 1)
-        .animate(CurvedAnimation(parent: _animController, curve: Curves.easeIn));
-    _animController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
   }
 
   @override
@@ -359,7 +338,9 @@ class _MealsScreenState extends State<MealsScreen>
                 padding: const EdgeInsets.symmetric(vertical: 9),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(9),
-                  color: isSelected ? AppColors.primary : Colors.transparent,
+                  color: isSelected
+                      ? AppColors.primary
+                      : Colors.transparent,
                 ),
                 child: Text(
                   tab == 'Plan' ? '📋 Today\'s Plan' : '📚 Food Library',
@@ -367,7 +348,9 @@ class _MealsScreenState extends State<MealsScreen>
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: isSelected ? Colors.black : textPrimary.withOpacity(0.6),
+                    color: isSelected
+                        ? Colors.black
+                        : textPrimary.withOpacity(0.6),
                   ),
                 ),
               ),
@@ -385,16 +368,33 @@ class _MealsScreenState extends State<MealsScreen>
     required Color textSecondary,
   }) {
     final macros = [
-      {'label': 'Calories', 'value': '$_totalPlanCalories', 'unit': 'kcal', 'color': const Color(0xFFFF6D00)},
-      {'label': 'Protein', 'value': '$_totalPlanProtein', 'unit': 'g', 'color': const Color(0xFF2979FF)},
-      {'label': 'Goal', 'value': '2000', 'unit': 'kcal', 'color': AppColors.primary},
+      {
+        'label': 'Calories',
+        'value': '$_totalPlanCalories',
+        'unit': 'kcal',
+        'color': const Color(0xFFFF6D00)
+      },
+      {
+        'label': 'Protein',
+        'value': '$_totalPlanProtein',
+        'unit': 'g',
+        'color': const Color(0xFF2979FF)
+      },
+      {
+        'label': 'Goal',
+        'value': '2000',
+        'unit': 'kcal',
+        'color': AppColors.primary
+      },
     ];
     return Row(
-      children: macros.map((m) {
+      children: macros.asMap().entries.map((entry) {
+        final i = entry.key;
+        final m = entry.value;
         final color = m['color'] as Color;
         return Expanded(
           child: Container(
-            margin: const EdgeInsets.only(right: 8),
+            margin: EdgeInsets.only(right: i < macros.length - 1 ? 8 : 0),
             padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
@@ -408,8 +408,13 @@ class _MealsScreenState extends State<MealsScreen>
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: color)),
-                Text('${m['unit']} ${m['label']}',
-                    style: TextStyle(fontSize: 9, color: textSecondary)),
+                const SizedBox(height: 2),
+                Text('${m['unit']}',
+                    style:
+                        TextStyle(fontSize: 9, color: textSecondary)),
+                Text('${m['label']}',
+                    style:
+                        TextStyle(fontSize: 9, color: textSecondary)),
               ],
             ),
           ),
@@ -427,7 +432,7 @@ class _MealsScreenState extends State<MealsScreen>
     bool wide = false,
   }) {
     final color = meal['color'] as Color;
-    final tier = meal['tier'] as String;
+    final tier = (meal['tier'] as String?) ?? 'guest';
     final isUnlocked = _isTierUnlocked(tier);
 
     return GestureDetector(
@@ -465,12 +470,17 @@ class _MealsScreenState extends State<MealsScreen>
                 children: [
                   Row(
                     children: [
-                      Text(
-                        (meal['meal'] ?? meal['name']) as String,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: isUnlocked ? textPrimary : textSecondary,
+                      Flexible(
+                        child: Text(
+                          (meal['meal'] ?? meal['name']) as String? ?? '',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: isUnlocked
+                                ? textPrimary
+                                : textSecondary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -479,25 +489,29 @@ class _MealsScreenState extends State<MealsScreen>
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    meal['items'] as String,
-                    style: TextStyle(fontSize: 11, color: textSecondary),
+                    (meal['items'] as String?) ?? '',
+                    style:
+                        TextStyle(fontSize: 11, color: textSecondary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      _buildMiniChip('${meal['calories']} kcal', color),
+                      _buildMiniChip(
+                          '${meal['calories']} kcal', color),
                       const SizedBox(width: 6),
                       _buildMiniChip('P: ${meal['protein']}g',
                           const Color(0xFF2979FF)),
                       const SizedBox(width: 6),
-                      if (meal['time'] != null)
-                        _buildMiniChip(meal['time'] as String,
-                            textSecondary.withOpacity(0.8))
-                      else
+                      if ((meal['time'] as String?) != null)
                         _buildMiniChip(
-                            meal['mealTime'] as String, AppColors.primary),
+                            meal['time'] as String,
+                            textSecondary.withOpacity(0.8))
+                      else if ((meal['mealTime'] as String?) != null)
+                        _buildMiniChip(
+                            meal['mealTime'] as String,
+                            AppColors.primary),
                     ],
                   ),
                 ],
@@ -526,7 +540,9 @@ class _MealsScreenState extends State<MealsScreen>
       ),
       child: Text(label,
           style: TextStyle(
-              fontSize: 9, color: color, fontWeight: FontWeight.w600)),
+              fontSize: 9,
+              color: color,
+              fontWeight: FontWeight.w600)),
     );
   }
 
@@ -536,7 +552,11 @@ class _MealsScreenState extends State<MealsScreen>
       'free': AppColors.primary,
       'premium': const Color(0xFFFFD600),
     };
-    final labels = {'guest': 'FREE', 'free': 'MEMBER', 'premium': '⭐ PRO'};
+    final labels = {
+      'guest': 'FREE',
+      'free': 'MEMBER',
+      'premium': '⭐ PRO'
+    };
     final color = colors[tier] ?? Colors.grey;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
@@ -547,7 +567,9 @@ class _MealsScreenState extends State<MealsScreen>
       ),
       child: Text(labels[tier] ?? 'FREE',
           style: TextStyle(
-              fontSize: 8, color: color, fontWeight: FontWeight.w700)),
+              fontSize: 8,
+              color: color,
+              fontWeight: FontWeight.w700)),
     );
   }
 
@@ -567,10 +589,12 @@ class _MealsScreenState extends State<MealsScreen>
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 7),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
-                color: isSelected ? AppColors.primary : cardColor,
+                color:
+                    isSelected ? AppColors.primary : cardColor,
                 border: Border.all(
                     color: isSelected
                         ? AppColors.primary
@@ -597,12 +621,14 @@ class _MealsScreenState extends State<MealsScreen>
   // MOBILE LAYOUT
   // ─────────────────────────────────────────
   Widget _buildMobileLayout(bool isDark) {
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0A0A0A);
+    final textPrimary =
+        isDark ? Colors.white : const Color(0xFF0A0A0A);
     final textSecondary =
         isDark ? const Color(0xFFB0B0B0) : const Color(0xFF555555);
     final bgColor =
         isDark ? const Color(0xFF050A05) : const Color(0xFFF5F5F5);
-    final cardColor = isDark ? const Color(0xFF141414) : Colors.white;
+    final cardColor =
+        isDark ? const Color(0xFF141414) : Colors.white;
     final borderColor =
         isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
 
@@ -648,25 +674,17 @@ class _MealsScreenState extends State<MealsScreen>
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                  children: _selectedTab == 'Plan'
-                      ? _mealPlan
-                          .map((m) => _buildMealCard(
-                                meal: m,
-                                cardColor: cardColor,
-                                borderColor: borderColor,
-                                textPrimary: textPrimary,
-                                textSecondary: textSecondary,
-                              ))
-                          .toList()
-                      : _filteredLibrary
-                          .map((m) => _buildMealCard(
-                                meal: m,
-                                cardColor: cardColor,
-                                borderColor: borderColor,
-                                textPrimary: textPrimary,
-                                textSecondary: textSecondary,
-                              ))
-                          .toList(),
+                  children: (_selectedTab == 'Plan'
+                          ? _mealPlan
+                          : _filteredLibrary)
+                      .map((m) => _buildMealCard(
+                            meal: m,
+                            cardColor: cardColor,
+                            borderColor: borderColor,
+                            textPrimary: textPrimary,
+                            textSecondary: textSecondary,
+                          ))
+                      .toList(),
                 ),
               ),
             ],
@@ -680,91 +698,96 @@ class _MealsScreenState extends State<MealsScreen>
   // WEB LAYOUT
   // ─────────────────────────────────────────
   Widget _buildWebLayout(bool isDark) {
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0A0A0A);
+    final textPrimary =
+        isDark ? Colors.white : const Color(0xFF0A0A0A);
     final textSecondary =
         isDark ? const Color(0xFFB0B0B0) : const Color(0xFF555555);
     final bgColor =
         isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF0F2F5);
-    final cardColor = isDark ? const Color(0xFF141414) : Colors.white;
+    final cardColor =
+        isDark ? const Color(0xFF141414) : Colors.white;
     final borderColor =
         isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
 
-    final items =
-        _selectedTab == 'Plan' ? _mealPlan : _filteredLibrary;
+    final items = _selectedTab == 'Plan' ? _mealPlan : _filteredLibrary;
 
-    return FadeTransition(
-      opacity: _fadeAnim,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(28),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1100),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Nutrition 🥗',
-                            style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                                color: textPrimary)),
-                        const SizedBox(height: 4),
-                        Text('Your daily meal plan + full food library',
-                            style: TextStyle(
-                                fontSize: 13, color: textSecondary)),
-                      ],
-                    ),
-                    const Spacer(),
-                    SizedBox(
-                      width: 280,
-                      child: _buildTabToggle(
-                          cardColor: cardColor,
-                          borderColor: borderColor,
-                          textPrimary: textPrimary),
-                    ),
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: FadeTransition(
+        opacity: _fadeAnim,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(28),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1100),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Nutrition 🥗',
+                              style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                  color: textPrimary)),
+                          const SizedBox(height: 4),
+                          Text(
+                              'Your daily meal plan + full food library',
+                              style: TextStyle(
+                                  fontSize: 13, color: textSecondary)),
+                        ],
+                      ),
+                      const Spacer(),
+                      SizedBox(
+                        width: 280,
+                        child: _buildTabToggle(
+                            cardColor: cardColor,
+                            borderColor: borderColor,
+                            textPrimary: textPrimary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  if (_selectedTab == 'Plan') ...[
+                    _buildMacroSummary(
+                        cardColor: cardColor,
+                        borderColor: borderColor,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary),
+                    const SizedBox(height: 20),
+                  ] else ...[
+                    _buildMealTimeFilter(
+                        cardColor: cardColor,
+                        borderColor: borderColor,
+                        textPrimary: textPrimary),
+                    const SizedBox(height: 20),
                   ],
-                ),
-                const SizedBox(height: 20),
-                if (_selectedTab == 'Plan') ...[
-                  _buildMacroSummary(
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 520,
+                      mainAxisExtent: 110,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: items.length,
+                    itemBuilder: (_, i) => _buildMealCard(
+                      meal: items[i],
                       cardColor: cardColor,
                       borderColor: borderColor,
                       textPrimary: textPrimary,
-                      textSecondary: textSecondary),
-                  const SizedBox(height: 20),
-                ] else ...[
-                  _buildMealTimeFilter(
-                      cardColor: cardColor,
-                      borderColor: borderColor,
-                      textPrimary: textPrimary),
-                  const SizedBox(height: 20),
+                      textSecondary: textSecondary,
+                      wide: true,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
                 ],
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate:
-                      const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 520,
-                    mainAxisExtent: 110,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  itemCount: items.length,
-                  itemBuilder: (_, i) => _buildMealCard(
-                    meal: items[i],
-                    cardColor: cardColor,
-                    borderColor: borderColor,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    wide: true,
-                  ),
-                ),
-                const SizedBox(height: 30),
-              ],
+              ),
             ),
           ),
         ),
