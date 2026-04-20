@@ -4,6 +4,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/utils/helpers.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/theme_provider.dart';
+import '../../services/storage_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -152,6 +153,10 @@ class _HomeScreenState extends State<HomeScreen>
 
                       // Stats row
                       _buildStatsRow(),
+                      const SizedBox(height: 28),
+
+                      // After _buildStatsRow() and its SizedBox:
+                      _buildUnlockBanner(),
                       const SizedBox(height: 28),
 
                       // Today's workout
@@ -358,6 +363,155 @@ class _HomeScreenState extends State<HomeScreen>
       }).toList(),
     );
   }
+
+  Widget _buildUnlockBanner() {
+  // Hide if already logged in
+  if (StorageService.isLoggedIn()) return const SizedBox.shrink();
+
+  return Container(
+    margin: const EdgeInsets.only(top: 8),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(16),
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          const Color(0xFF1A1A2E),
+          AppColors.primary.withOpacity(0.15),
+        ],
+      ),
+      border: Border.all(
+        color: AppColors.primary.withOpacity(0.3),
+        width: 1.5,
+      ),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text(
+                'FREE PLAN',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              '🔓 Unlock More Features',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        // Feature list
+        _buildUnlockFeature('☁️ Save progress to cloud'),
+        _buildUnlockFeature('💪 50+ more exercises'),
+        _buildUnlockFeature('🥗 Advanced diet plans'),
+        _buildUnlockFeature('📊 Detailed analytics'),
+
+        const SizedBox(height: 12),
+
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(context, '/register');
+                },
+                child: Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFF5EFC82),
+                        Color(0xFF00C853),
+                      ],
+                    ),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'Create Free Account',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: () {
+                Navigator.pushNamed(context, '/login');
+              },
+              child: Container(
+                height: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.4),
+                  ),
+                ),
+                child: const Center(
+                  child: Text(
+                    'Sign In',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildUnlockFeature(String text) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 4),
+    child: Row(
+      children: [
+        const Icon(Icons.check_circle,
+            size: 14, color: AppColors.primary),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.textSecondary.withOpacity(0.8),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildSectionTitle(String title, String subtitle) {
     return Row(

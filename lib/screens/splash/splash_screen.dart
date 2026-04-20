@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:math';
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_strings.dart';
+import '../../services/storage_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -108,10 +109,14 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Navigate after 4 seconds
     Timer(const Duration(milliseconds: 2500), () {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/onboarding');
-      }
-    });
+  if (mounted) {
+    if (StorageService.isSetupDone()) {
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      Navigator.pushReplacementNamed(context, '/onboarding');
+    }
+  }
+});
   }
 
   @override

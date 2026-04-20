@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_constants.dart';
+import '../../services/storage_service.dart';
 
 class EquipmentSelectionScreen extends StatefulWidget {
   const EquipmentSelectionScreen({super.key});
@@ -75,21 +76,33 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
   }
 
   void _continue() {
-    if (_selectedEquipment == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Please select your equipment'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+  if (_selectedEquipment == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Please select your equipment'),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
         ),
-      );
-      return;
-    }
-    Navigator.pushReplacementNamed(context, '/home');
+      ),
+    );
+    return;
   }
+
+  // Save to local storage
+  StorageService.saveUserInfo(
+    name: 'Abdullah',       // we'll make this dynamic later
+    age: 24,
+    weight: 55.0,
+    height: 165.0,
+    gender: 'Male',
+    goal: 'Build Muscle',
+    equipment: _selectedEquipment!,
+  );
+
+  Navigator.pushReplacementNamed(context, '/home');
+}
 
   @override
   Widget build(BuildContext context) {
