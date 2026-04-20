@@ -215,10 +215,14 @@ class _HomeScreenState extends State<HomeScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: AppColors.primary.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(16),
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF0D1F0D)
+                      : const Color(0xFFE8F5E9),
                   border: Border.all(
-                      color: AppColors.primary.withOpacity(0.3)),
+                    color: AppColors.primary.withOpacity(0.4),
+                    width: 1.5,
+                  ),
                 ),
                 child: Text(
                   '🎯 $userGoal',
@@ -431,7 +435,8 @@ class _HomeScreenState extends State<HomeScreen>
 
         Row(
           children: [
-            Expanded(
+            Flexible(
+              flex: 3,
               child: GestureDetector(
                 onTap: () {
                   Navigator.pushNamed(context, '/register');
