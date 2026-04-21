@@ -402,6 +402,7 @@ class _MealsScreenState extends State<MealsScreen>
               border: Border.all(color: color.withOpacity(0.2)),
             ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(m['value'] as String,
                     style: TextStyle(
@@ -423,6 +424,7 @@ class _MealsScreenState extends State<MealsScreen>
     );
   }
 
+  // ── FIXED: meal card column uses mainAxisSize.min + Wrap for chips ───────────
   Widget _buildMealCard({
     required Map<String, dynamic> meal,
     required Color cardColor,
@@ -439,17 +441,18 @@ class _MealsScreenState extends State<MealsScreen>
       onTap: () => _onMealTap(meal),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           color: cardColor,
           border: Border.all(color: borderColor),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: color.withOpacity(isUnlocked ? 0.12 : 0.06),
@@ -458,52 +461,52 @@ class _MealsScreenState extends State<MealsScreen>
               child: Center(
                 child: isUnlocked
                     ? Text(meal['emoji'] as String,
-                        style: const TextStyle(fontSize: 22))
+                        style: const TextStyle(fontSize: 20))
                     : Icon(Icons.lock_rounded,
-                        size: 20, color: textSecondary),
+                        size: 18, color: textSecondary),
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Name + tier badge
                   Row(
                     children: [
                       Flexible(
                         child: Text(
                           (meal['meal'] ?? meal['name']) as String? ?? '',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: isUnlocked
-                                ? textPrimary
-                                : textSecondary,
+                            color: isUnlocked ? textPrimary : textSecondary,
                           ),
                           overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 5),
                       _buildTierBadge(tier),
                     ],
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   Text(
                     (meal['items'] as String?) ?? '',
-                    style:
-                        TextStyle(fontSize: 11, color: textSecondary),
+                    style: TextStyle(fontSize: 10, color: textSecondary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
-                  Row(
+                  const SizedBox(height: 5),
+                  // Chips — Wrap prevents horizontal overflow
+                  Wrap(
+                    spacing: 5,
+                    runSpacing: 3,
                     children: [
-                      _buildMiniChip(
-                          '${meal['calories']} kcal', color),
-                      const SizedBox(width: 6),
+                      _buildMiniChip('${meal['calories']} kcal', color),
                       _buildMiniChip('P: ${meal['protein']}g',
                           const Color(0xFF2979FF)),
-                      const SizedBox(width: 6),
                       if ((meal['time'] as String?) != null)
                         _buildMiniChip(
                             meal['time'] as String,
@@ -522,7 +525,7 @@ class _MealsScreenState extends State<MealsScreen>
               isUnlocked
                   ? Icons.arrow_forward_ios_rounded
                   : Icons.lock_outline_rounded,
-              size: 14,
+              size: 13,
               color: isUnlocked ? color : textSecondary,
             ),
           ],
@@ -533,9 +536,9 @@ class _MealsScreenState extends State<MealsScreen>
 
   Widget _buildMiniChip(String label, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(5),
         color: color.withOpacity(0.12),
       ),
       child: Text(label,
@@ -765,13 +768,14 @@ class _MealsScreenState extends State<MealsScreen>
                         textPrimary: textPrimary),
                     const SizedBox(height: 20),
                   ],
+                  // FIX: increased mainAxisExtent to 120 so chips row fits without overflow
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate:
                         const SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: 520,
-                      mainAxisExtent: 110,
+                      mainAxisExtent: 120,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
                     ),

@@ -344,6 +344,7 @@ class _WorkoutScreenState extends State<WorkoutScreen>
                 ),
               ),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   if (!isUnlocked)
                     Icon(Icons.lock_rounded,
@@ -421,6 +422,7 @@ class _WorkoutScreenState extends State<WorkoutScreen>
     );
   }
 
+  // ── FIXED: exercise card no longer overflows in 110px grid cell ──────────────
   Widget _buildExerciseCard({
     required Map<String, dynamic> exercise,
     required Color cardColor,
@@ -439,17 +441,19 @@ class _WorkoutScreenState extends State<WorkoutScreen>
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           color: cardColor,
           border: Border.all(color: borderColor),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            // Icon circle — fixed size, never shrinks
             Container(
-              width: 48,
-              height: 48,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: color.withOpacity(isUnlocked ? 0.12 : 0.06),
@@ -458,47 +462,56 @@ class _WorkoutScreenState extends State<WorkoutScreen>
               child: Center(
                 child: isUnlocked
                     ? Text(exercise['emoji'] as String,
-                        style: const TextStyle(fontSize: 22))
+                        style: const TextStyle(fontSize: 20))
                     : Icon(Icons.lock_rounded,
-                        size: 20, color: textSecondary),
+                        size: 18, color: textSecondary),
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
+            // Text content — uses Expanded + clamps content to avoid overflow
             Expanded(
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Name + tier badge row
                   Row(
                     children: [
-                      Text(
-                        exercise['name'] as String,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: isUnlocked ? textPrimary : textSecondary,
+                      Flexible(
+                        child: Text(
+                          exercise['name'] as String,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: isUnlocked ? textPrimary : textSecondary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 5),
                       _buildMiniTierBadge(required),
                     ],
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
+                  // Description — single line with ellipsis
                   Text(
                     exercise['desc'] as String,
-                    style: TextStyle(fontSize: 11, color: textSecondary),
-                    maxLines: wide ? 2 : 1,
+                    style: TextStyle(fontSize: 10, color: textSecondary),
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
-                  Row(
+                  const SizedBox(height: 5),
+                  // Chips row — wrapped so they never overflow horizontally
+                  Wrap(
+                    spacing: 5,
+                    runSpacing: 3,
                     children: [
                       _buildMiniChip(
                           exercise['muscle'] as String,
                           _getMuscleColor(exercise['muscle'] as String)),
-                      const SizedBox(width: 6),
                       _buildMiniChip(
                           '${exercise['sets']}×${exercise['reps']}', color),
-                      const SizedBox(width: 6),
                       _buildMiniChip('Rest ${exercise['rest']}',
                           textSecondary.withOpacity(0.7)),
                     ],
@@ -506,12 +519,12 @@ class _WorkoutScreenState extends State<WorkoutScreen>
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Icon(
               isUnlocked
                   ? Icons.arrow_forward_ios_rounded
                   : Icons.lock_outline_rounded,
-              size: 14,
+              size: 13,
               color: isUnlocked ? color : textSecondary,
             ),
           ],
@@ -522,9 +535,9 @@ class _WorkoutScreenState extends State<WorkoutScreen>
 
   Widget _buildMiniChip(String label, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(5),
         color: color.withOpacity(0.12),
       ),
       child: Text(label,
@@ -819,7 +832,7 @@ class _WorkoutScreenState extends State<WorkoutScreen>
                       textPrimary: textPrimary,
                       textSecondary: textSecondary,
                       isDark: isDark),
-                // Grid of exercises
+                // Grid of exercises — increased mainAxisExtent to 120 to give content room
                 if (_filteredExercises.isEmpty)
                   Center(
                     child: Padding(
@@ -836,7 +849,8 @@ class _WorkoutScreenState extends State<WorkoutScreen>
                     gridDelegate:
                         const SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: 520,
-                      mainAxisExtent: 110,
+                      // FIX: bumped from 110 → 120 to prevent column overflow
+                      mainAxisExtent: 120,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
                     ),
