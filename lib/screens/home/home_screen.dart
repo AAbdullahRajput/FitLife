@@ -6,9 +6,12 @@ import '../../core/constants/app_constants.dart';
 import '../../core/utils/helpers.dart';
 import '../../core/theme/theme_provider.dart';
 import '../../core/data/app_data.dart';
-import '../../services/storage_service.dart';
 import '../../services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../workout/workout_screen.dart';
+import '../meals/meals_screen.dart';
+import '../progress/progress_screen.dart';
+import '../profile/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,11 +25,10 @@ class _HomeScreenState extends State<HomeScreen>
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   int _selectedTab = 0;
+  String _webSection = 'Dashboard';
   bool _isLoggedIn = false;
   bool _isLoadingData = false;
 
-  // pulled from AppData — home screen owns its own local copy so
-  // checkboxes work without affecting other screens
   late List<Map<String, dynamic>> _todayWorkouts;
   late List<Map<String, dynamic>> _todayMeals;
 
@@ -42,132 +44,137 @@ class _HomeScreenState extends State<HomeScreen>
   int get totalCalories =>
       _todayMeals.fold(0, (sum, m) => sum + (m['calories'] as int));
 
+  String get _userTier {
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session == null) return 'guest';
+    return 'free';
+  }
+
   @override
-void initState() {
-  super.initState();
-  _todayWorkouts = AppData.getTodayWorkouts();
-  _todayMeals = AppData.getTodayMeals();
-  _animController = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 800),
-  );
-  _fadeAnim = Tween<double>(begin: 0, end: 1).animate(
-    CurvedAnimation(parent: _animController, curve: Curves.easeIn),
-  );
-  _animController.forward();
-  _checkLoginStatus();
-  _loadFromSupabase(); // ← ADD THIS
-}
+  void initState() {
+    super.initState();
+    _todayWorkouts = AppData.getTodayWorkouts();
+    _todayMeals = AppData.getTodayMeals();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _fadeAnim = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeIn),
+    );
+    _animController.forward();
+    _checkLoginStatus();
+    _loadFromSupabase();
+  }
 
   Future<void> _checkLoginStatus() async {
-  final session = Supabase.instance.client.auth.currentSession;
-  setState(() => _isLoggedIn = session != null);
-}
+    final session = Supabase.instance.client.auth.currentSession;
+    setState(() => _isLoggedIn = session != null);
+  }
 
   Future<void> _loadFromSupabase() async {
-  setState(() => _isLoadingData = true);
-  try {
-    final exercises = await SupabaseService.getExercises(tier: 'guest');
-    final meals = await SupabaseService.getMeals(tier: 'guest');
+    setState(() => _isLoadingData = true);
+    try {
+      final exercises = await SupabaseService.getExercises(tier: 'guest');
+      final meals = await SupabaseService.getMeals(tier: 'guest');
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      if (exercises.isNotEmpty) {
-        _todayWorkouts = exercises.take(4).map((ex) => {
-          'name': ex['name'] ?? '',
-          'sets': 3,
-          'reps': 10,
-          'rest': '60s',
-          'muscle': ex['muscle'] ?? '',
-          'emoji': _muscleEmoji(ex['muscle'] ?? ''),
-          'color': _muscleColor(ex['muscle'] ?? ''),
-          'done': false,
-          'id': ex['id'],
-        }).toList();
-      }
+      setState(() {
+        if (exercises.isNotEmpty) {
+          _todayWorkouts = exercises.take(4).map((ex) => {
+            'name': ex['name'] ?? '',
+            'sets': 3,
+            'reps': 10,
+            'rest': '60s',
+            'muscle': ex['muscle'] ?? '',
+            'emoji': _muscleEmoji(ex['muscle'] ?? ''),
+            'color': _muscleColor(ex['muscle'] ?? ''),
+            'done': false,
+            'id': ex['id'],
+          }).toList();
+        }
 
-      if (meals.isNotEmpty) {
-        _todayMeals = [];
-        for (final type in ['breakfast', 'lunch', 'snack', 'dinner']) {
-          final match = meals.firstWhere(
-            (m) => m['type'] == type,
-            orElse: () => {},
-          );
-          if (match.isNotEmpty) {
-            _todayMeals.add({
-              'meal': _capitalize(match['type'] ?? ''),
-              'time': _mealTime(match['type'] ?? ''),
-              'items': match['name'] ?? '',
-              'calories': match['calories'] ?? 0,
-              'emoji': _mealEmoji(match['type'] ?? ''),
-              'color': _mealColor(match['type'] ?? ''),
-              'id': match['id'],
-            });
+        if (meals.isNotEmpty) {
+          _todayMeals = [];
+          for (final type in ['breakfast', 'lunch', 'snack', 'dinner']) {
+            final match = meals.firstWhere(
+              (m) => m['type'] == type,
+              orElse: () => {},
+            );
+            if (match.isNotEmpty) {
+              _todayMeals.add({
+                'meal': _capitalize(match['type'] ?? ''),
+                'time': _mealTime(match['type'] ?? ''),
+                'items': match['name'] ?? '',
+                'calories': match['calories'] ?? 0,
+                'emoji': _mealEmoji(match['type'] ?? ''),
+                'color': _mealColor(match['type'] ?? ''),
+                'id': match['id'],
+              });
+            }
           }
         }
-      }
-      _isLoadingData = false;
-    });
-  } catch (_) {
-    setState(() => _isLoadingData = false);
+        _isLoadingData = false;
+      });
+    } catch (_) {
+      setState(() => _isLoadingData = false);
+    }
   }
-}
 
-// ── Helper methods ──
-String _capitalize(String s) =>
-    s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+  String _capitalize(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
-String _muscleEmoji(String muscle) {
-  const map = {
-    'Chest': '🏋️', 'Back': '💪', 'Shoulders': '⚡',
-    'Legs': '🦵', 'Arms': '💪', 'Core': '🔥', 'Full Body': '🏃',
-  };
-  return map[muscle] ?? '💪';
-}
+  String _muscleEmoji(String muscle) {
+    const map = {
+      'Chest': '🏋️', 'Back': '💪', 'Shoulders': '⚡',
+      'Legs': '🦵', 'Arms': '💪', 'Core': '🔥', 'Full Body': '🏃',
+    };
+    return map[muscle] ?? '💪';
+  }
 
-Color _muscleColor(String muscle) {
-  const map = {
-    'Chest': Color(0xFF2979FF),
-    'Back': Color(0xFF00C853),
-    'Shoulders': Color(0xFFFF6D00),
-    'Legs': Color(0xFFAA00FF),
-    'Arms': Color(0xFFFFD600),
-    'Core': Color(0xFFFF1744),
-    'Full Body': Color(0xFF00BCD4),
-  };
-  return map[muscle] ?? const Color(0xFF2979FF);
-}
+  Color _muscleColor(String muscle) {
+    const map = {
+      'Chest': Color(0xFF2979FF),
+      'Back': Color(0xFF00C853),
+      'Shoulders': Color(0xFFFF6D00),
+      'Legs': Color(0xFFAA00FF),
+      'Arms': Color(0xFFFFD600),
+      'Core': Color(0xFFFF1744),
+      'Full Body': Color(0xFF00BCD4),
+    };
+    return map[muscle] ?? const Color(0xFF2979FF);
+  }
 
-String _mealTime(String type) {
-  const map = {
-    'breakfast': '8:00 AM',
-    'lunch': '1:00 PM',
-    'snack': '4:00 PM',
-    'dinner': '8:00 PM',
-  };
-  return map[type] ?? '12:00 PM';
-}
+  String _mealTime(String type) {
+    const map = {
+      'breakfast': '8:00 AM',
+      'lunch': '1:00 PM',
+      'snack': '4:00 PM',
+      'dinner': '8:00 PM',
+    };
+    return map[type] ?? '12:00 PM';
+  }
 
-String _mealEmoji(String type) {
-  const map = {
-    'breakfast': '🥣',
-    'lunch': '🍗',
-    'snack': '🍌',
-    'dinner': '🐟',
-  };
-  return map[type] ?? '🍽️';
-}
+  String _mealEmoji(String type) {
+    const map = {
+      'breakfast': '🥣',
+      'lunch': '🍗',
+      'snack': '🍌',
+      'dinner': '🐟',
+    };
+    return map[type] ?? '🍽️';
+  }
 
-Color _mealColor(String type) {
-  const map = {
-    'breakfast': Color(0xFFFFD600),
-    'lunch': Color(0xFF00C853),
-    'snack': Color(0xFFFF6D00),
-    'dinner': Color(0xFF2979FF),
-  };
-  return map[type] ?? const Color(0xFF00C853);
-}
+  Color _mealColor(String type) {
+    const map = {
+      'breakfast': Color(0xFFFFD600),
+      'lunch': Color(0xFF00C853),
+      'snack': Color(0xFFFF6D00),
+      'dinner': Color(0xFF2979FF),
+    };
+    return map[type] ?? const Color(0xFF00C853);
+  }
 
   @override
   void dispose() {
@@ -210,51 +217,8 @@ Color _mealColor(String type) {
                 children: [
                   _buildWebSidebar(isDark, sidebarColor),
                   Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(28),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 1100),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildWebWelcomeBanner(isDark, textPrimary,
-                                  textSecondary, cardColor, borderColor),
-                              const SizedBox(height: 24),
-                              _buildWebStatsGrid(isDark, textPrimary, cardColor),
-                              const SizedBox(height: 24),
-                              if (!_isLoggedIn) ...[
-                                _buildWebUnlockBanner(
-                                    isDark, textPrimary, textSecondary),
-                                const SizedBox(height: 24),
-                              ],
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    flex: 3,
-                                    child: _buildWebWorkoutCard(isDark,
-                                        textPrimary, textSecondary,
-                                        cardColor, borderColor),
-                                  ),
-                                  const SizedBox(width: 20),
-                                  Expanded(
-                                    flex: 2,
-                                    child: _buildWebDietCard(isDark,
-                                        textPrimary, textSecondary,
-                                        cardColor, borderColor),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 24),
-                              if (!_isLoggedIn)
-                                _buildWebLockedSection(isDark, textPrimary,
-                                    textSecondary, cardColor, borderColor),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                    child: _buildWebContent(isDark, textPrimary,
+                        textSecondary, cardColor, borderColor),
                   ),
                 ],
               ),
@@ -263,6 +227,67 @@ Color _mealColor(String type) {
         ),
       ),
     );
+  }
+
+  // ── Web Content Area (switches based on _webSection) ──
+  Widget _buildWebContent(bool isDark, Color textPrimary, Color textSecondary,
+      Color cardColor, Color borderColor) {
+    switch (_webSection) {
+      case 'Workouts':
+      case 'Workouts 🔒':
+        return WorkoutScreen(userTier: _userTier);
+      case 'Diet Plan':
+      case 'Diet Plan 🔒':
+        return MealsScreen(userTier: _userTier);
+      case 'Progress':
+      case 'Progress 🔒':
+        return const ProgressScreen();
+      case 'Profile':
+        return const ProfileScreen();
+      default:
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(28),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1100),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildWebWelcomeBanner(
+                      isDark, textPrimary, textSecondary, cardColor, borderColor),
+                  const SizedBox(height: 24),
+                  _buildWebStatsGrid(isDark, textPrimary, cardColor),
+                  const SizedBox(height: 24),
+                  if (!_isLoggedIn) ...[
+                    _buildWebUnlockBanner(isDark, textPrimary, textSecondary),
+                    const SizedBox(height: 24),
+                  ],
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: _buildWebWorkoutCard(isDark, textPrimary,
+                            textSecondary, cardColor, borderColor),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        flex: 2,
+                        child: _buildWebDietCard(isDark, textPrimary,
+                            textSecondary, cardColor, borderColor),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  if (!_isLoggedIn)
+                    _buildWebLockedSection(isDark, textPrimary,
+                        textSecondary, cardColor, borderColor),
+                ],
+              ),
+            ),
+          ),
+        );
+    }
   }
 
   Widget _buildWebTopNav(bool isDark, Color textPrimary, Color cardColor,
@@ -308,13 +333,13 @@ Color _mealColor(String type) {
           ),
           const Spacer(),
           if (_isLoggedIn) ...[
-            _buildNavLink('Dashboard', true, textPrimary),
+            _buildNavLink('Dashboard', _webSection == 'Dashboard', textPrimary),
             const SizedBox(width: 4),
-            _buildNavLink('Workouts', false, textPrimary),
+            _buildNavLink('Workouts', _webSection == 'Workouts', textPrimary),
             const SizedBox(width: 4),
-            _buildNavLink('Diet', false, textPrimary),
+            _buildNavLink('Diet', _webSection == 'Diet Plan', textPrimary),
             const SizedBox(width: 4),
-            _buildNavLink('Progress', false, textPrimary),
+            _buildNavLink('Progress', _webSection == 'Progress', textPrimary),
             const SizedBox(width: 20),
           ],
           Consumer<ThemeProvider>(
@@ -389,40 +414,47 @@ Color _mealColor(String type) {
   }
 
   Widget _buildNavLink(String label, bool isActive, Color textPrimary) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        color:
-            isActive ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (label == 'Dashboard') _webSection = 'Dashboard';
+          else if (label == 'Workouts') _webSection = 'Workouts';
+          else if (label == 'Diet') _webSection = 'Diet Plan';
+          else if (label == 'Progress') _webSection = 'Progress';
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: isActive ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+        ),
+        child: Text(label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+              color: isActive ? AppColors.primary : textPrimary.withOpacity(0.6),
+            )),
       ),
-      child: Text(label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-            color: isActive
-                ? AppColors.primary
-                : textPrimary.withOpacity(0.6),
-          )),
     );
   }
 
   Widget _buildWebSidebar(bool isDark, Color sidebarColor) {
     final items = _isLoggedIn
         ? [
-            {'icon': Icons.dashboard_rounded, 'label': 'Dashboard', 'active': true},
-            {'icon': Icons.fitness_center_rounded, 'label': 'Workouts', 'active': false},
-            {'icon': Icons.restaurant_rounded, 'label': 'Diet Plan', 'active': false},
-            {'icon': Icons.bar_chart_rounded, 'label': 'Progress', 'active': false},
-            {'icon': Icons.notifications_rounded, 'label': 'Reminders', 'active': false},
-            {'icon': Icons.person_rounded, 'label': 'Profile', 'active': false},
-            {'icon': Icons.settings_rounded, 'label': 'Settings', 'active': false},
+            {'icon': Icons.dashboard_rounded, 'label': 'Dashboard'},
+            {'icon': Icons.fitness_center_rounded, 'label': 'Workouts'},
+            {'icon': Icons.restaurant_rounded, 'label': 'Diet Plan'},
+            {'icon': Icons.bar_chart_rounded, 'label': 'Progress'},
+            {'icon': Icons.notifications_rounded, 'label': 'Reminders'},
+            {'icon': Icons.person_rounded, 'label': 'Profile'},
+            {'icon': Icons.settings_rounded, 'label': 'Settings'},
           ]
         : [
-            {'icon': Icons.dashboard_rounded, 'label': 'Dashboard', 'active': true},
-            {'icon': Icons.lock_rounded, 'label': 'Workouts 🔒', 'active': false},
-            {'icon': Icons.lock_rounded, 'label': 'Diet Plan 🔒', 'active': false},
-            {'icon': Icons.lock_rounded, 'label': 'Progress 🔒', 'active': false},
+            {'icon': Icons.dashboard_rounded, 'label': 'Dashboard'},
+            {'icon': Icons.lock_rounded, 'label': 'Workouts 🔒'},
+            {'icon': Icons.lock_rounded, 'label': 'Diet Plan 🔒'},
+            {'icon': Icons.lock_rounded, 'label': 'Progress 🔒'},
           ];
 
     return Container(
@@ -476,35 +508,40 @@ Color _mealColor(String type) {
           Divider(color: Colors.white.withOpacity(0.08), height: 1),
           const SizedBox(height: 16),
           ...items.map((item) {
-            final isActive = item['active'] as bool;
-            final isLocked = (item['label'] as String).contains('🔒');
-            return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: isActive
-                    ? AppColors.primary.withOpacity(0.15)
-                    : Colors.transparent,
-              ),
-              child: ListTile(
-                dense: true,
-                leading: Icon(item['icon'] as IconData,
-                    size: 18,
-                    color: isActive
-                        ? AppColors.primary
-                        : isLocked
-                            ? Colors.white.withOpacity(0.2)
-                            : Colors.white.withOpacity(0.5)),
-                title: Text(item['label'] as String,
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight:
-                            isActive ? FontWeight.w700 : FontWeight.w400,
-                        color: isActive
-                            ? AppColors.primary
-                            : isLocked
-                                ? Colors.white.withOpacity(0.2)
-                                : Colors.white.withOpacity(0.6))),
+            final label = item['label'] as String;
+            final isActive = label == _webSection ||
+                (label == 'Dashboard' && _webSection == 'Dashboard');
+            final isLocked = label.contains('🔒');
+            return GestureDetector(
+              onTap: () => setState(() => _webSection = label),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: isActive
+                      ? AppColors.primary.withOpacity(0.15)
+                      : Colors.transparent,
+                ),
+                child: ListTile(
+                  dense: true,
+                  leading: Icon(item['icon'] as IconData,
+                      size: 18,
+                      color: isActive
+                          ? AppColors.primary
+                          : isLocked
+                              ? Colors.white.withOpacity(0.2)
+                              : Colors.white.withOpacity(0.5)),
+                  title: Text(label,
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight:
+                              isActive ? FontWeight.w700 : FontWeight.w400,
+                          color: isActive
+                              ? AppColors.primary
+                              : isLocked
+                                  ? Colors.white.withOpacity(0.2)
+                                  : Colors.white.withOpacity(0.6))),
+                ),
               ),
             );
           }),
@@ -1137,7 +1174,10 @@ Color _mealColor(String type) {
   // ═══════════════════════════════════════
   // MOBILE LAYOUT
   // ═══════════════════════════════════════
-  Widget _buildMobileLayout(bool isDark) {
+
+  // ── Dashboard content for tab index 0 ──
+  Widget _buildMobileDashboard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? Colors.white : const Color(0xFF0A0A0A);
     final textSecondary =
         isDark ? const Color(0xFFB0B0B0) : const Color(0xFF555555);
@@ -1147,6 +1187,57 @@ Color _mealColor(String type) {
     final borderColor =
         isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
 
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppConstants.paddingLG),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildMobileHeader(isDark, textPrimary, textSecondary),
+          const SizedBox(height: 20),
+          _buildMobileStatsRow(textPrimary),
+          const SizedBox(height: 16),
+          if (!_isLoggedIn) ...[
+            _buildMobileUnlockBanner(isDark, textPrimary, textSecondary),
+            const SizedBox(height: 20),
+          ],
+          if (_isLoadingData) ...[
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: CircularProgressIndicator(
+                    color: AppColors.primary, strokeWidth: 2.5),
+              ),
+            ),
+          ] else ...[
+            _buildSectionTitle(
+                "Today's Workout 💪",
+                "$completedWorkouts/${_todayWorkouts.length} done",
+                textPrimary),
+            const SizedBox(height: 12),
+            _buildMobileWorkoutList(
+                cardColor, borderColor, textPrimary, textSecondary),
+            const SizedBox(height: 20),
+            _buildSectionTitle(
+                "Today's Meals 🥗", "$totalCalories kcal", textPrimary),
+            const SizedBox(height: 12),
+            _buildMobileMealList(
+                cardColor, borderColor, textPrimary, textSecondary),
+            if (!_isLoggedIn) ...[
+              const SizedBox(height: 20),
+              _buildMobileLockedSection(isDark, textPrimary, textSecondary),
+            ],
+            const SizedBox(height: 20),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(bool isDark) {
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0A0A0A);
+    final bgColor =
+        isDark ? const Color(0xFF050A05) : const Color(0xFFF5F5F5);
+
     return Scaffold(
       backgroundColor: bgColor,
       body: FadeTransition(
@@ -1155,54 +1246,15 @@ Color _mealColor(String type) {
           child: Column(
             children: [
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(AppConstants.paddingLG),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildMobileHeader(isDark, textPrimary, textSecondary),
-                      const SizedBox(height: 20),
-                      _buildMobileStatsRow(textPrimary),
-                      const SizedBox(height: 16),
-                      if (!_isLoggedIn) ...[
-  _buildMobileUnlockBanner(
-      isDark, textPrimary, textSecondary),
-  const SizedBox(height: 20),
-],
-if (_isLoadingData) ...[
-  const Center(
-    child: Padding(
-      padding: EdgeInsets.symmetric(vertical: 40),
-      child: CircularProgressIndicator(
-        color: AppColors.primary,
-        strokeWidth: 2.5,
-      ),
-    ),
-  ),
-] else ...[
-  _buildSectionTitle(
-      "Today's Workout 💪",
-      "$completedWorkouts/${_todayWorkouts.length} done",
-      textPrimary),
-  const SizedBox(height: 12),
-  _buildMobileWorkoutList(
-      cardColor, borderColor, textPrimary, textSecondary),
-  const SizedBox(height: 20),
-  _buildSectionTitle(
-      "Today's Meals 🥗", "$totalCalories kcal", textPrimary),
-  const SizedBox(height: 12),
-  _buildMobileMealList(
-      cardColor, borderColor, textPrimary, textSecondary),
-  if (!_isLoggedIn) ...[
-    const SizedBox(height: 20),
-    _buildMobileLockedSection(
-        isDark, textPrimary, textSecondary),
-  ],
-  const SizedBox(height: 20),
-],
-const SizedBox(height: 20),
-                    ],
-                  ),
+                child: IndexedStack(
+                  index: _selectedTab,
+                  children: [
+                    _buildMobileDashboard(),
+                    WorkoutScreen(userTier: _userTier),
+                    MealsScreen(userTier: _userTier),
+                    const ProgressScreen(),
+                    const ProfileScreen(),
+                  ],
                 ),
               ),
               _buildMobileBottomNav(isDark, textPrimary),
@@ -1714,11 +1766,11 @@ const SizedBox(height: 20),
     }
 
     final tabs = [
-      {'icon': Icons.home_rounded, 'label': 'Home', 'route': '/home'},
-      {'icon': Icons.fitness_center_rounded, 'label': 'Workout', 'route': '/workout'},
-      {'icon': Icons.restaurant_rounded, 'label': 'Diet', 'route': '/diet'},
-      {'icon': Icons.bar_chart_rounded, 'label': 'Progress', 'route': '/progress'},
-      {'icon': Icons.person_rounded, 'label': 'Profile', 'route': '/profile'},
+      {'icon': Icons.home_rounded, 'label': 'Home'},
+      {'icon': Icons.fitness_center_rounded, 'label': 'Workout'},
+      {'icon': Icons.restaurant_rounded, 'label': 'Diet'},
+      {'icon': Icons.bar_chart_rounded, 'label': 'Progress'},
+      {'icon': Icons.person_rounded, 'label': 'Profile'},
     ];
 
     return Container(
@@ -1734,12 +1786,7 @@ const SizedBox(height: 20),
           final tab = entry.value;
           final isSelected = _selectedTab == index;
           return GestureDetector(
-            onTap: () {
-              setState(() => _selectedTab = index);
-              if (index != 0) {
-                Navigator.pushNamed(context, tab['route'] as String);
-              }
-            },
+            onTap: () => setState(() => _selectedTab = index),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
