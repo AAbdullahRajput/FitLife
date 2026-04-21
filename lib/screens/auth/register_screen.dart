@@ -804,7 +804,7 @@ class _RegisterScreenState extends State<RegisterScreen>
           children: [
             // ── Left panel — branding ──
             Expanded(
-              flex: 1,
+              flex: 4,
               child: Container(
                 color: sidebarColor,
                 child: Center(
@@ -955,12 +955,12 @@ class _RegisterScreenState extends State<RegisterScreen>
 
             // ── Right panel — form ──
             Expanded(
-              flex: 1,
+              flex: 5,
               child: Container(
                 color: bgColor,
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 440),
+                    constraints: const BoxConstraints(maxWidth: 460),
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 40, vertical: 48),
