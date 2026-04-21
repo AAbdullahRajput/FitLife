@@ -7,6 +7,7 @@ import '../../core/utils/helpers.dart';
 import '../../core/theme/theme_provider.dart';
 import '../../core/data/app_data.dart';
 import '../../services/storage_service.dart';
+import '../../services/supabase_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen>
   late Animation<double> _fadeAnim;
   int _selectedTab = 0;
   bool _isLoggedIn = false;
+  bool _isLoadingData = false;
 
   // pulled from AppData — home screen owns its own local copy so
   // checkboxes work without affecting other screens
@@ -40,25 +42,131 @@ class _HomeScreenState extends State<HomeScreen>
       _todayMeals.fold(0, (sum, m) => sum + (m['calories'] as int));
 
   @override
-  void initState() {
-    super.initState();
-    _todayWorkouts = AppData.getTodayWorkouts();
-    _todayMeals = AppData.getTodayMeals();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _fadeAnim = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeIn),
-    );
-    _animController.forward();
-    _checkLoginStatus();
-  }
+void initState() {
+  super.initState();
+  _todayWorkouts = AppData.getTodayWorkouts();
+  _todayMeals = AppData.getTodayMeals();
+  _animController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 800),
+  );
+  _fadeAnim = Tween<double>(begin: 0, end: 1).animate(
+    CurvedAnimation(parent: _animController, curve: Curves.easeIn),
+  );
+  _animController.forward();
+  _checkLoginStatus();
+  _loadFromSupabase(); // ← ADD THIS
+}
 
   Future<void> _checkLoginStatus() async {
     final loggedIn = await StorageService.isLoggedIn();
     setState(() => _isLoggedIn = loggedIn);
   }
+
+  Future<void> _loadFromSupabase() async {
+  setState(() => _isLoadingData = true);
+  try {
+    final exercises = await SupabaseService.getExercises(tier: 'guest');
+    final meals = await SupabaseService.getMeals(tier: 'guest');
+
+    if (!mounted) return;
+
+    setState(() {
+      if (exercises.isNotEmpty) {
+        _todayWorkouts = exercises.take(4).map((ex) => {
+          'name': ex['name'] ?? '',
+          'sets': 3,
+          'reps': 10,
+          'rest': '60s',
+          'muscle': ex['muscle'] ?? '',
+          'emoji': _muscleEmoji(ex['muscle'] ?? ''),
+          'color': _muscleColor(ex['muscle'] ?? ''),
+          'done': false,
+          'id': ex['id'],
+        }).toList();
+      }
+
+      if (meals.isNotEmpty) {
+        _todayMeals = [];
+        for (final type in ['breakfast', 'lunch', 'snack', 'dinner']) {
+          final match = meals.firstWhere(
+            (m) => m['type'] == type,
+            orElse: () => {},
+          );
+          if (match.isNotEmpty) {
+            _todayMeals.add({
+              'meal': _capitalize(match['type'] ?? ''),
+              'time': _mealTime(match['type'] ?? ''),
+              'items': match['name'] ?? '',
+              'calories': match['calories'] ?? 0,
+              'emoji': _mealEmoji(match['type'] ?? ''),
+              'color': _mealColor(match['type'] ?? ''),
+              'id': match['id'],
+            });
+          }
+        }
+      }
+      _isLoadingData = false;
+    });
+  } catch (_) {
+    setState(() => _isLoadingData = false);
+  }
+}
+
+// ── Helper methods ──
+String _capitalize(String s) =>
+    s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
+String _muscleEmoji(String muscle) {
+  const map = {
+    'Chest': '🏋️', 'Back': '💪', 'Shoulders': '⚡',
+    'Legs': '🦵', 'Arms': '💪', 'Core': '🔥', 'Full Body': '🏃',
+  };
+  return map[muscle] ?? '💪';
+}
+
+Color _muscleColor(String muscle) {
+  const map = {
+    'Chest': Color(0xFF2979FF),
+    'Back': Color(0xFF00C853),
+    'Shoulders': Color(0xFFFF6D00),
+    'Legs': Color(0xFFAA00FF),
+    'Arms': Color(0xFFFFD600),
+    'Core': Color(0xFFFF1744),
+    'Full Body': Color(0xFF00BCD4),
+  };
+  return map[muscle] ?? const Color(0xFF2979FF);
+}
+
+String _mealTime(String type) {
+  const map = {
+    'breakfast': '8:00 AM',
+    'lunch': '1:00 PM',
+    'snack': '4:00 PM',
+    'dinner': '8:00 PM',
+  };
+  return map[type] ?? '12:00 PM';
+}
+
+String _mealEmoji(String type) {
+  const map = {
+    'breakfast': '🥣',
+    'lunch': '🍗',
+    'snack': '🍌',
+    'dinner': '🐟',
+  };
+  return map[type] ?? '🍽️';
+}
+
+Color _mealColor(String type) {
+  const map = {
+    'breakfast': Color(0xFFFFD600),
+    'lunch': Color(0xFF00C853),
+    'snack': Color(0xFFFF6D00),
+    'dinner': Color(0xFF2979FF),
+  };
+  return map[type] ?? const Color(0xFF00C853);
+}
 
   @override
   void dispose() {
@@ -1056,29 +1164,42 @@ class _HomeScreenState extends State<HomeScreen>
                       _buildMobileStatsRow(textPrimary),
                       const SizedBox(height: 16),
                       if (!_isLoggedIn) ...[
-                        _buildMobileUnlockBanner(
-                            isDark, textPrimary, textSecondary),
-                        const SizedBox(height: 20),
-                      ],
-                      _buildSectionTitle(
-                          "Today's Workout 💪",
-                          "$completedWorkouts/${_todayWorkouts.length} done",
-                          textPrimary),
-                      const SizedBox(height: 12),
-                      _buildMobileWorkoutList(
-                          cardColor, borderColor, textPrimary, textSecondary),
-                      const SizedBox(height: 20),
-                      _buildSectionTitle(
-                          "Today's Meals 🥗", "$totalCalories kcal", textPrimary),
-                      const SizedBox(height: 12),
-                      _buildMobileMealList(
-                          cardColor, borderColor, textPrimary, textSecondary),
-                      if (!_isLoggedIn) ...[
-                        const SizedBox(height: 20),
-                        _buildMobileLockedSection(
-                            isDark, textPrimary, textSecondary),
-                      ],
-                      const SizedBox(height: 20),
+  _buildMobileUnlockBanner(
+      isDark, textPrimary, textSecondary),
+  const SizedBox(height: 20),
+],
+if (_isLoadingData) ...[
+  const Center(
+    child: Padding(
+      padding: EdgeInsets.symmetric(vertical: 40),
+      child: CircularProgressIndicator(
+        color: AppColors.primary,
+        strokeWidth: 2.5,
+      ),
+    ),
+  ),
+] else ...[
+  _buildSectionTitle(
+      "Today's Workout 💪",
+      "$completedWorkouts/${_todayWorkouts.length} done",
+      textPrimary),
+  const SizedBox(height: 12),
+  _buildMobileWorkoutList(
+      cardColor, borderColor, textPrimary, textSecondary),
+  const SizedBox(height: 20),
+  _buildSectionTitle(
+      "Today's Meals 🥗", "$totalCalories kcal", textPrimary),
+  const SizedBox(height: 12),
+  _buildMobileMealList(
+      cardColor, borderColor, textPrimary, textSecondary),
+  if (!_isLoggedIn) ...[
+    const SizedBox(height: 20),
+    _buildMobileLockedSection(
+        isDark, textPrimary, textSecondary),
+  ],
+  const SizedBox(height: 20),
+],
+const SizedBox(height: 20),
                     ],
                   ),
                 ),
