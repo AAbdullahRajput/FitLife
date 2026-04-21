@@ -12,6 +12,7 @@ import '../workout/workout_screen.dart';
 import '../meals/meals_screen.dart';
 import '../progress/progress_screen.dart';
 import '../profile/profile_screen.dart';
+import '../settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -530,6 +531,8 @@ class _HomeScreenState extends State<HomeScreen>
         return const ProgressScreen();
       case 'Profile':
         return const ProfileScreen();
+      case 'Settings':
+      return const SettingsScreen();
       default:
         return SingleChildScrollView(
           padding: const EdgeInsets.all(28),

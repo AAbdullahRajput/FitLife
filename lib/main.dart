@@ -18,6 +18,8 @@ import 'screens/progress/progress_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
+import 'screens/settings/settings_screen.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -92,6 +94,7 @@ class FitLifeApp extends StatelessWidget {
         // ── Other tabs ──
         '/progress': (context) => const ProgressScreen(),
         '/profile': (context) => const ProfileScreen(),
+        '/settings': (context) => const SettingsScreen(),
       },
     );
   }
