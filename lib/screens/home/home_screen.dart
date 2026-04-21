@@ -29,6 +29,14 @@ class _HomeScreenState extends State<HomeScreen>
   bool _isLoggedIn = false;
   bool _isLoadingData = false;
 
+  // Hover state tracking for sidebar items
+  String? _hoveredSidebarItem;
+  // Hover state tracking for nav links
+  String? _hoveredNavLink;
+
+  // Tooltip overlay for long press
+  OverlayEntry? _tooltipOverlay;
+
   late List<Map<String, dynamic>> _todayWorkouts;
   late List<Map<String, dynamic>> _todayMeals;
 
@@ -125,8 +133,6 @@ class _HomeScreenState extends State<HomeScreen>
   String _capitalize(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
-  // ── Premium icon helpers replacing emojis ─────────────────────────────────
-
   IconData _muscleIcon(String muscle) {
     const map = {
       'Chest': Icons.fitness_center_rounded,
@@ -183,8 +189,151 @@ class _HomeScreenState extends State<HomeScreen>
     return map[type] ?? const Color(0xFF00C853);
   }
 
+  // ── Tooltip helpers ─────────────────────────────────────────────────────────
+
+  void _showTooltip(BuildContext context, String title, String message,
+      IconData icon, Color color, {Offset? globalPosition}) {
+    _removeTooltip();
+
+    final overlay = Overlay.of(context);
+    final renderBox = context.findRenderObject() as RenderBox?;
+    Offset position = globalPosition ?? Offset.zero;
+
+    if (renderBox != null && globalPosition == null) {
+      final boxPos = renderBox.localToGlobal(Offset.zero);
+      final size = renderBox.size;
+      position = Offset(boxPos.dx + size.width / 2, boxPos.dy - 8);
+    }
+
+    _tooltipOverlay = OverlayEntry(
+      builder: (context) => Positioned(
+        left: 0,
+        right: 0,
+        top: position.dy - 100,
+        child: IgnorePointer(
+          child: Center(
+            child: Material(
+              color: Colors.transparent,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutBack,
+                builder: (context, value, child) => Transform.scale(
+                  scale: value,
+                  child: child,
+                ),
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 280),
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A1A1A),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: color.withOpacity(0.4)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withOpacity(0.2),
+                        blurRadius: 20,
+                        spreadRadius: 0,
+                      ),
+                      const BoxShadow(
+                        color: Colors.black54,
+                        blurRadius: 12,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: color.withOpacity(0.15),
+                            ),
+                            child: Icon(icon, size: 14, color: color),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(title,
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: color)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.info_outline_rounded,
+                              size: 12,
+                              color: Colors.white.withOpacity(0.5)),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              message,
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white.withOpacity(0.8),
+                                  height: 1.4),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          color: color.withOpacity(0.12),
+                          border:
+                              Border.all(color: color.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.touch_app_rounded,
+                                size: 10, color: color),
+                            const SizedBox(width: 4),
+                            Text('Long press to mark complete',
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    color: color,
+                                    fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(_tooltipOverlay!);
+
+    // Auto-dismiss after 2.5 seconds
+    Future.delayed(const Duration(milliseconds: 2500), _removeTooltip);
+  }
+
+  void _removeTooltip() {
+    _tooltipOverlay?.remove();
+    _tooltipOverlay = null;
+  }
+
   @override
   void dispose() {
+    _removeTooltip();
     _animController.dispose();
     super.dispose();
   }
@@ -353,7 +502,6 @@ class _HomeScreenState extends State<HomeScreen>
             _buildNavLink('Progress', _webSection == 'Progress', textPrimary),
             const SizedBox(width: 20),
           ],
-          // Theme toggle with pointer cursor
           Consumer<ThemeProvider>(
             builder: (context, theme, _) => MouseRegion(
               cursor: SystemMouseCursors.click,
@@ -441,9 +589,13 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  // ── FIXED: Nav link with proper hover color change ──────────────────────────
   Widget _buildNavLink(String label, bool isActive, Color textPrimary) {
+    final isHovered = _hoveredNavLink == label;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoveredNavLink = label),
+      onExit: (_) => setState(() => _hoveredNavLink = null),
       child: GestureDetector(
         onTap: () {
           setState(() {
@@ -453,23 +605,33 @@ class _HomeScreenState extends State<HomeScreen>
             else if (label == 'Progress') _webSection = 'Progress';
           });
         },
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            color: isActive ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+            color: isActive
+                ? AppColors.primary.withOpacity(0.15)
+                : isHovered
+                    ? AppColors.primary.withOpacity(0.08)
+                    : Colors.transparent,
           ),
           child: Text(label,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                color: isActive ? AppColors.primary : textPrimary.withOpacity(0.6),
+                color: isActive
+                    ? AppColors.primary
+                    : isHovered
+                        ? AppColors.primary.withOpacity(0.8)
+                        : textPrimary.withOpacity(0.6),
               )),
         ),
       ),
     );
   }
 
+  // ── FIXED: Sidebar with proper hover color change ────────────────────────────
   Widget _buildWebSidebar(bool isDark, Color sidebarColor) {
     final items = _isLoggedIn
         ? [
@@ -556,24 +718,32 @@ class _HomeScreenState extends State<HomeScreen>
           ...items.map((item) {
             final label = item['label'] as String;
             final isLocked = item['locked'] as bool;
-            // Use original label for section matching (locked items share same base label)
             final isActive = label == _webSection ||
                 (label == 'Dashboard' && _webSection == 'Dashboard');
+            final isHovered = _hoveredSidebarItem == label && !isLocked;
+
             return MouseRegion(
               cursor: isLocked
                   ? SystemMouseCursors.forbidden
                   : SystemMouseCursors.click,
+              onEnter: (_) {
+                if (!isLocked) setState(() => _hoveredSidebarItem = label);
+              },
+              onExit: (_) => setState(() => _hoveredSidebarItem = null),
               child: GestureDetector(
                 onTap: isLocked
                     ? null
                     : () => setState(() => _webSection = label),
-                child: Container(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
                   margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
                     color: isActive
-                        ? AppColors.primary.withOpacity(0.15)
-                        : Colors.transparent,
+                        ? AppColors.primary.withOpacity(0.18)
+                        : isHovered
+                            ? AppColors.primary.withOpacity(0.08)
+                            : Colors.transparent,
                   ),
                   child: ListTile(
                     dense: true,
@@ -581,9 +751,11 @@ class _HomeScreenState extends State<HomeScreen>
                         size: 18,
                         color: isActive
                             ? AppColors.primary
-                            : isLocked
-                                ? Colors.white.withOpacity(0.2)
-                                : Colors.white.withOpacity(0.5)),
+                            : isHovered
+                                ? AppColors.primary.withOpacity(0.7)
+                                : isLocked
+                                    ? Colors.white.withOpacity(0.2)
+                                    : Colors.white.withOpacity(0.5)),
                     title: Text(label,
                         style: TextStyle(
                             fontSize: 13,
@@ -591,9 +763,11 @@ class _HomeScreenState extends State<HomeScreen>
                                 isActive ? FontWeight.w700 : FontWeight.w400,
                             color: isActive
                                 ? AppColors.primary
-                                : isLocked
-                                    ? Colors.white.withOpacity(0.2)
-                                    : Colors.white.withOpacity(0.6))),
+                                : isHovered
+                                    ? AppColors.primary.withOpacity(0.8)
+                                    : isLocked
+                                        ? Colors.white.withOpacity(0.2)
+                                        : Colors.white.withOpacity(0.6))),
                     trailing: isLocked
                         ? Icon(Icons.lock_outline_rounded,
                             size: 14, color: Colors.white.withOpacity(0.2))
@@ -926,6 +1100,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  // ── UPDATED: Web workout card with long-press tooltip ──────────────────────
   Widget _buildWebWorkoutCard(bool isDark, Color textPrimary,
       Color textSecondary, Color cardColor, Color borderColor) {
     return Container(
@@ -971,6 +1146,30 @@ class _HomeScreenState extends State<HomeScreen>
           const SizedBox(height: 4),
           Text(Helpers.formatDate(DateTime.now()),
               style: TextStyle(fontSize: 12, color: textSecondary)),
+          // ── Tip hint ──────────────────────────────────────────────────────
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: AppColors.primary.withOpacity(0.06),
+              border: Border.all(color: AppColors.primary.withOpacity(0.15)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.touch_app_rounded,
+                    size: 13, color: AppColors.primary.withOpacity(0.7)),
+                const SizedBox(width: 6),
+                Text(
+                  'Tap to view details · Long press to mark as complete ✓',
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: textSecondary,
+                      fontStyle: FontStyle.italic),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
           ..._todayWorkouts.asMap().entries.map((entry) {
             final index = entry.key;
@@ -985,8 +1184,20 @@ class _HomeScreenState extends State<HomeScreen>
               child: GestureDetector(
                 onTap: () => Navigator.pushNamed(context, '/exercise-detail',
                     arguments: workout),
-                onLongPress: () =>
-                    setState(() => _todayWorkouts[index]['done'] = !isDone),
+                onLongPress: () {
+                  setState(() => _todayWorkouts[index]['done'] = !isDone);
+                  _showTooltip(
+                    context,
+                    isDone ? 'Marked Incomplete' : 'Workout Complete! 🎉',
+                    isDone
+                        ? '${workout['name']} has been unchecked.'
+                        : '${workout['name']} marked as done. Great job! Keep going!',
+                    isDone
+                        ? Icons.remove_circle_outline_rounded
+                        : Icons.check_circle_rounded,
+                    color,
+                  );
+                },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   margin: const EdgeInsets.only(bottom: 10),
@@ -1045,20 +1256,23 @@ class _HomeScreenState extends State<HomeScreen>
                                 fontWeight: FontWeight.w600)),
                       ),
                       const SizedBox(width: 10),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isDone ? color : Colors.transparent,
-                          border: Border.all(
-                              color: isDone ? color : borderColor, width: 2),
+                      Tooltip(
+                        message: isDone ? 'Long press to uncheck' : 'Long press to complete',
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isDone ? color : Colors.transparent,
+                            border: Border.all(
+                                color: isDone ? color : borderColor, width: 2),
+                          ),
+                          child: isDone
+                              ? const Icon(Icons.check,
+                                  size: 12, color: Colors.white)
+                              : null,
                         ),
-                        child: isDone
-                            ? const Icon(Icons.check,
-                                size: 12, color: Colors.white)
-                            : null,
                       ),
                     ],
                   ),
@@ -1142,6 +1356,15 @@ class _HomeScreenState extends State<HomeScreen>
               child: GestureDetector(
                 onTap: () => Navigator.pushNamed(context, '/meal-detail',
                     arguments: meal),
+                onLongPress: () {
+                  _showTooltip(
+                    context,
+                    meal['meal'] as String,
+                    '${meal['items']} · ${meal['calories']} kcal · ${meal['time']}',
+                    icon,
+                    color,
+                  );
+                },
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(12),
@@ -1375,6 +1598,32 @@ class _HomeScreenState extends State<HomeScreen>
                 "$completedWorkouts/${_todayWorkouts.length} done",
                 textPrimary,
                 Icons.fitness_center_rounded),
+            const SizedBox(height: 8),
+            // ── Mobile workout tip hint ──────────────────────────────────
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: AppColors.primary.withOpacity(0.06),
+                border: Border.all(color: AppColors.primary.withOpacity(0.15)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.touch_app_rounded,
+                      size: 13, color: AppColors.primary.withOpacity(0.7)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Long press any workout to mark it as complete ✓',
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: textSecondary,
+                          fontStyle: FontStyle.italic),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 12),
             _buildMobileWorkoutList(
                 cardColor, borderColor, textPrimary, textSecondary),
@@ -1781,6 +2030,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  // ── UPDATED: Mobile workout list with tooltip on long press ─────────────────
   Widget _buildMobileWorkoutList(Color cardColor, Color borderColor,
       Color textPrimary, Color textSecondary) {
     return Column(
@@ -1795,8 +2045,20 @@ class _HomeScreenState extends State<HomeScreen>
         return GestureDetector(
           onTap: () => Navigator.pushNamed(context, '/exercise-detail',
               arguments: workout),
-          onLongPress: () =>
-              setState(() => _todayWorkouts[index]['done'] = !isDone),
+          onLongPress: () {
+            setState(() => _todayWorkouts[index]['done'] = !isDone);
+            _showTooltip(
+              context,
+              isDone ? 'Marked Incomplete' : 'Workout Complete! 🎉',
+              isDone
+                  ? '${workout['name']} has been unchecked.'
+                  : '${workout['name']} marked as done!\n${workout['sets']} sets × ${workout['reps']} reps finished. Great work!',
+              isDone
+                  ? Icons.remove_circle_outline_rounded
+                  : Icons.check_circle_rounded,
+              color,
+            );
+          },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             margin: const EdgeInsets.only(bottom: 10),
@@ -1887,6 +2149,15 @@ class _HomeScreenState extends State<HomeScreen>
         return GestureDetector(
           onTap: () =>
               Navigator.pushNamed(context, '/meal-detail', arguments: meal),
+          onLongPress: () {
+            _showTooltip(
+              context,
+              meal['meal'] as String,
+              '${meal['items']} · ${meal['calories']} kcal · ${meal['time']}',
+              icon,
+              color,
+            );
+          },
           child: Container(
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(14),
@@ -1942,6 +2213,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  // ── FIXED: Mobile bottom nav with proper active tab color ───────────────────
   Widget _buildMobileBottomNav(bool isDark, Color textPrimary) {
     final navBg = isDark ? const Color(0xFF141414) : Colors.white;
     final navBorder =
@@ -2012,6 +2284,13 @@ class _HomeScreenState extends State<HomeScreen>
       decoration: BoxDecoration(
         color: navBg,
         border: Border(top: BorderSide(color: navBorder)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.4 : 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -2027,27 +2306,48 @@ class _HomeScreenState extends State<HomeScreen>
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 color: isSelected
-                    ? AppColors.primary.withOpacity(0.12)
+                    ? AppColors.primary.withOpacity(0.15)
                     : Colors.transparent,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(tab['icon'] as IconData,
+                  // ── Animated icon with color transition ─────────────────
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      tab['icon'] as IconData,
+                      key: ValueKey(isSelected),
                       color: isSelected
                           ? AppColors.primary
-                          : textPrimary.withOpacity(0.4),
-                      size: 22),
+                          : textPrimary.withOpacity(0.35),
+                      size: isSelected ? 24 : 22,
+                    ),
+                  ),
                   const SizedBox(height: 3),
-                  Text(tab['label'] as String,
-                      style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                          color: isSelected
-                              ? AppColors.primary
-                              : textPrimary.withOpacity(0.4))),
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w400,
+                        color: isSelected
+                            ? AppColors.primary
+                            : textPrimary.withOpacity(0.35)),
+                    child: Text(tab['label'] as String),
+                  ),
+                  // ── Active indicator dot ──────────────────────────────
+                  const SizedBox(height: 3),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: isSelected ? 4 : 0,
+                    height: isSelected ? 4 : 0,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary,
+                    ),
+                  ),
                 ],
               ),
             ),
