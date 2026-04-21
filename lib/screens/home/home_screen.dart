@@ -88,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen>
             'reps': 10,
             'rest': '60s',
             'muscle': ex['muscle'] ?? '',
-            'emoji': _muscleEmoji(ex['muscle'] ?? ''),
+            'icon': _muscleIcon(ex['muscle'] ?? ''),
             'color': _muscleColor(ex['muscle'] ?? ''),
             'done': false,
             'id': ex['id'],
@@ -108,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen>
                 'time': _mealTime(match['type'] ?? ''),
                 'items': match['name'] ?? '',
                 'calories': match['calories'] ?? 0,
-                'emoji': _mealEmoji(match['type'] ?? ''),
+                'icon': _mealIcon(match['type'] ?? ''),
                 'color': _mealColor(match['type'] ?? ''),
                 'id': match['id'],
               });
@@ -125,12 +125,19 @@ class _HomeScreenState extends State<HomeScreen>
   String _capitalize(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
-  String _muscleEmoji(String muscle) {
+  // ── Premium icon helpers replacing emojis ─────────────────────────────────
+
+  IconData _muscleIcon(String muscle) {
     const map = {
-      'Chest': '🏋️', 'Back': '💪', 'Shoulders': '⚡',
-      'Legs': '🦵', 'Arms': '💪', 'Core': '🔥', 'Full Body': '🏃',
+      'Chest': Icons.fitness_center_rounded,
+      'Back': Icons.accessibility_new_rounded,
+      'Shoulders': Icons.sports_gymnastics_rounded,
+      'Legs': Icons.directions_run_rounded,
+      'Arms': Icons.sports_handball_rounded,
+      'Core': Icons.self_improvement_rounded,
+      'Full Body': Icons.sports_martial_arts_rounded,
     };
-    return map[muscle] ?? '💪';
+    return map[muscle] ?? Icons.fitness_center_rounded;
   }
 
   Color _muscleColor(String muscle) {
@@ -156,14 +163,14 @@ class _HomeScreenState extends State<HomeScreen>
     return map[type] ?? '12:00 PM';
   }
 
-  String _mealEmoji(String type) {
+  IconData _mealIcon(String type) {
     const map = {
-      'breakfast': '🥣',
-      'lunch': '🍗',
-      'snack': '🍌',
-      'dinner': '🐟',
+      'breakfast': Icons.free_breakfast_rounded,
+      'lunch': Icons.lunch_dining_rounded,
+      'snack': Icons.apple_rounded,
+      'dinner': Icons.dinner_dining_rounded,
     };
-    return map[type] ?? '🍽️';
+    return map[type] ?? Icons.restaurant_rounded;
   }
 
   Color _mealColor(String type) {
@@ -229,18 +236,17 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ── Web Content Area (switches based on _webSection) ──
   Widget _buildWebContent(bool isDark, Color textPrimary, Color textSecondary,
       Color cardColor, Color borderColor) {
     switch (_webSection) {
       case 'Workouts':
-      case 'Workouts 🔒':
+      case 'Workouts (Locked)':
         return WorkoutScreen(userTier: _userTier);
       case 'Diet Plan':
-      case 'Diet Plan 🔒':
+      case 'Diet Plan (Locked)':
         return MealsScreen(userTier: _userTier);
       case 'Progress':
-      case 'Progress 🔒':
+      case 'Progress (Locked)':
         return const ProgressScreen();
       case 'Profile':
         return const ProfileScreen();
@@ -301,35 +307,40 @@ class _HomeScreenState extends State<HomeScreen>
       ),
       child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary.withOpacity(0.15),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+          // Logo with pointer cursor
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.primary.withOpacity(0.15),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+                  ),
+                  child: const Center(
+                      child: Icon(Icons.fitness_center_rounded,
+                          size: 16, color: AppColors.primary)),
                 ),
-                child: const Center(
-                    child: Text('🏋️', style: TextStyle(fontSize: 16))),
-              ),
-              const SizedBox(width: 10),
-              ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [Color(0xFF5EFC82), Color(0xFF00C853)],
-                ).createShader(bounds),
-                child: const Text(
-                  'FitLife',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: 1,
+                const SizedBox(width: 10),
+                ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [Color(0xFF5EFC82), Color(0xFF00C853)],
+                  ).createShader(bounds),
+                  child: const Text(
+                    'FitLife',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 1,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const Spacer(),
           if (_isLoggedIn) ...[
@@ -342,70 +353,87 @@ class _HomeScreenState extends State<HomeScreen>
             _buildNavLink('Progress', _webSection == 'Progress', textPrimary),
             const SizedBox(width: 20),
           ],
+          // Theme toggle with pointer cursor
           Consumer<ThemeProvider>(
-            builder: (context, theme, _) => GestureDetector(
-              onTap: () => Provider.of<ThemeProvider>(context, listen: false)
-                  .toggleTheme(),
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary.withOpacity(0.1),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-                ),
-                child: Center(
-                  child: Text(theme.isDark ? '☀️' : '🌙',
-                      style: const TextStyle(fontSize: 16)),
+            builder: (context, theme, _) => MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () => Provider.of<ThemeProvider>(context, listen: false)
+                    .toggleTheme(),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.primary.withOpacity(0.1),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      theme.isDark ? Icons.wb_sunny_rounded : Icons.dark_mode_rounded,
+                      size: 17,
+                      color: AppColors.primary,
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
           const SizedBox(width: 12),
           if (!_isLoggedIn) ...[
-            GestureDetector(
-              onTap: () => Navigator.pushNamed(context, '/login'),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () => Navigator.pushNamed(context, '/login'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+                  ),
+                  child: const Text('Sign In',
+                      style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600)),
                 ),
-                child: const Text('Sign In',
-                    style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600)),
               ),
             ),
             const SizedBox(width: 10),
-            GestureDetector(
-              onTap: () => Navigator.pushNamed(context, '/register'),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  gradient: const LinearGradient(
-                      colors: [Color(0xFF5EFC82), Color(0xFF00C853)]),
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () => Navigator.pushNamed(context, '/register'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    gradient: const LinearGradient(
+                        colors: [Color(0xFF5EFC82), Color(0xFF00C853)]),
+                  ),
+                  child: const Text('Get Started Free',
+                      style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700)),
                 ),
-                child: const Text('Get Started Free',
-                    style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700)),
               ),
             ),
           ] else ...[
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.15),
-                border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary.withOpacity(0.15),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+                ),
+                child: const Center(
+                    child: Icon(Icons.person_rounded, size: 18,
+                        color: AppColors.primary)),
               ),
-              child: const Center(
-                  child: Text('👤', style: TextStyle(fontSize: 18))),
             ),
           ],
         ],
@@ -414,27 +442,30 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildNavLink(String label, bool isActive, Color textPrimary) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          if (label == 'Dashboard') _webSection = 'Dashboard';
-          else if (label == 'Workouts') _webSection = 'Workouts';
-          else if (label == 'Diet') _webSection = 'Diet Plan';
-          else if (label == 'Progress') _webSection = 'Progress';
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          color: isActive ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            if (label == 'Dashboard') _webSection = 'Dashboard';
+            else if (label == 'Workouts') _webSection = 'Workouts';
+            else if (label == 'Diet') _webSection = 'Diet Plan';
+            else if (label == 'Progress') _webSection = 'Progress';
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: isActive ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+          ),
+          child: Text(label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                color: isActive ? AppColors.primary : textPrimary.withOpacity(0.6),
+              )),
         ),
-        child: Text(label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-              color: isActive ? AppColors.primary : textPrimary.withOpacity(0.6),
-            )),
       ),
     );
   }
@@ -442,19 +473,19 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildWebSidebar(bool isDark, Color sidebarColor) {
     final items = _isLoggedIn
         ? [
-            {'icon': Icons.dashboard_rounded, 'label': 'Dashboard'},
-            {'icon': Icons.fitness_center_rounded, 'label': 'Workouts'},
-            {'icon': Icons.restaurant_rounded, 'label': 'Diet Plan'},
-            {'icon': Icons.bar_chart_rounded, 'label': 'Progress'},
-            {'icon': Icons.notifications_rounded, 'label': 'Reminders'},
-            {'icon': Icons.person_rounded, 'label': 'Profile'},
-            {'icon': Icons.settings_rounded, 'label': 'Settings'},
+            {'icon': Icons.dashboard_rounded, 'label': 'Dashboard', 'locked': false},
+            {'icon': Icons.fitness_center_rounded, 'label': 'Workouts', 'locked': false},
+            {'icon': Icons.restaurant_rounded, 'label': 'Diet Plan', 'locked': false},
+            {'icon': Icons.bar_chart_rounded, 'label': 'Progress', 'locked': false},
+            {'icon': Icons.notifications_rounded, 'label': 'Reminders', 'locked': false},
+            {'icon': Icons.person_rounded, 'label': 'Profile', 'locked': false},
+            {'icon': Icons.settings_rounded, 'label': 'Settings', 'locked': false},
           ]
         : [
-            {'icon': Icons.dashboard_rounded, 'label': 'Dashboard'},
-            {'icon': Icons.lock_rounded, 'label': 'Workouts 🔒'},
-            {'icon': Icons.lock_rounded, 'label': 'Diet Plan 🔒'},
-            {'icon': Icons.lock_rounded, 'label': 'Progress 🔒'},
+            {'icon': Icons.dashboard_rounded, 'label': 'Dashboard', 'locked': false},
+            {'icon': Icons.lock_rounded, 'label': 'Workouts', 'locked': true},
+            {'icon': Icons.lock_rounded, 'label': 'Diet Plan', 'locked': true},
+            {'icon': Icons.lock_rounded, 'label': 'Progress', 'locked': true},
           ];
 
     return Container(
@@ -477,7 +508,8 @@ class _HomeScreenState extends State<HomeScreen>
                         Border.all(color: AppColors.primary.withOpacity(0.5)),
                   ),
                   child: const Center(
-                      child: Text('👤', style: TextStyle(fontSize: 18))),
+                      child: Icon(Icons.person_rounded, size: 20,
+                          color: AppColors.primary)),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -489,14 +521,28 @@ class _HomeScreenState extends State<HomeScreen>
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               color: Colors.white)),
-                      Text(
-                        _isLoggedIn ? '✅ Member' : '👤 Guest',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: _isLoggedIn
-                              ? AppColors.primary
-                              : Colors.white.withOpacity(0.4),
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            _isLoggedIn
+                                ? Icons.verified_rounded
+                                : Icons.person_outline_rounded,
+                            size: 11,
+                            color: _isLoggedIn
+                                ? AppColors.primary
+                                : Colors.white.withOpacity(0.4),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            _isLoggedIn ? 'Member' : 'Guest',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: _isLoggedIn
+                                  ? AppColors.primary
+                                  : Colors.white.withOpacity(0.4),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -509,38 +555,50 @@ class _HomeScreenState extends State<HomeScreen>
           const SizedBox(height: 16),
           ...items.map((item) {
             final label = item['label'] as String;
+            final isLocked = item['locked'] as bool;
+            // Use original label for section matching (locked items share same base label)
             final isActive = label == _webSection ||
                 (label == 'Dashboard' && _webSection == 'Dashboard');
-            final isLocked = label.contains('🔒');
-            return GestureDetector(
-              onTap: () => setState(() => _webSection = label),
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  color: isActive
-                      ? AppColors.primary.withOpacity(0.15)
-                      : Colors.transparent,
-                ),
-                child: ListTile(
-                  dense: true,
-                  leading: Icon(item['icon'] as IconData,
-                      size: 18,
-                      color: isActive
-                          ? AppColors.primary
-                          : isLocked
-                              ? Colors.white.withOpacity(0.2)
-                              : Colors.white.withOpacity(0.5)),
-                  title: Text(label,
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight:
-                              isActive ? FontWeight.w700 : FontWeight.w400,
-                          color: isActive
-                              ? AppColors.primary
-                              : isLocked
-                                  ? Colors.white.withOpacity(0.2)
-                                  : Colors.white.withOpacity(0.6))),
+            return MouseRegion(
+              cursor: isLocked
+                  ? SystemMouseCursors.forbidden
+                  : SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: isLocked
+                    ? null
+                    : () => setState(() => _webSection = label),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: isActive
+                        ? AppColors.primary.withOpacity(0.15)
+                        : Colors.transparent,
+                  ),
+                  child: ListTile(
+                    dense: true,
+                    leading: Icon(item['icon'] as IconData,
+                        size: 18,
+                        color: isActive
+                            ? AppColors.primary
+                            : isLocked
+                                ? Colors.white.withOpacity(0.2)
+                                : Colors.white.withOpacity(0.5)),
+                    title: Text(label,
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight:
+                                isActive ? FontWeight.w700 : FontWeight.w400,
+                            color: isActive
+                                ? AppColors.primary
+                                : isLocked
+                                    ? Colors.white.withOpacity(0.2)
+                                    : Colors.white.withOpacity(0.6))),
+                    trailing: isLocked
+                        ? Icon(Icons.lock_outline_rounded,
+                            size: 14, color: Colors.white.withOpacity(0.2))
+                        : null,
+                  ),
                 ),
               ),
             );
@@ -549,22 +607,32 @@ class _HomeScreenState extends State<HomeScreen>
           if (!_isLoggedIn)
             Padding(
               padding: const EdgeInsets.all(16),
-              child: GestureDetector(
-                onTap: () => Navigator.pushNamed(context, '/register'),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    gradient: const LinearGradient(
-                        colors: [Color(0xFF5EFC82), Color(0xFF00C853)]),
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => Navigator.pushNamed(context, '/register'),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      gradient: const LinearGradient(
+                          colors: [Color(0xFF5EFC82), Color(0xFF00C853)]),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.auto_awesome_rounded,
+                            size: 14, color: Colors.black),
+                        SizedBox(width: 6),
+                        Text('Join Free',
+                            style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700)),
+                      ],
+                    ),
                   ),
-                  child: const Center(
-                      child: Text('✨ Join Free',
-                          style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700))),
                 ),
               ),
             ),
@@ -595,7 +663,7 @@ class _HomeScreenState extends State<HomeScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${Helpers.getGreeting()}, $userName! 👋',
+                Text('${Helpers.getGreeting()}, $userName!',
                     style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -606,15 +674,17 @@ class _HomeScreenState extends State<HomeScreen>
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    _buildWebBadge('🎯 $userGoal', AppColors.primary),
+                    _buildWebBadge(userGoal, Icons.flag_rounded, AppColors.primary),
                     const SizedBox(width: 8),
                     _buildWebBadge(
-                      'BMI ${Helpers.calculateBMI(userWeight, userHeight).toStringAsFixed(1)} • ${Helpers.getBMICategory(Helpers.calculateBMI(userWeight, userHeight))}',
+                      'BMI ${Helpers.calculateBMI(userWeight, userHeight).toStringAsFixed(1)} · ${Helpers.getBMICategory(Helpers.calculateBMI(userWeight, userHeight))}',
+                      Icons.monitor_heart_rounded,
                       const Color(0xFF2979FF),
                     ),
                     const SizedBox(width: 8),
                     _buildWebBadge(
                       '$completedWorkouts/${_todayWorkouts.length} workouts done',
+                      Icons.check_circle_rounded,
                       const Color(0xFFFF6D00),
                     ),
                   ],
@@ -629,18 +699,19 @@ class _HomeScreenState extends State<HomeScreen>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: AppColors.primary.withOpacity(0.1),
-              border:
-                  Border.all(color: AppColors.primary.withOpacity(0.3), width: 2),
+              border: Border.all(
+                  color: AppColors.primary.withOpacity(0.3), width: 2),
             ),
             child: const Center(
-                child: Text('🏋️', style: TextStyle(fontSize: 38))),
+                child: Icon(Icons.fitness_center_rounded,
+                    size: 36, color: AppColors.primary)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildWebBadge(String text, Color color) {
+  Widget _buildWebBadge(String text, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
@@ -648,20 +719,27 @@ class _HomeScreenState extends State<HomeScreen>
         color: color.withOpacity(0.12),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
-      child: Text(text,
-          style: TextStyle(
-              fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: color),
+          const SizedBox(width: 5),
+          Text(text,
+              style: TextStyle(
+                  fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+        ],
+      ),
     );
   }
 
   Widget _buildWebStatsGrid(bool isDark, Color textPrimary, Color cardColor) {
     final stats = [
-      {'label': 'Weight', 'value': '${userWeight}kg', 'emoji': '⚖️', 'color': const Color(0xFF2979FF)},
-      {'label': 'Height', 'value': '${userHeight}cm', 'emoji': '📏', 'color': const Color(0xFFFF6D00)},
-      {'label': 'Age', 'value': '$userAge yrs', 'emoji': '🎂', 'color': const Color(0xFFAA00FF)},
-      {'label': 'Daily Calories', 'value': '$totalCalories kcal', 'emoji': '🔥', 'color': const Color(0xFFFFD600)},
-      {'label': 'BMI', 'value': Helpers.calculateBMI(userWeight, userHeight).toStringAsFixed(1), 'emoji': '📊', 'color': AppColors.primary},
-      {'label': 'Workouts', 'value': '$completedWorkouts/${_todayWorkouts.length}', 'emoji': '💪', 'color': const Color(0xFF00C853)},
+      {'label': 'Weight', 'value': '${userWeight}kg', 'icon': Icons.monitor_weight_rounded, 'color': const Color(0xFF2979FF)},
+      {'label': 'Height', 'value': '${userHeight}cm', 'icon': Icons.height_rounded, 'color': const Color(0xFFFF6D00)},
+      {'label': 'Age', 'value': '$userAge yrs', 'icon': Icons.cake_rounded, 'color': const Color(0xFFAA00FF)},
+      {'label': 'Daily Calories', 'value': '$totalCalories kcal', 'icon': Icons.local_fire_department_rounded, 'color': const Color(0xFFFFD600)},
+      {'label': 'BMI', 'value': Helpers.calculateBMI(userWeight, userHeight).toStringAsFixed(1), 'icon': Icons.analytics_rounded, 'color': AppColors.primary},
+      {'label': 'Workouts', 'value': '$completedWorkouts/${_todayWorkouts.length}', 'icon': Icons.fitness_center_rounded, 'color': const Color(0xFF00C853)},
     ];
 
     return GridView.count(
@@ -673,6 +751,7 @@ class _HomeScreenState extends State<HomeScreen>
       childAspectRatio: 2.2,
       children: stats.map((stat) {
         final color = stat['color'] as Color;
+        final icon = stat['icon'] as IconData;
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -687,9 +766,7 @@ class _HomeScreenState extends State<HomeScreen>
                 height: 44,
                 decoration: BoxDecoration(
                     shape: BoxShape.circle, color: color.withOpacity(0.1)),
-                child: Center(
-                    child: Text(stat['emoji'] as String,
-                        style: const TextStyle(fontSize: 20))),
+                child: Center(child: Icon(icon, size: 20, color: color)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -753,21 +830,28 @@ class _HomeScreenState extends State<HomeScreen>
                               letterSpacing: 1)),
                     ),
                     const SizedBox(width: 10),
-                    Text("🔓 You're using the free plan — unlock more!",
-                        style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: textPrimary)),
+                    Row(
+                      children: [
+                        const Icon(Icons.lock_open_rounded,
+                            size: 14, color: AppColors.primary),
+                        const SizedBox(width: 5),
+                        Text("You're using the free plan — unlock more!",
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: textPrimary)),
+                      ],
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 16,
                   children: [
-                    _buildWebFeatureChip('☁️ Cloud sync', textSecondary),
-                    _buildWebFeatureChip('💪 50+ exercises', textSecondary),
-                    _buildWebFeatureChip('🥗 Advanced diet', textSecondary),
-                    _buildWebFeatureChip('📊 Analytics', textSecondary),
+                    _buildWebFeatureChip('Cloud sync', textSecondary),
+                    _buildWebFeatureChip('50+ exercises', textSecondary),
+                    _buildWebFeatureChip('Advanced diet', textSecondary),
+                    _buildWebFeatureChip('Analytics', textSecondary),
                   ],
                 ),
               ],
@@ -776,39 +860,52 @@ class _HomeScreenState extends State<HomeScreen>
           const SizedBox(width: 20),
           Row(
             children: [
-              GestureDetector(
-                onTap: () => Navigator.pushNamed(context, '/login'),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                        color: AppColors.primary.withOpacity(0.4)),
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => Navigator.pushNamed(context, '/login'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: AppColors.primary.withOpacity(0.4)),
+                    ),
+                    child: const Text('Sign In',
+                        style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600)),
                   ),
-                  child: const Text('Sign In',
-                      style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600)),
                 ),
               ),
               const SizedBox(width: 10),
-              GestureDetector(
-                onTap: () => Navigator.pushNamed(context, '/register'),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    gradient: const LinearGradient(
-                        colors: [Color(0xFF5EFC82), Color(0xFF00C853)]),
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => Navigator.pushNamed(context, '/register'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      gradient: const LinearGradient(
+                          colors: [Color(0xFF5EFC82), Color(0xFF00C853)]),
+                    ),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.auto_awesome_rounded,
+                            size: 14, color: Colors.black),
+                        SizedBox(width: 6),
+                        Text('Create Free Account',
+                            style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700)),
+                      ],
+                    ),
                   ),
-                  child: const Text('✨ Create Free Account',
-                      style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700)),
                 ),
               ),
             ],
@@ -822,7 +919,7 @@ class _HomeScreenState extends State<HomeScreen>
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.check_circle, size: 13, color: AppColors.primary),
+        const Icon(Icons.check_circle_rounded, size: 13, color: AppColors.primary),
         const SizedBox(width: 4),
         Text(text, style: TextStyle(fontSize: 12, color: textSecondary)),
       ],
@@ -844,11 +941,18 @@ class _HomeScreenState extends State<HomeScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Today's Workout 💪",
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: textPrimary)),
+              Row(
+                children: [
+                  const Icon(Icons.fitness_center_rounded,
+                      size: 18, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text("Today's Workout",
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: textPrimary)),
+                ],
+              ),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -873,87 +977,91 @@ class _HomeScreenState extends State<HomeScreen>
             final workout = entry.value;
             final color = workout['color'] as Color;
             final isDone = workout['done'] as bool;
+            final icon =
+                workout['icon'] as IconData? ?? Icons.fitness_center_rounded;
 
-            return GestureDetector(
-              onTap: () => Navigator.pushNamed(context, '/exercise-detail',
-                  arguments: workout),
-              onLongPress: () =>
-                  setState(() => _todayWorkouts[index]['done'] = !isDone),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: isDone
-                      ? color.withOpacity(0.08)
-                      : (isDark
-                          ? const Color(0xFF1A1A1A)
-                          : const Color(0xFFF8F8F8)),
-                  border: Border.all(
-                      color: isDone ? color.withOpacity(0.4) : borderColor),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
+            return MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () => Navigator.pushNamed(context, '/exercise-detail',
+                    arguments: workout),
+                onLongPress: () =>
+                    setState(() => _todayWorkouts[index]['done'] = !isDone),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: isDone
+                        ? color.withOpacity(0.08)
+                        : (isDark
+                            ? const Color(0xFF1A1A1A)
+                            : const Color(0xFFF8F8F8)),
+                    border: Border.all(
+                        color: isDone ? color.withOpacity(0.4) : borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: color.withOpacity(0.12)),
+                        child: Center(
+                            child: Icon(icon, size: 18, color: color)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(workout['name'] as String,
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDone ? color : textPrimary,
+                                    decoration: isDone
+                                        ? TextDecoration.lineThrough
+                                        : null)),
+                            Text(
+                                '${workout['sets']} sets × ${workout['reps']} reps • Rest ${workout['rest']}',
+                                style: TextStyle(
+                                    fontSize: 11, color: textSecondary)),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(6),
+                            color: color.withOpacity(0.1)),
+                        child: Text(workout['muscle'] as String,
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: color,
+                                fontWeight: FontWeight.w600)),
+                      ),
+                      const SizedBox(width: 10),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: color.withOpacity(0.12)),
-                      child: Center(
-                          child: Text(workout['emoji'] as String,
-                              style: const TextStyle(fontSize: 18))),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(workout['name'] as String,
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDone ? color : textPrimary,
-                                  decoration: isDone
-                                      ? TextDecoration.lineThrough
-                                      : null)),
-                          Text(
-                              '${workout['sets']} sets × ${workout['reps']} reps • Rest ${workout['rest']}',
-                              style: TextStyle(
-                                  fontSize: 11, color: textSecondary)),
-                        ],
+                          color: isDone ? color : Colors.transparent,
+                          border: Border.all(
+                              color: isDone ? color : borderColor, width: 2),
+                        ),
+                        child: isDone
+                            ? const Icon(Icons.check,
+                                size: 12, color: Colors.white)
+                            : null,
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(6),
-                          color: color.withOpacity(0.1)),
-                      child: Text(workout['muscle'] as String,
-                          style: TextStyle(
-                              fontSize: 10,
-                              color: color,
-                              fontWeight: FontWeight.w600)),
-                    ),
-                    const SizedBox(width: 10),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isDone ? color : Colors.transparent,
-                        border: Border.all(
-                            color: isDone ? color : borderColor, width: 2),
-                      ),
-                      child: isDone
-                          ? const Icon(Icons.check,
-                              size: 12, color: Colors.white)
-                          : null,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -978,11 +1086,18 @@ class _HomeScreenState extends State<HomeScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Today's Meals 🥗",
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: textPrimary)),
+              Row(
+                children: [
+                  const Icon(Icons.restaurant_rounded,
+                      size: 18, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text("Today's Meals",
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: textPrimary)),
+                ],
+              ),
               Text('$totalCalories kcal',
                   style: const TextStyle(
                       fontSize: 12,
@@ -1020,61 +1135,65 @@ class _HomeScreenState extends State<HomeScreen>
           const SizedBox(height: 16),
           ..._todayMeals.map((meal) {
             final color = meal['color'] as Color;
-            return GestureDetector(
-              onTap: () => Navigator.pushNamed(context, '/meal-detail',
-                  arguments: meal),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: isDark
-                      ? const Color(0xFF1A1A1A)
-                      : const Color(0xFFF8F8F8),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: color.withOpacity(0.12)),
-                      child: Center(
-                          child: Text(meal['emoji'] as String,
-                              style: const TextStyle(fontSize: 16))),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+            final icon =
+                meal['icon'] as IconData? ?? Icons.restaurant_rounded;
+            return MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () => Navigator.pushNamed(context, '/meal-detail',
+                    arguments: meal),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: isDark
+                        ? const Color(0xFF1A1A1A)
+                        : const Color(0xFFF8F8F8),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: color.withOpacity(0.12)),
+                        child: Center(
+                            child: Icon(icon, size: 16, color: color)),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(meal['meal'] as String,
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: textPrimary)),
+                            Text(meal['items'] as String,
+                                style: TextStyle(
+                                    fontSize: 10, color: textSecondary)),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text(meal['meal'] as String,
+                          Text('${meal['calories']} kcal',
                               style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: textPrimary)),
-                          Text(meal['items'] as String,
+                                  color: color)),
+                          Text(meal['time'] as String,
                               style: TextStyle(
                                   fontSize: 10, color: textSecondary)),
                         ],
                       ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text('${meal['calories']} kcal',
-                            style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: color)),
-                        Text(meal['time'] as String,
-                            style: TextStyle(
-                                fontSize: 10, color: textSecondary)),
-                      ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -1087,20 +1206,46 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildWebLockedSection(bool isDark, Color textPrimary,
       Color textSecondary, Color cardColor, Color borderColor) {
     final features = [
-      {'emoji': '💪', 'title': 'Full Exercise Library', 'desc': '200+ exercises with video demos', 'color': const Color(0xFF2979FF)},
-      {'emoji': '🥗', 'title': 'Advanced Diet Plans', 'desc': 'AI-generated meal plans', 'color': const Color(0xFF00C853)},
-      {'emoji': '📊', 'title': 'Progress Analytics', 'desc': 'Charts and insights over time', 'color': const Color(0xFFFF6D00)},
-      {'emoji': '☁️', 'title': 'Cloud Backup', 'desc': 'Never lose your data', 'color': const Color(0xFFAA00FF)},
+      {
+        'icon': Icons.fitness_center_rounded,
+        'title': 'Full Exercise Library',
+        'desc': '200+ exercises with video demos',
+        'color': const Color(0xFF2979FF)
+      },
+      {
+        'icon': Icons.restaurant_menu_rounded,
+        'title': 'Advanced Diet Plans',
+        'desc': 'AI-generated meal plans',
+        'color': const Color(0xFF00C853)
+      },
+      {
+        'icon': Icons.insights_rounded,
+        'title': 'Progress Analytics',
+        'desc': 'Charts and insights over time',
+        'color': const Color(0xFFFF6D00)
+      },
+      {
+        'icon': Icons.cloud_sync_rounded,
+        'title': 'Cloud Backup',
+        'desc': 'Never lose your data',
+        'color': const Color(0xFFAA00FF)
+      },
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('🔒 Unlock Premium Features',
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: textPrimary)),
+        Row(
+          children: [
+            const Icon(Icons.lock_rounded, size: 18, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Text('Unlock Premium Features',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: textPrimary)),
+          ],
+        ),
         const SizedBox(height: 4),
         Text('Create a free account to unlock these features',
             style: TextStyle(fontSize: 13, color: textSecondary)),
@@ -1114,6 +1259,7 @@ class _HomeScreenState extends State<HomeScreen>
           childAspectRatio: 1.6,
           children: features.map((f) {
             final color = f['color'] as Color;
+            final icon = f['icon'] as IconData;
             return Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -1125,9 +1271,16 @@ class _HomeScreenState extends State<HomeScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(f['emoji'] as String,
-                      style: const TextStyle(fontSize: 24)),
-                  const SizedBox(height: 6),
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(9),
+                      color: color.withOpacity(0.12),
+                    ),
+                    child: Center(child: Icon(icon, size: 18, color: color)),
+                  ),
+                  const SizedBox(height: 8),
                   Text(f['title'] as String,
                       style: TextStyle(
                           fontSize: 13,
@@ -1143,27 +1296,38 @@ class _HomeScreenState extends State<HomeScreen>
         ),
         const SizedBox(height: 20),
         Center(
-          child: GestureDetector(
-            onTap: () => Navigator.pushNamed(context, '/register'),
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                gradient: const LinearGradient(
-                    colors: [Color(0xFF5EFC82), Color(0xFF00C853)]),
-                boxShadow: [
-                  BoxShadow(
-                      color: AppColors.primary.withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8))
-                ],
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/register'),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: const LinearGradient(
+                      colors: [Color(0xFF5EFC82), Color(0xFF00C853)]),
+                  boxShadow: [
+                    BoxShadow(
+                        color: AppColors.primary.withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8))
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.rocket_launch_rounded,
+                        size: 16, color: Colors.black),
+                    SizedBox(width: 8),
+                    Text('Create Your Free Account Now',
+                        style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800)),
+                  ],
+                ),
               ),
-              child: const Text('🚀 Create Your Free Account Now',
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800)),
             ),
           ),
         ),
@@ -1175,14 +1339,11 @@ class _HomeScreenState extends State<HomeScreen>
   // MOBILE LAYOUT
   // ═══════════════════════════════════════
 
-  // ── Dashboard content for tab index 0 ──
   Widget _buildMobileDashboard() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? Colors.white : const Color(0xFF0A0A0A);
     final textSecondary =
         isDark ? const Color(0xFFB0B0B0) : const Color(0xFF555555);
-    final bgColor =
-        isDark ? const Color(0xFF050A05) : const Color(0xFFF5F5F5);
     final cardColor = isDark ? const Color(0xFF141414) : Colors.white;
     final borderColor =
         isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
@@ -1210,15 +1371,16 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ] else ...[
             _buildSectionTitle(
-                "Today's Workout 💪",
+                "Today's Workout",
                 "$completedWorkouts/${_todayWorkouts.length} done",
-                textPrimary),
+                textPrimary,
+                Icons.fitness_center_rounded),
             const SizedBox(height: 12),
             _buildMobileWorkoutList(
                 cardColor, borderColor, textPrimary, textSecondary),
             const SizedBox(height: 20),
-            _buildSectionTitle(
-                "Today's Meals 🥗", "$totalCalories kcal", textPrimary),
+            _buildSectionTitle("Today's Meals", "$totalCalories kcal",
+                textPrimary, Icons.restaurant_rounded),
             const SizedBox(height: 12),
             _buildMobileMealList(
                 cardColor, borderColor, textPrimary, textSecondary),
@@ -1273,7 +1435,7 @@ class _HomeScreenState extends State<HomeScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('${Helpers.getGreeting()} 👋',
+              Text(Helpers.getGreeting(),
                   style: TextStyle(fontSize: 13, color: textSecondary)),
               const SizedBox(height: 4),
               Text(userName,
@@ -1291,11 +1453,19 @@ class _HomeScreenState extends State<HomeScreen>
                   border:
                       Border.all(color: AppColors.primary.withOpacity(0.3)),
                 ),
-                child: Text('🎯 $userGoal',
-                    style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.flag_rounded,
+                        size: 11, color: AppColors.primary),
+                    const SizedBox(width: 4),
+                    Text(userGoal,
+                        style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600)),
+                  ],
+                ),
               ),
             ],
           ),
@@ -1312,7 +1482,8 @@ class _HomeScreenState extends State<HomeScreen>
                     color: AppColors.primary.withOpacity(0.4), width: 2),
               ),
               child: const Center(
-                  child: Text('👤', style: TextStyle(fontSize: 20))),
+                  child: Icon(Icons.person_rounded,
+                      size: 22, color: AppColors.primary)),
             ),
             const SizedBox(height: 4),
             Text(
@@ -1339,8 +1510,14 @@ class _HomeScreenState extends State<HomeScreen>
                     Border.all(color: AppColors.primary.withOpacity(0.3)),
               ),
               child: Center(
-                  child: Text(theme.isDark ? '☀️' : '🌙',
-                      style: const TextStyle(fontSize: 16))),
+                child: Icon(
+                  theme.isDark
+                      ? Icons.wb_sunny_rounded
+                      : Icons.dark_mode_rounded,
+                  size: 17,
+                  color: AppColors.primary,
+                ),
+              ),
             ),
           ),
         ),
@@ -1350,10 +1527,30 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildMobileStatsRow(Color textPrimary) {
     final stats = [
-      {'label': 'Weight', 'value': '${userWeight}kg', 'emoji': '⚖️', 'color': const Color(0xFF2979FF)},
-      {'label': 'Height', 'value': '${userHeight}cm', 'emoji': '📏', 'color': const Color(0xFFFF6D00)},
-      {'label': 'Age', 'value': '${userAge}yrs', 'emoji': '🎂', 'color': const Color(0xFFAA00FF)},
-      {'label': 'Calories', 'value': '$totalCalories', 'emoji': '🔥', 'color': const Color(0xFFFFD600)},
+      {
+        'label': 'Weight',
+        'value': '${userWeight}kg',
+        'icon': Icons.monitor_weight_rounded,
+        'color': const Color(0xFF2979FF)
+      },
+      {
+        'label': 'Height',
+        'value': '${userHeight}cm',
+        'icon': Icons.height_rounded,
+        'color': const Color(0xFFFF6D00)
+      },
+      {
+        'label': 'Age',
+        'value': '${userAge}yrs',
+        'icon': Icons.cake_rounded,
+        'color': const Color(0xFFAA00FF)
+      },
+      {
+        'label': 'Calories',
+        'value': '$totalCalories',
+        'icon': Icons.local_fire_department_rounded,
+        'color': const Color(0xFFFFD600)
+      },
     ];
 
     return Row(
@@ -1361,6 +1558,7 @@ class _HomeScreenState extends State<HomeScreen>
         final i = entry.key;
         final stat = entry.value;
         final color = stat['color'] as Color;
+        final icon = stat['icon'] as IconData;
         return Expanded(
           child: Container(
             margin: EdgeInsets.only(right: i < stats.length - 1 ? 8 : 0),
@@ -1373,8 +1571,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
             child: Column(
               children: [
-                Text(stat['emoji'] as String,
-                    style: const TextStyle(fontSize: 18)),
+                Icon(icon, size: 20, color: color),
                 const SizedBox(height: 4),
                 Text(stat['value'] as String,
                     style: TextStyle(
@@ -1424,11 +1621,18 @@ class _HomeScreenState extends State<HomeScreen>
                         letterSpacing: 1)),
               ),
               const SizedBox(width: 8),
-              Text('🔓 Unlock More',
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: textPrimary)),
+              Row(
+                children: [
+                  const Icon(Icons.lock_open_rounded,
+                      size: 13, color: AppColors.primary),
+                  const SizedBox(width: 4),
+                  Text('Unlock More',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: textPrimary)),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -1436,10 +1640,10 @@ class _HomeScreenState extends State<HomeScreen>
             spacing: 12,
             runSpacing: 4,
             children: [
-              _buildFeatureChip('☁️ Cloud sync', textSecondary),
-              _buildFeatureChip('💪 50+ exercises', textSecondary),
-              _buildFeatureChip('🥗 Diet plans', textSecondary),
-              _buildFeatureChip('📊 Analytics', textSecondary),
+              _buildFeatureChip('Cloud sync', textSecondary),
+              _buildFeatureChip('50+ exercises', textSecondary),
+              _buildFeatureChip('Diet plans', textSecondary),
+              _buildFeatureChip('Analytics', textSecondary),
             ],
           ),
           const SizedBox(height: 12),
@@ -1456,12 +1660,19 @@ class _HomeScreenState extends State<HomeScreen>
                       gradient: const LinearGradient(
                           colors: [Color(0xFF5EFC82), Color(0xFF00C853)]),
                     ),
-                    child: const Center(
-                        child: Text('Create Free Account',
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.auto_awesome_rounded,
+                            size: 14, color: Colors.black),
+                        SizedBox(width: 6),
+                        Text('Create Free Account',
                             style: TextStyle(
                                 color: Colors.black,
                                 fontSize: 13,
-                                fontWeight: FontWeight.w700))),
+                                fontWeight: FontWeight.w700)),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1495,7 +1706,8 @@ class _HomeScreenState extends State<HomeScreen>
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.check_circle, size: 12, color: AppColors.primary),
+        const Icon(Icons.check_circle_rounded,
+            size: 12, color: AppColors.primary),
         const SizedBox(width: 4),
         Text(text, style: TextStyle(fontSize: 11, color: textSecondary)),
       ],
@@ -1516,7 +1728,17 @@ class _HomeScreenState extends State<HomeScreen>
       ),
       child: Column(
         children: [
-          const Text('🔒', style: TextStyle(fontSize: 32)),
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              color: AppColors.primary.withOpacity(0.1),
+            ),
+            child: const Center(
+                child: Icon(Icons.lock_rounded,
+                    size: 24, color: AppColors.primary)),
+          ),
           const SizedBox(height: 10),
           Text('More Features Locked',
               style: TextStyle(
@@ -1535,15 +1757,21 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildSectionTitle(
-      String title, String subtitle, Color textPrimary) {
+      String title, String subtitle, Color textPrimary, IconData icon) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title,
-            style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: textPrimary)),
+        Row(
+          children: [
+            Icon(icon, size: 16, color: AppColors.primary),
+            const SizedBox(width: 6),
+            Text(title,
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: textPrimary)),
+          ],
+        ),
         Text(subtitle,
             style: const TextStyle(
                 fontSize: 12,
@@ -1561,6 +1789,8 @@ class _HomeScreenState extends State<HomeScreen>
         final workout = entry.value;
         final color = workout['color'] as Color;
         final isDone = workout['done'] as bool;
+        final icon =
+            workout['icon'] as IconData? ?? Icons.fitness_center_rounded;
 
         return GestureDetector(
           onTap: () => Navigator.pushNamed(context, '/exercise-detail',
@@ -1585,9 +1815,7 @@ class _HomeScreenState extends State<HomeScreen>
                   decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: color.withOpacity(isDone ? 0.2 : 0.1)),
-                  child: Center(
-                      child: Text(workout['emoji'] as String,
-                          style: const TextStyle(fontSize: 18))),
+                  child: Center(child: Icon(icon, size: 20, color: color)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1655,6 +1883,7 @@ class _HomeScreenState extends State<HomeScreen>
     return Column(
       children: _todayMeals.map((meal) {
         final color = meal['color'] as Color;
+        final icon = meal['icon'] as IconData? ?? Icons.restaurant_rounded;
         return GestureDetector(
           onTap: () =>
               Navigator.pushNamed(context, '/meal-detail', arguments: meal),
@@ -1674,9 +1903,7 @@ class _HomeScreenState extends State<HomeScreen>
                   decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: color.withOpacity(0.12)),
-                  child: Center(
-                      child: Text(meal['emoji'] as String,
-                          style: const TextStyle(fontSize: 18))),
+                  child: Center(child: Icon(icon, size: 20, color: color)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1753,11 +1980,18 @@ class _HomeScreenState extends State<HomeScreen>
                   gradient: const LinearGradient(
                       colors: [Color(0xFF5EFC82), Color(0xFF00C853)]),
                 ),
-                child: const Text('✨ Join Free',
-                    style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700)),
+                child: Row(
+                  children: const [
+                    Icon(Icons.auto_awesome_rounded,
+                        size: 13, color: Colors.black),
+                    SizedBox(width: 4),
+                    Text('Join Free',
+                        style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700)),
+                  ],
+                ),
               ),
             ),
           ],
