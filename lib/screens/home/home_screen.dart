@@ -8,6 +8,7 @@ import '../../core/theme/theme_provider.dart';
 import '../../core/data/app_data.dart';
 import '../../services/storage_service.dart';
 import '../../services/supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -59,9 +60,9 @@ void initState() {
 }
 
   Future<void> _checkLoginStatus() async {
-    final loggedIn = await StorageService.isLoggedIn();
-    setState(() => _isLoggedIn = loggedIn);
-  }
+  final session = Supabase.instance.client.auth.currentSession;
+  setState(() => _isLoggedIn = session != null);
+}
 
   Future<void> _loadFromSupabase() async {
   setState(() => _isLoadingData = true);

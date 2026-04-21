@@ -29,7 +29,6 @@ class _RegisterScreenState extends State<RegisterScreen>
   String? _errorMessage;
   String? _successMessage;
 
-  // Selected goal — stored in Supabase profile after sign-up
   String _selectedGoal = 'Build Muscle';
   final List<String> _goals = [
     'Build Muscle',
@@ -37,6 +36,8 @@ class _RegisterScreenState extends State<RegisterScreen>
     'Stay Fit',
     'Improve Endurance',
   ];
+
+  final _supabase = Supabase.instance.client;
 
   @override
   void initState() {
@@ -50,6 +51,16 @@ class _RegisterScreenState extends State<RegisterScreen>
             .animate(CurvedAnimation(
                 parent: _animController, curve: Curves.easeOut));
     _animController.forward();
+    _redirectIfLoggedIn();
+  }
+
+  void _redirectIfLoggedIn() {
+    final session = _supabase.auth.currentSession;
+    if (session != null && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacementNamed(context, '/home');
+      });
+    }
   }
 
   @override
@@ -62,23 +73,38 @@ class _RegisterScreenState extends State<RegisterScreen>
     super.dispose();
   }
 
+  // ─────────────────────────────────────────
+  // AUTH LOGIC
+  // ─────────────────────────────────────────
+
   Future<void> _handleRegister() async {
     final name = _nameController.text.trim();
-    final email = _emailController.text.trim();
+    // Normalize email: lowercase + trim any accidental spaces
+    final email = _emailController.text.trim().toLowerCase();
     final password = _passwordController.text;
     final confirm = _confirmPasswordController.text;
 
+    // ── Client-side validation (before hitting Supabase) ──
     if (name.isEmpty || email.isEmpty || password.isEmpty || confirm.isEmpty) {
       setState(() => _errorMessage = 'Please fill in all fields.');
       return;
     }
-    if (password != confirm) {
-      setState(() => _errorMessage = 'Passwords do not match.');
+    if (name.length < 2) {
+      setState(() => _errorMessage = 'Name must be at least 2 characters.');
+      return;
+    }
+    // Simple, permissive email check — Supabase will do the strict check
+    if (!email.contains('@') || !email.contains('.')) {
+      setState(() => _errorMessage = 'Please enter a valid email address.');
       return;
     }
     if (password.length < 6) {
       setState(
           () => _errorMessage = 'Password must be at least 6 characters.');
+      return;
+    }
+    if (password != confirm) {
+      setState(() => _errorMessage = 'Passwords do not match.');
       return;
     }
     if (!_agreedToTerms) {
@@ -94,38 +120,98 @@ class _RegisterScreenState extends State<RegisterScreen>
     });
 
     try {
-      final response = await Supabase.instance.client.auth.signUp(
+      // ── Step 1: Sign up ──
+      final response = await _supabase.auth.signUp(
         email: email,
         password: password,
-        data: {
-          'full_name': name,
-          'goal': _selectedGoal,
-        },
+        data: {'full_name': name, 'goal': _selectedGoal},
       );
 
-      if (response.user != null) {
-        // Upsert profile row
-        await Supabase.instance.client.from('profiles').upsert({
-          'id': response.user!.id,
+      if (!mounted) return;
+
+      if (response.user == null) {
+        setState(
+            () => _errorMessage = 'Registration failed. Please try again.');
+        return;
+      }
+
+      final user = response.user!;
+
+      // ── Step 2: Detect already-registered (identities is empty) ──
+      if (user.identities != null && user.identities!.isEmpty) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage =
+              'An account with this email already exists. Try signing in.';
+        });
+        return;
+      }
+
+      // ── Step 3: Upsert profile (non-fatal) ──
+      try {
+        await _supabase.from('profiles').upsert({
+          'id': user.id,
           'full_name': name,
+          'email': email,
           'goal': _selectedGoal,
           'tier': 'free',
-        });
-
-        if (mounted) {
-          setState(() => _successMessage =
-              '🎉 Account created! Check your email to verify.');
-        }
+          'created_at': DateTime.now().toIso8601String(),
+        }, onConflict: 'id');
+      } catch (profileError) {
+        debugPrint('Profile upsert error (non-fatal): $profileError');
       }
+
+      // ── Step 4: Success ──
+      if (mounted) {
+  _nameController.clear();
+  _emailController.clear();
+  _passwordController.clear();
+  _confirmPasswordController.clear();
+  setState(() => _agreedToTerms = false);
+  setState(() {
+    _successMessage = '🎉 Account created! You can now sign in.';
+  });
+  await Future.delayed(const Duration(seconds: 2));
+  if (mounted) Navigator.pushReplacementNamed(context, '/login');
+}
     } on AuthException catch (e) {
-      setState(() => _errorMessage = e.message);
-    } catch (_) {
+      setState(() => _errorMessage = _mapAuthError(e.message));
+    } catch (e) {
       setState(
           () => _errorMessage = 'Something went wrong. Please try again.');
+      debugPrint('Register error: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  String _mapAuthError(String message) {
+    final msg = message.toLowerCase();
+    if (msg.contains('user already registered') ||
+        msg.contains('already registered') ||
+        msg.contains('already exists')) {
+      return 'An account with this email already exists. Try signing in.';
+    }
+    if (msg.contains('invalid email') || msg.contains('email is invalid')) {
+      return 'Please enter a valid email address (e.g. you@gmail.com).';
+    }
+    if (msg.contains('password should be at least')) {
+      return 'Password must be at least 6 characters.';
+    }
+    if (msg.contains('too many requests') ||
+        msg.contains('email rate limit')) {
+      return 'Too many attempts. Please wait a moment and try again.';
+    }
+    if (msg.contains('network') || msg.contains('connection')) {
+      return 'Network error. Check your internet connection.';
+    }
+    // Return raw message as fallback so we can debug
+    return message;
+  }
+
+  // ─────────────────────────────────────────
+  // BUILD
+  // ─────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -152,23 +238,21 @@ class _RegisterScreenState extends State<RegisterScreen>
                 color: AppColors.primary.withOpacity(0.5), width: 2),
           ),
           child: Center(
-              child:
-                  Text('🏋️', style: TextStyle(fontSize: size * 0.5))),
+              child: Text('🏋️',
+                  style: TextStyle(fontSize: size * 0.5))),
         ),
         const SizedBox(width: 10),
         ShaderMask(
           shaderCallback: (bounds) => const LinearGradient(
             colors: [Color(0xFF5EFC82), Color(0xFF00C853)],
           ).createShader(bounds),
-          child: Text(
-            'FitLife',
-            style: TextStyle(
-              fontSize: fontSize,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              letterSpacing: 1,
-            ),
-          ),
+          child: Text('FitLife',
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: 1,
+              )),
         ),
       ],
     );
@@ -186,6 +270,8 @@ class _RegisterScreenState extends State<RegisterScreen>
     bool obscure = false,
     Widget? suffix,
     TextInputType keyboardType = TextInputType.text,
+    TextInputAction textInputAction = TextInputAction.next,
+    VoidCallback? onSubmitted,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,7 +281,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: textPrimary)),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
@@ -206,16 +292,20 @@ class _RegisterScreenState extends State<RegisterScreen>
             controller: controller,
             obscureText: obscure,
             keyboardType: keyboardType,
+            textInputAction: textInputAction,
+            onSubmitted:
+                onSubmitted != null ? (_) => onSubmitted() : null,
             style: TextStyle(fontSize: 14, color: textPrimary),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(
-                  fontSize: 14, color: textSecondary.withOpacity(0.5)),
+                  fontSize: 14,
+                  color: textSecondary.withOpacity(0.5)),
               prefixIcon: Icon(icon, size: 18, color: textSecondary),
               suffixIcon: suffix,
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                  vertical: 16, horizontal: 4),
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
             ),
           ),
         ),
@@ -229,13 +319,12 @@ class _RegisterScreenState extends State<RegisterScreen>
     required Color textPrimary,
     required Color textSecondary,
   }) {
-    final goalEmojis = {
+    const goalEmojis = {
       'Build Muscle': '💪',
       'Lose Weight': '🔥',
       'Stay Fit': '⚡',
       'Improve Endurance': '🏃',
     };
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -255,17 +344,15 @@ class _RegisterScreenState extends State<RegisterScreen>
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
+                    horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   color: isSelected
                       ? AppColors.primary.withOpacity(0.15)
                       : cardColor,
                   border: Border.all(
-                    color: isSelected
-                        ? AppColors.primary
-                        : borderColor,
-                  ),
+                      color:
+                          isSelected ? AppColors.primary : borderColor),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -290,15 +377,14 @@ class _RegisterScreenState extends State<RegisterScreen>
     );
   }
 
-  Widget _buildTermsRow({
-    required Color textPrimary,
-    required Color textSecondary,
-  }) {
+  Widget _buildTermsRow(
+      {required Color textPrimary, required Color textSecondary}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GestureDetector(
-          onTap: () => setState(() => _agreedToTerms = !_agreedToTerms),
+          onTap: () =>
+              setState(() => _agreedToTerms = !_agreedToTerms),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             width: 20,
@@ -306,9 +392,8 @@ class _RegisterScreenState extends State<RegisterScreen>
             margin: const EdgeInsets.only(top: 1),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(6),
-              color: _agreedToTerms
-                  ? AppColors.primary
-                  : Colors.transparent,
+              color:
+                  _agreedToTerms ? AppColors.primary : Colors.transparent,
               border: Border.all(
                 color: _agreedToTerms
                     ? AppColors.primary
@@ -326,19 +411,19 @@ class _RegisterScreenState extends State<RegisterScreen>
         Expanded(
           child: RichText(
             text: TextSpan(
-              style:
-                  TextStyle(fontSize: 12, color: textSecondary, height: 1.5),
-              children: [
-                const TextSpan(text: 'I agree to the '),
+              style: TextStyle(
+                  fontSize: 12, color: textSecondary, height: 1.5),
+              children: const [
+                TextSpan(text: 'I agree to the '),
                 TextSpan(
                     text: 'Terms of Service',
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w600)),
-                const TextSpan(text: ' and '),
+                TextSpan(text: ' and '),
                 TextSpan(
                     text: 'Privacy Policy',
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w600)),
               ],
@@ -349,51 +434,33 @@ class _RegisterScreenState extends State<RegisterScreen>
     );
   }
 
-  Widget _buildErrorBox(String message) {
+  Widget _buildMessageBox(String message, {bool isError = true}) {
+    final color =
+        isError ? const Color(0xFFFF1744) : AppColors.primary;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: const Color(0xFFFF1744).withOpacity(0.08),
-        border:
-            Border.all(color: const Color(0xFFFF1744).withOpacity(0.3)),
+        color: color.withOpacity(0.08),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error_outline_rounded,
-              size: 16, color: Color(0xFFFF1744)),
+          Icon(
+              isError
+                  ? Icons.error_outline_rounded
+                  : Icons.check_circle_outline_rounded,
+              size: 16,
+              color: color),
           const SizedBox(width: 8),
           Expanded(
             child: Text(message,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFFFF1744),
-                    fontWeight: FontWeight.w500)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSuccessBox(String message) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: AppColors.primary.withOpacity(0.08),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.check_circle_outline_rounded,
-              size: 16, color: AppColors.primary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(message,
-                style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w500)),
+                    color: color,
+                    fontWeight: FontWeight.w500,
+                    height: 1.4)),
           ),
         ],
       ),
@@ -406,7 +473,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: double.infinity,
-        height: 52,
+        height: 50,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           gradient: _isLoading
@@ -447,8 +514,8 @@ class _RegisterScreenState extends State<RegisterScreen>
     return Row(
       children: [
         Expanded(
-            child:
-                Divider(color: textSecondary.withOpacity(0.2), height: 1)),
+            child: Divider(
+                color: textSecondary.withOpacity(0.2), height: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Text('or',
@@ -457,8 +524,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                   color: textSecondary.withOpacity(0.5))),
         ),
         Expanded(
-            child:
-                Divider(color: textSecondary.withOpacity(0.2), height: 1)),
+            child: Divider(
+                color: textSecondary.withOpacity(0.2), height: 1)),
       ],
     );
   }
@@ -469,9 +536,13 @@ class _RegisterScreenState extends State<RegisterScreen>
     required Color textPrimary,
   }) {
     return GestureDetector(
-      onTap: () {}, // TODO: Google sign-in
+      onTap: _isLoading
+          ? null
+          : () {
+              // TODO: _supabase.auth.signInWithOAuth(OAuthProvider.google)
+            },
       child: Container(
-        height: 52,
+        height: 50,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           color: cardColor,
@@ -522,33 +593,35 @@ class _RegisterScreenState extends State<RegisterScreen>
     required Color textSecondary,
     required Color cardColor,
     required Color borderColor,
+    bool compact = false,
   }) {
+    final gap = compact ? 10.0 : 14.0;
+    final sg = compact ? 12.0 : 16.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildInputField(
-          controller: _nameController,
-          label: 'Full Name',
-          hint: 'Abdullah Khan',
-          icon: Icons.person_outline_rounded,
-          cardColor: cardColor,
-          borderColor: borderColor,
-          textPrimary: textPrimary,
-          textSecondary: textSecondary,
-        ),
-        const SizedBox(height: 14),
+            controller: _nameController,
+            label: 'Full Name',
+            hint: 'Abdullah Khan',
+            icon: Icons.person_outline_rounded,
+            cardColor: cardColor,
+            borderColor: borderColor,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary),
+        SizedBox(height: gap),
         _buildInputField(
-          controller: _emailController,
-          label: 'Email',
-          hint: 'you@example.com',
-          icon: Icons.email_outlined,
-          cardColor: cardColor,
-          borderColor: borderColor,
-          textPrimary: textPrimary,
-          textSecondary: textSecondary,
-          keyboardType: TextInputType.emailAddress,
-        ),
-        const SizedBox(height: 14),
+            controller: _emailController,
+            label: 'Email',
+            hint: 'you@example.com',
+            icon: Icons.email_outlined,
+            cardColor: cardColor,
+            borderColor: borderColor,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary,
+            keyboardType: TextInputType.emailAddress),
+        SizedBox(height: gap),
         _buildInputField(
           controller: _passwordController,
           label: 'Password',
@@ -570,7 +643,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 color: textSecondary),
           ),
         ),
-        const SizedBox(height: 14),
+        SizedBox(height: gap),
         _buildInputField(
           controller: _confirmPasswordController,
           label: 'Confirm Password',
@@ -581,6 +654,8 @@ class _RegisterScreenState extends State<RegisterScreen>
           textPrimary: textPrimary,
           textSecondary: textSecondary,
           obscure: _obscureConfirm,
+          textInputAction: TextInputAction.done,
+          onSubmitted: _handleRegister,
           suffix: GestureDetector(
             onTap: () =>
                 setState(() => _obscureConfirm = !_obscureConfirm),
@@ -592,34 +667,33 @@ class _RegisterScreenState extends State<RegisterScreen>
                 color: textSecondary),
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: sg),
         _buildGoalSelector(
-          cardColor: cardColor,
-          borderColor: borderColor,
-          textPrimary: textPrimary,
-          textSecondary: textSecondary,
-        ),
-        const SizedBox(height: 16),
+            cardColor: cardColor,
+            borderColor: borderColor,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary),
+        SizedBox(height: sg),
         _buildTermsRow(
             textPrimary: textPrimary, textSecondary: textSecondary),
-        const SizedBox(height: 20),
+        SizedBox(height: sg),
         if (_errorMessage != null) ...[
-          _buildErrorBox(_errorMessage!),
-          const SizedBox(height: 16),
+          _buildMessageBox(_errorMessage!, isError: true),
+          SizedBox(height: gap),
         ],
         if (_successMessage != null) ...[
-          _buildSuccessBox(_successMessage!),
-          const SizedBox(height: 16),
+          _buildMessageBox(_successMessage!, isError: false),
+          SizedBox(height: gap),
         ],
         _buildRegisterButton(),
-        const SizedBox(height: 20),
+        SizedBox(height: sg),
         _buildDivider(textSecondary),
-        const SizedBox(height: 20),
+        SizedBox(height: sg),
         _buildGoogleButton(
             cardColor: cardColor,
             borderColor: borderColor,
             textPrimary: textPrimary),
-        const SizedBox(height: 24),
+        SizedBox(height: compact ? 16 : 24),
         _buildLoginLink(textSecondary),
       ],
     );
@@ -652,7 +726,6 @@ class _RegisterScreenState extends State<RegisterScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Back button
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
@@ -667,12 +740,9 @@ class _RegisterScreenState extends State<RegisterScreen>
                           size: 15, color: textPrimary),
                     ),
                   ),
-
                   const SizedBox(height: 28),
-
                   _buildLogo(size: 44, fontSize: 20),
                   const SizedBox(height: 24),
-
                   Text('Create your account 🚀',
                       style: TextStyle(
                           fontSize: 26,
@@ -680,14 +750,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                           color: textPrimary,
                           height: 1.2)),
                   const SizedBox(height: 8),
-                  Text(
-                    'Join FitLife free and start your journey today.',
-                    style: TextStyle(fontSize: 14, color: textSecondary),
-                  ),
-
+                  Text('Join FitLife free and start your journey today.',
+                      style:
+                          TextStyle(fontSize: 14, color: textSecondary)),
                   const SizedBox(height: 20),
-
-                  // Tier benefits strip
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
@@ -725,10 +791,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 24),
-
-                  // Form card
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -754,20 +817,16 @@ class _RegisterScreenState extends State<RegisterScreen>
                       borderColor: borderColor,
                     ),
                   ),
-
                   const SizedBox(height: 24),
-
                   Center(
                     child: GestureDetector(
-                      onTap: () =>
-                          Navigator.pushReplacementNamed(context, '/home'),
-                      child: Text(
-                        'Continue as Guest →',
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: textSecondary,
-                            fontWeight: FontWeight.w500),
-                      ),
+                      onTap: () => Navigator.pushReplacementNamed(
+                          context, '/home'),
+                      child: Text('Continue as Guest →',
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: textSecondary,
+                              fontWeight: FontWeight.w500)),
                     ),
                   ),
                 ],
@@ -780,7 +839,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   }
 
   // ─────────────────────────────────────────
-  // WEB LAYOUT
+  // WEB LAYOUT — true 50/50 via LayoutBuilder
   // ─────────────────────────────────────────
   Widget _buildWebLayout(bool isDark) {
     final textPrimary =
@@ -800,278 +859,273 @@ class _RegisterScreenState extends State<RegisterScreen>
       backgroundColor: bgColor,
       body: FadeTransition(
         opacity: _fadeAnim,
-        child: Row(
-          children: [
-            // ── Left panel — branding ──
-            Expanded(
-              flex: 4,
-              child: Container(
-                color: sidebarColor,
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 440),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 48, vertical: 48),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildLogo(size: 44, fontSize: 22),
-                          const SizedBox(height: 56),
-
-                          ShaderMask(
-                            shaderCallback: (bounds) =>
-                                const LinearGradient(
-                              colors: [
-                                Color(0xFF5EFC82),
-                                Color(0xFF00C853)
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ).createShader(bounds),
-                            child: const Text(
-                              'Your fitness\njourney starts\nhere.',
-                              style: TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                height: 1.25,
-                                letterSpacing: -0.5,
+        // LayoutBuilder gives us exact screen width so we can split 50/50
+        child: LayoutBuilder(builder: (context, constraints) {
+          final halfW = constraints.maxWidth / 2;
+          return Row(
+            children: [
+              // ── Left panel — exactly 50% ──
+              SizedBox(
+                width: halfW,
+                child: Container(
+                  color: sidebarColor,
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 460),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 48, vertical: 48),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildLogo(size: 44, fontSize: 22),
+                            const SizedBox(height: 48),
+                            ShaderMask(
+                              shaderCallback: (bounds) =>
+                                  const LinearGradient(
+                                colors: [
+                                  Color(0xFF5EFC82),
+                                  Color(0xFF00C853)
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ).createShader(bounds),
+                              child: const Text(
+                                'Your fitness\njourney starts\nhere.',
+                                style: TextStyle(
+                                  fontSize: 38,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  height: 1.2,
+                                  letterSpacing: -0.5,
+                                ),
                               ),
                             ),
-                          ),
-
-                          const SizedBox(height: 16),
-                          Text(
-                            'Create your free account and get\naccess to workouts, meal plans\nand progress tracking.',
-                            style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white.withOpacity(0.5),
-                                height: 1.6),
-                          ),
-
-                          const SizedBox(height: 40),
-
-                          // What's included
-                          Text('What\'s included for free:',
+                            const SizedBox(height: 16),
+                            Text(
+                              'Create your free account and get access to\nworkouts, meal plans and progress tracking.',
                               style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white.withOpacity(0.4),
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.5)),
-                          const SizedBox(height: 16),
-
-                          ...[
-                            ('💪', '50+ exercises & variations'),
-                            ('🥗', '10 meal plans with recipes'),
-                            ('📊', 'Progress tracking & stats'),
-                            ('🎯', 'Goal-based workout plans'),
-                            ('☁️', 'Sync across all your devices'),
-                          ].map((item) => Padding(
-                                padding:
-                                    const EdgeInsets.only(bottom: 14),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 36,
-                                      height: 36,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: AppColors.primary
-                                            .withOpacity(0.1),
-                                        border: Border.all(
-                                            color: AppColors.primary
-                                                .withOpacity(0.2)),
-                                      ),
-                                      child: Center(
-                                          child: Text(item.$1,
-                                              style: const TextStyle(
-                                                  fontSize: 16))),
-                                    ),
-                                    const SizedBox(width: 14),
-                                    Text(item.$2,
-                                        style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.white
-                                                .withOpacity(0.7),
-                                            fontWeight:
-                                                FontWeight.w500)),
-                                  ],
-                                ),
-                              )),
-
-                          const Spacer(),
-
-                          // Already have account
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(14),
-                              color: Colors.white.withOpacity(0.04),
-                              border: Border.all(
-                                  color: Colors.white.withOpacity(0.08)),
+                                  fontSize: 14,
+                                  color: Colors.white.withOpacity(0.5),
+                                  height: 1.6),
                             ),
-                            child: Row(
-                              children: [
-                                const Text('👋',
-                                    style: TextStyle(fontSize: 24)),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                            const SizedBox(height: 36),
+                            Text("What's included for free:",
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white.withOpacity(0.4),
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5)),
+                            const SizedBox(height: 14),
+                            ...[
+                              ('💪', '50+ exercises & variations'),
+                              ('🥗', '10 meal plans with recipes'),
+                              ('📊', 'Progress tracking & stats'),
+                              ('🎯', 'Goal-based workout plans'),
+                              ('☁️', 'Sync across all your devices'),
+                            ].map((item) => Padding(
+                                  padding:
+                                      const EdgeInsets.only(bottom: 12),
+                                  child: Row(
                                     children: [
-                                      Text('Already a member?',
+                                      Container(
+                                        width: 34,
+                                        height: 34,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: AppColors.primary
+                                              .withOpacity(0.1),
+                                          border: Border.all(
+                                              color: AppColors.primary
+                                                  .withOpacity(0.2)),
+                                        ),
+                                        child: Center(
+                                            child: Text(item.$1,
+                                                style: const TextStyle(
+                                                    fontSize: 15))),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(item.$2,
                                           style: TextStyle(
                                               fontSize: 13,
-                                              fontWeight: FontWeight.w700,
                                               color: Colors.white
-                                                  .withOpacity(0.8))),
-                                      const SizedBox(height: 2),
-                                      GestureDetector(
-                                        onTap: () =>
-                                            Navigator.pushReplacementNamed(
-                                                context, '/login'),
-                                        child: const Text('Sign in →',
-                                            style: TextStyle(
-                                                fontSize: 12,
-                                                color: AppColors.primary,
-                                                fontWeight:
-                                                    FontWeight.w600)),
-                                      ),
+                                                  .withOpacity(0.7),
+                                              fontWeight:
+                                                  FontWeight.w500)),
                                     ],
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // ── Right panel — form ──
-            Expanded(
-              flex: 5,
-              child: Container(
-                color: bgColor,
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 460),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 40, vertical: 48),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Back button
-                          GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.arrow_back_ios_new_rounded,
-                                    size: 13, color: textSecondary),
-                                const SizedBox(width: 6),
-                                Text('Back',
-                                    style: TextStyle(
-                                        fontSize: 13,
-                                        color: textSecondary)),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 36),
-
-                          Text('Create your account 🚀',
-                              style: TextStyle(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w800,
-                                  color: textPrimary,
-                                  height: 1.2)),
-                          const SizedBox(height: 8),
-                          Text(
-                              'Join FitLife free and start your journey today.',
-                              style: TextStyle(
-                                  fontSize: 14, color: textSecondary)),
-
-                          const SizedBox(height: 28),
-
-                          Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              color: cardColor,
-                              border: Border.all(color: borderColor),
-                              boxShadow: isDark
-                                  ? []
-                                  : [
-                                      BoxShadow(
-                                          color: Colors.black
-                                              .withOpacity(0.05),
-                                          blurRadius: 24,
-                                          offset: const Offset(0, 4))
-                                    ],
-                            ),
-                            child: _buildFormContent(
-                              isDark: isDark,
-                              textPrimary: textPrimary,
-                              textSecondary: textSecondary,
-                              cardColor: isDark
-                                  ? const Color(0xFF1E1E1E)
-                                  : const Color(0xFFF8F8F8),
-                              borderColor: borderColor,
-                            ),
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          Center(
-                            child: GestureDetector(
-                              onTap: () =>
-                                  Navigator.pushReplacementNamed(
-                                      context, '/home'),
-                              child: Text(
-                                'Continue as Guest →',
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    color: textSecondary,
-                                    fontWeight: FontWeight.w500),
+                                )),
+                            const Spacer(),
+                            // Already a member card
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                color: Colors.white.withOpacity(0.04),
+                                border: Border.all(
+                                    color:
+                                        Colors.white.withOpacity(0.08)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Text('👋',
+                                      style: TextStyle(fontSize: 22)),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Already a member?',
+                                            style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight:
+                                                    FontWeight.w700,
+                                                color: Colors.white
+                                                    .withOpacity(0.8))),
+                                        const SizedBox(height: 2),
+                                        GestureDetector(
+                                          onTap: () =>
+                                              Navigator
+                                                  .pushReplacementNamed(
+                                                      context, '/login'),
+                                          child: const Text('Sign in →',
+                                              style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: AppColors.primary,
+                                                  fontWeight:
+                                                      FontWeight.w600)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
+
+              // ── Right panel — exactly 50%, no scrollbar visible ──
+              SizedBox(
+                width: halfW,
+                child: Container(
+                  color: bgColor,
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 480),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 40, vertical: 28),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Back button
+                            GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                      Icons.arrow_back_ios_new_rounded,
+                                      size: 13,
+                                      color: textSecondary),
+                                  const SizedBox(width: 6),
+                                  Text('Back',
+                                      style: TextStyle(
+                                          fontSize: 13,
+                                          color: textSecondary)),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Text('Create your account 🚀',
+                                style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w800,
+                                    color: textPrimary,
+                                    height: 1.2)),
+                            const SizedBox(height: 6),
+                            Text(
+                                'Join FitLife free and start your journey today.',
+                                style: TextStyle(
+                                    fontSize: 13, color: textSecondary)),
+                            const SizedBox(height: 16),
+
+                            // ── Form card fills remaining height ──
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  borderRadius:
+                                      BorderRadius.circular(20),
+                                  color: cardColor,
+                                  border: Border.all(color: borderColor),
+                                  boxShadow: isDark
+                                      ? []
+                                      : [
+                                          BoxShadow(
+                                              color: Colors.black
+                                                  .withOpacity(0.05),
+                                              blurRadius: 24,
+                                              offset: const Offset(0, 4))
+                                        ],
+                                ),
+                                child: ScrollConfiguration(
+                                  behavior: _NoScrollbarBehavior(),
+                                  child: SingleChildScrollView(
+                                    child: _buildFormContent(
+                                      isDark: isDark,
+                                      textPrimary: textPrimary,
+                                      textSecondary: textSecondary,
+                                      cardColor: isDark
+                                          ? const Color(0xFF1E1E1E)
+                                          : const Color(0xFFF8F8F8),
+                                      borderColor: borderColor,
+                                      compact: true,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 16),
+                            Center(
+                              child: GestureDetector(
+                                onTap: () =>
+                                    Navigator.pushReplacementNamed(
+                                        context, '/home'),
+                                child: Text('Continue as Guest →',
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        color: textSecondary,
+                                        fontWeight: FontWeight.w500)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }),
       ),
     );
   }
+}
 
-  Widget _buildAvatarCircle(String emoji, double left) {
-    return Positioned(
-      left: left,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.primary.withOpacity(0.15),
-          border:
-              Border.all(color: const Color(0xFF1A1A2E), width: 2),
-        ),
-        child: Center(
-            child:
-                Text(emoji, style: const TextStyle(fontSize: 14))),
-      ),
-    );
+/// Suppresses the scrollbar track/thumb while keeping scroll physics intact.
+class _NoScrollbarBehavior extends ScrollBehavior {
+  @override
+  Widget buildScrollbar(
+      BuildContext context, Widget child, ScrollableDetails details) {
+    return child;
   }
 }

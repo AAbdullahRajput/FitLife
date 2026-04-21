@@ -23,17 +23,35 @@ class _LoginScreenState extends State<LoginScreen>
   bool _isLoading = false;
   String? _errorMessage;
 
+  // ── Supabase client shorthand ──
+  final _supabase = Supabase.instance.client;
+
   @override
   void initState() {
     super.initState();
+
+    // Animations
     _animController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 700));
     _fadeAnim = Tween<double>(begin: 0, end: 1).animate(
         CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _slideAnim =
         Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero).animate(
-            CurvedAnimation(parent: _animController, curve: Curves.easeOut));
+            CurvedAnimation(
+                parent: _animController, curve: Curves.easeOut));
     _animController.forward();
+
+    // If already logged in, go straight to home
+    _redirectIfLoggedIn();
+  }
+
+  void _redirectIfLoggedIn() {
+    final session = _supabase.auth.currentSession;
+    if (session != null && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacementNamed(context, '/home');
+      });
+    }
   }
 
   @override
@@ -44,6 +62,10 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
+  // ─────────────────────────────────────────
+  // AUTH LOGIC
+  // ─────────────────────────────────────────
+
   Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
@@ -53,25 +75,98 @@ class _LoginScreenState extends State<LoginScreen>
       return;
     }
 
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      setState(() => _errorMessage = 'Please enter a valid email address.');
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      await Supabase.instance.client.auth.signInWithPassword(
+      final response = await _supabase.auth.signInWithPassword(
         email: email,
         password: password,
       );
-      if (mounted) Navigator.pushReplacementNamed(context, '/home');
+
+      if (!mounted) return;
+
+      if (response.user != null) {
+        // Check if email is confirmed
+        if (response.user!.emailConfirmedAt == null) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage =
+                '📧 Please verify your email first. Check your inbox and click the confirmation link.';
+          });
+          return;
+        }
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     } on AuthException catch (e) {
-      setState(() => _errorMessage = e.message);
-    } catch (_) {
+      setState(() => _errorMessage = _mapAuthError(e.message));
+    } catch (e) {
       setState(() => _errorMessage = 'Something went wrong. Please try again.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  Future<void> _handleForgotPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      setState(
+          () => _errorMessage = 'Enter your email above, then tap Forgot password.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _supabase.auth.resetPasswordForEmail(email);
+      if (mounted) {
+        setState(() => _errorMessage =
+            '📧 Password reset email sent! Check your inbox.');
+      }
+    } on AuthException catch (e) {
+      setState(() => _errorMessage = _mapAuthError(e.message));
+    } catch (_) {
+      setState(() => _errorMessage = 'Could not send reset email. Try again.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// Maps raw Supabase error strings to user-friendly messages.
+  String _mapAuthError(String message) {
+    final msg = message.toLowerCase();
+    if (msg.contains('invalid login credentials') ||
+        msg.contains('invalid credentials')) {
+      return 'Incorrect email or password. Please try again.';
+    }
+    if (msg.contains('email not confirmed')) {
+      return '📧 Please verify your email. Check your inbox for the confirmation link.';
+    }
+    if (msg.contains('too many requests')) {
+      return 'Too many attempts. Please wait a moment and try again.';
+    }
+    if (msg.contains('user not found')) {
+      return 'No account found with this email. Sign up first!';
+    }
+    if (msg.contains('network')) {
+      return 'Network error. Check your internet connection.';
+    }
+    return message;
+  }
+
+  // ─────────────────────────────────────────
+  // BUILD
+  // ─────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -94,12 +189,12 @@ class _LoginScreenState extends State<LoginScreen>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: AppColors.primary.withOpacity(0.15),
-            border:
-                Border.all(color: AppColors.primary.withOpacity(0.5), width: 2),
+            border: Border.all(
+                color: AppColors.primary.withOpacity(0.5), width: 2),
           ),
           child: Center(
-              child: Text('🏋️',
-                  style: TextStyle(fontSize: size * 0.5))),
+              child:
+                  Text('🏋️', style: TextStyle(fontSize: size * 0.5))),
         ),
         const SizedBox(width: 10),
         ShaderMask(
@@ -132,6 +227,8 @@ class _LoginScreenState extends State<LoginScreen>
     bool obscure = false,
     Widget? suffix,
     TextInputType keyboardType = TextInputType.text,
+    TextInputAction textInputAction = TextInputAction.next,
+    VoidCallback? onSubmitted,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,12 +249,16 @@ class _LoginScreenState extends State<LoginScreen>
             controller: controller,
             obscureText: obscure,
             keyboardType: keyboardType,
+            textInputAction: textInputAction,
+            onSubmitted: onSubmitted != null ? (_) => onSubmitted() : null,
             style: TextStyle(fontSize: 14, color: textPrimary),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle:
-                  TextStyle(fontSize: 14, color: textSecondary.withOpacity(0.5)),
-              prefixIcon: Icon(icon, size: 18, color: textSecondary),
+              hintStyle: TextStyle(
+                  fontSize: 14,
+                  color: textSecondary.withOpacity(0.5)),
+              prefixIcon:
+                  Icon(icon, size: 18, color: textSecondary),
               suffixIcon: suffix,
               border: InputBorder.none,
               contentPadding:
@@ -169,37 +270,46 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildErrorBox(String message) {
+  Widget _buildMessageBox(String message, {bool isError = true}) {
+    final color =
+        isError ? const Color(0xFFFF1744) : AppColors.primary;
+    final bgColor = color.withOpacity(0.08);
+    final borderColor = color.withOpacity(0.3);
+    final icon = isError
+        ? Icons.error_outline_rounded
+        : Icons.check_circle_outline_rounded;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: const Color(0xFFFF1744).withOpacity(0.08),
-        border: Border.all(color: const Color(0xFFFF1744).withOpacity(0.3)),
+        color: bgColor,
+        border: Border.all(color: borderColor),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error_outline_rounded,
-              size: 16, color: Color(0xFFFF1744)),
+          Icon(icon, size: 16, color: color),
           const SizedBox(width: 8),
           Expanded(
             child: Text(message,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFFFF1744),
-                    fontWeight: FontWeight.w500)),
+                    color: color,
+                    fontWeight: FontWeight.w500,
+                    height: 1.4)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildLoginButton({bool wide = false}) {
+  Widget _buildLoginButton() {
     return GestureDetector(
       onTap: _isLoading ? null : _handleLogin,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: wide ? double.infinity : double.infinity,
+        width: double.infinity,
         height: 52,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
@@ -241,15 +351,18 @@ class _LoginScreenState extends State<LoginScreen>
     return Row(
       children: [
         Expanded(
-            child: Divider(color: textSecondary.withOpacity(0.2), height: 1)),
+            child: Divider(
+                color: textSecondary.withOpacity(0.2), height: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Text('or',
-              style:
-                  TextStyle(fontSize: 12, color: textSecondary.withOpacity(0.5))),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: textSecondary.withOpacity(0.5))),
         ),
         Expanded(
-            child: Divider(color: textSecondary.withOpacity(0.2), height: 1)),
+            child: Divider(
+                color: textSecondary.withOpacity(0.2), height: 1)),
       ],
     );
   }
@@ -260,7 +373,10 @@ class _LoginScreenState extends State<LoginScreen>
     required Color textPrimary,
   }) {
     return GestureDetector(
-      onTap: () {}, // TODO: Google sign-in
+      onTap: _isLoading ? null : () {
+        // TODO: implement Google OAuth via Supabase
+        // _supabase.auth.signInWithOAuth(OAuthProvider.google);
+      },
       child: Container(
         height: 52,
         decoration: BoxDecoration(
@@ -271,7 +387,11 @@ class _LoginScreenState extends State<LoginScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('G', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF4285F4))),
+            const Text('G',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF4285F4))),
             const SizedBox(width: 10),
             Text('Continue with Google',
                 style: TextStyle(
@@ -291,7 +411,8 @@ class _LoginScreenState extends State<LoginScreen>
         Text("Don't have an account? ",
             style: TextStyle(fontSize: 13, color: textSecondary)),
         GestureDetector(
-          onTap: () => Navigator.pushReplacementNamed(context, '/register'),
+          onTap: () =>
+              Navigator.pushReplacementNamed(context, '/register'),
           child: const Text('Sign Up Free',
               style: TextStyle(
                   fontSize: 13,
@@ -306,8 +427,8 @@ class _LoginScreenState extends State<LoginScreen>
     return Align(
       alignment: Alignment.centerRight,
       child: GestureDetector(
-        onTap: () {}, // TODO: forgot password
-        child: Text('Forgot password?',
+        onTap: _isLoading ? null : _handleForgotPassword,
+        child: const Text('Forgot password?',
             style: TextStyle(
                 fontSize: 12,
                 color: AppColors.primary,
@@ -323,6 +444,11 @@ class _LoginScreenState extends State<LoginScreen>
     required Color cardColor,
     required Color borderColor,
   }) {
+    // Determine message type: success messages start with 📧 (for reset/verify)
+    final isSuccessMsg = _errorMessage != null &&
+        (_errorMessage!.startsWith('📧') &&
+            _errorMessage!.contains('sent'));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -336,6 +462,7 @@ class _LoginScreenState extends State<LoginScreen>
           textPrimary: textPrimary,
           textSecondary: textSecondary,
           keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
         ),
         const SizedBox(height: 16),
         _buildInputField(
@@ -348,6 +475,8 @@ class _LoginScreenState extends State<LoginScreen>
           textPrimary: textPrimary,
           textSecondary: textSecondary,
           obscure: _obscurePassword,
+          textInputAction: TextInputAction.done,
+          onSubmitted: _handleLogin,
           suffix: GestureDetector(
             onTap: () =>
                 setState(() => _obscurePassword = !_obscurePassword),
@@ -363,7 +492,8 @@ class _LoginScreenState extends State<LoginScreen>
         _buildForgotPassword(textSecondary),
         const SizedBox(height: 20),
         if (_errorMessage != null) ...[
-          _buildErrorBox(_errorMessage!),
+          _buildMessageBox(_errorMessage!,
+              isError: !isSuccessMsg),
           const SizedBox(height: 16),
         ],
         _buildLoginButton(),
@@ -407,7 +537,6 @@ class _LoginScreenState extends State<LoginScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Back button
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
@@ -422,13 +551,9 @@ class _LoginScreenState extends State<LoginScreen>
                           size: 15, color: textPrimary),
                     ),
                   ),
-
                   const SizedBox(height: 36),
-
-                  // Hero section
                   _buildLogo(size: 48, fontSize: 22),
                   const SizedBox(height: 28),
-
                   Text('Welcome back 👋',
                       style: TextStyle(
                           fontSize: 28,
@@ -438,11 +563,10 @@ class _LoginScreenState extends State<LoginScreen>
                   const SizedBox(height: 8),
                   Text(
                     'Sign in to continue your fitness journey.',
-                    style: TextStyle(fontSize: 14, color: textSecondary),
+                    style:
+                        TextStyle(fontSize: 14, color: textSecondary),
                   ),
-
                   const SizedBox(height: 36),
-
                   // Stats strip
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -465,10 +589,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 32),
-
-                  // Form card
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -494,10 +615,7 @@ class _LoginScreenState extends State<LoginScreen>
                       borderColor: borderColor,
                     ),
                   ),
-
                   const SizedBox(height: 24),
-
-                  // Guest option
                   Center(
                     child: GestureDetector(
                       onTap: () =>
@@ -531,14 +649,17 @@ class _LoginScreenState extends State<LoginScreen>
                 fontWeight: FontWeight.w800,
                 color: AppColors.primary)),
         Text(label,
-            style: const TextStyle(fontSize: 10, color: AppColors.primary)),
+            style: const TextStyle(
+                fontSize: 10, color: AppColors.primary)),
       ],
     );
   }
 
   Widget _buildStatDivider() {
     return Container(
-        width: 1, height: 36, color: AppColors.primary.withOpacity(0.2));
+        width: 1,
+        height: 36,
+        color: AppColors.primary.withOpacity(0.2));
   }
 
   // ─────────────────────────────────────────
@@ -564,7 +685,7 @@ class _LoginScreenState extends State<LoginScreen>
         opacity: _fadeAnim,
         child: Row(
           children: [
-            // ── Left panel — branding (flex: 1, properly centered) ──
+            // ── Left panel ──
             Expanded(
               flex: 1,
               child: Container(
@@ -580,11 +701,13 @@ class _LoginScreenState extends State<LoginScreen>
                         children: [
                           _buildLogo(size: 44, fontSize: 22),
                           const SizedBox(height: 56),
-
-                          // Big headline
                           ShaderMask(
-                            shaderCallback: (bounds) => const LinearGradient(
-                              colors: [Color(0xFF5EFC82), Color(0xFF00C853)],
+                            shaderCallback: (bounds) =>
+                                const LinearGradient(
+                              colors: [
+                                Color(0xFF5EFC82),
+                                Color(0xFF00C853)
+                              ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ).createShader(bounds),
@@ -599,7 +722,6 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                             ),
                           ),
-
                           const SizedBox(height: 16),
                           Text(
                             'Join thousands of athletes tracking\ntheir fitness journey with FitLife.',
@@ -608,17 +730,15 @@ class _LoginScreenState extends State<LoginScreen>
                                 color: Colors.white.withOpacity(0.5),
                                 height: 1.6),
                           ),
-
                           const SizedBox(height: 40),
-
-                          // Feature list
                           ...[
                             ('💪', '200+ exercises with variations'),
                             ('🥗', 'Personalised daily meal plans'),
                             ('📊', 'Real-time progress tracking'),
                             ('☁️', 'Cloud sync across all devices'),
                           ].map((item) => Padding(
-                                padding: const EdgeInsets.only(bottom: 14),
+                                padding:
+                                    const EdgeInsets.only(bottom: 14),
                                 child: Row(
                                   children: [
                                     Container(
@@ -626,26 +746,29 @@ class _LoginScreenState extends State<LoginScreen>
                                       height: 36,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: AppColors.primary.withOpacity(0.1),
+                                        color: AppColors.primary
+                                            .withOpacity(0.1),
                                         border: Border.all(
-                                            color: AppColors.primary.withOpacity(0.2)),
+                                            color: AppColors.primary
+                                                .withOpacity(0.2)),
                                       ),
                                       child: Center(
                                           child: Text(item.$1,
-                                              style: const TextStyle(fontSize: 16))),
+                                              style: const TextStyle(
+                                                  fontSize: 16))),
                                     ),
                                     const SizedBox(width: 14),
                                     Text(item.$2,
                                         style: TextStyle(
                                             fontSize: 13,
-                                            color: Colors.white.withOpacity(0.7),
-                                            fontWeight: FontWeight.w500)),
+                                            color: Colors.white
+                                                .withOpacity(0.7),
+                                            fontWeight:
+                                                FontWeight.w500)),
                                   ],
                                 ),
                               )),
-
                           const Spacer(),
-
                           // Social proof
                           Container(
                             padding: const EdgeInsets.all(16),
@@ -653,7 +776,8 @@ class _LoginScreenState extends State<LoginScreen>
                               borderRadius: BorderRadius.circular(14),
                               color: Colors.white.withOpacity(0.04),
                               border: Border.all(
-                                  color: Colors.white.withOpacity(0.08)),
+                                  color:
+                                      Colors.white.withOpacity(0.08)),
                             ),
                             child: Row(
                               children: [
@@ -671,21 +795,25 @@ class _LoginScreenState extends State<LoginScreen>
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: List.generate(
                                             5,
-                                            (_) => const Icon(Icons.star_rounded,
+                                            (_) => const Icon(
+                                                Icons.star_rounded,
                                                 size: 12,
-                                                color: Color(0xFFFFD600))),
+                                                color:
+                                                    Color(0xFFFFD600))),
                                       ),
                                       const SizedBox(height: 3),
                                       Text(
                                         '10,000+ athletes trust FitLife',
                                         style: TextStyle(
                                             fontSize: 11,
-                                            color: Colors.white.withOpacity(0.5)),
+                                            color: Colors.white
+                                                .withOpacity(0.5)),
                                       ),
                                     ],
                                   ),
@@ -701,7 +829,7 @@ class _LoginScreenState extends State<LoginScreen>
               ),
             ),
 
-            // ── Right panel — form (flex: 1, properly centered) ──
+            // ── Right panel ──
             Expanded(
               flex: 1,
               child: Container(
@@ -715,24 +843,24 @@ class _LoginScreenState extends State<LoginScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Back button
                           GestureDetector(
                             onTap: () => Navigator.pop(context),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.arrow_back_ios_new_rounded,
-                                    size: 13, color: textSecondary),
+                                Icon(
+                                    Icons.arrow_back_ios_new_rounded,
+                                    size: 13,
+                                    color: textSecondary),
                                 const SizedBox(width: 6),
                                 Text('Back',
                                     style: TextStyle(
-                                        fontSize: 13, color: textSecondary)),
+                                        fontSize: 13,
+                                        color: textSecondary)),
                               ],
                             ),
                           ),
-
                           const SizedBox(height: 40),
-
                           Text('Welcome back 👋',
                               style: TextStyle(
                                   fontSize: 28,
@@ -741,10 +869,10 @@ class _LoginScreenState extends State<LoginScreen>
                                   height: 1.2)),
                           const SizedBox(height: 8),
                           Text('Sign in to your FitLife account.',
-                              style: TextStyle(fontSize: 14, color: textSecondary)),
-
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  color: textSecondary)),
                           const SizedBox(height: 32),
-
                           Container(
                             padding: const EdgeInsets.all(24),
                             decoration: BoxDecoration(
@@ -755,7 +883,8 @@ class _LoginScreenState extends State<LoginScreen>
                                   ? []
                                   : [
                                       BoxShadow(
-                                          color: Colors.black.withOpacity(0.05),
+                                          color: Colors.black
+                                              .withOpacity(0.05),
                                           blurRadius: 24,
                                           offset: const Offset(0, 4))
                                     ],
@@ -770,13 +899,12 @@ class _LoginScreenState extends State<LoginScreen>
                               borderColor: borderColor,
                             ),
                           ),
-
                           const SizedBox(height: 24),
-
                           Center(
                             child: GestureDetector(
-                              onTap: () => Navigator.pushReplacementNamed(
-                                  context, '/home'),
+                              onTap: () =>
+                                  Navigator.pushReplacementNamed(
+                                      context, '/home'),
                               child: Text(
                                 'Continue as Guest →',
                                 style: TextStyle(
@@ -812,7 +940,8 @@ class _LoginScreenState extends State<LoginScreen>
               Border.all(color: const Color(0xFF1A1A2E), width: 2),
         ),
         child: Center(
-            child: Text(emoji, style: const TextStyle(fontSize: 14))),
+            child:
+                Text(emoji, style: const TextStyle(fontSize: 14))),
       ),
     );
   }
