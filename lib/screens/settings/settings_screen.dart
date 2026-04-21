@@ -7,18 +7,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/theme_provider.dart';
 import '../../services/storage_service.dart';
 
-// ── Accent colours the user can choose from ──────────────────────────────────
-const List<Color> _kAccentColors = [
-  Color(0xFF00C853), // Default green
-  Color(0xFF2979FF), // Blue
-  Color(0xFFFF6D00), // Orange
-  Color(0xFFAA00FF), // Purple
-  Color(0xFFFF1744), // Red
-  Color(0xFF00BCD4), // Cyan
-  Color(0xFFFFD600), // Yellow
-  Color(0xFFE91E63), // Pink
-];
-
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -40,7 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       (_supabase.auth.currentUser?.userMetadata?['full_name'] as String?) ??
       'Guest';
 
-  // ── Notification toggles (UI only) ───────────────────────────────────────
+  // ── Notification toggles ─────────────────────────────────────────────────
   bool _workoutReminders = true;
   bool _mealReminders = true;
   bool _progressReminders = false;
@@ -66,13 +54,10 @@ class _SettingsScreenState extends State<SettingsScreen>
   bool _analyticsEnabled = true;
   bool _crashReporting = true;
 
-  // ── Accent colour ─────────────────────────────────────────────────────────
-  Color _selectedAccent = _kAccentColors[0];
-
   // ── Loading / section state ───────────────────────────────────────────────
   bool _isLoggingOut = false;
   bool _isDeletingAccount = false;
-  String? _expandedSection; // which section card is open on mobile
+  String? _expandedSection;
 
   @override
   void initState() {
@@ -90,9 +75,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     super.dispose();
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // LOGOUT
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── LOGOUT ─────────────────────────────────────────────────────────────────
   Future<void> _handleLogout() async {
     final confirmed = await _showConfirmDialog(
       title: 'Sign Out',
@@ -106,18 +89,15 @@ class _SettingsScreenState extends State<SettingsScreen>
     try {
       await _supabase.auth.signOut();
       await StorageService.setLoggedIn(false);
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
-      }
+      if (mounted) Navigator.pushReplacementNamed(context, '/login');
     } catch (_) {
       setState(() => _isLoggingOut = false);
-      if (mounted) _showSnack('Sign out failed. Please try again.', isError: true);
+      if (mounted)
+        _showSnack('Sign out failed. Please try again.', isError: true);
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // DELETE ACCOUNT
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── DELETE ACCOUNT ──────────────────────────────────────────────────────────
   Future<void> _handleDeleteAccount() async {
     final confirmed = await _showConfirmDialog(
       title: 'Delete Account',
@@ -130,7 +110,6 @@ class _SettingsScreenState extends State<SettingsScreen>
 
     setState(() => _isDeletingAccount = true);
     try {
-      // Delete profile row first
       if (_isLoggedIn) {
         await _supabase
             .from('profiles')
@@ -139,20 +118,17 @@ class _SettingsScreenState extends State<SettingsScreen>
       }
       await _supabase.auth.signOut();
       await StorageService.clearAll();
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/register');
-      }
+      if (mounted) Navigator.pushReplacementNamed(context, '/register');
     } catch (_) {
       setState(() => _isDeletingAccount = false);
       if (mounted) {
-        _showSnack('Could not delete account. Please try again.', isError: true);
+        _showSnack('Could not delete account. Please try again.',
+            isError: true);
       }
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // HELPERS
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── HELPERS ────────────────────────────────────────────────────────────────
   Future<bool> _showConfirmDialog({
     required String title,
     required String message,
@@ -160,6 +136,9 @@ class _SettingsScreenState extends State<SettingsScreen>
     required bool isDestructive,
   }) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = AppColors.of(context, listen: false);
+    final gradient = AppColors.gradientOf(context, listen: false);
+    final onAccent = AppColors.onAccentOf(context, listen: false);
     final cardColor = isDark ? const Color(0xFF1A1A1A) : Colors.white;
     final textPrimary = isDark ? Colors.white : const Color(0xFF0A0A0A);
     final textSecondary =
@@ -197,7 +176,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       shape: BoxShape.circle,
                       color: (isDestructive
                               ? const Color(0xFFFF1744)
-                              : AppColors.primary)
+                              : accent)
                           .withOpacity(0.12),
                     ),
                     child: Center(
@@ -207,7 +186,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                             : Icons.logout_rounded,
                         color: isDestructive
                             ? const Color(0xFFFF1744)
-                            : AppColors.primary,
+                            : accent,
                         size: 24,
                       ),
                     ),
@@ -221,8 +200,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                   const SizedBox(height: 8),
                   Text(message,
                       textAlign: TextAlign.center,
-                      style:
-                          TextStyle(fontSize: 13, color: textSecondary, height: 1.5)),
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: textSecondary,
+                          height: 1.5)),
                   const SizedBox(height: 24),
                   Row(
                     children: [
@@ -260,20 +241,19 @@ class _SettingsScreenState extends State<SettingsScreen>
                                 colors: isDestructive
                                     ? [
                                         const Color(0xFFFF1744),
-                                        const Color(0xFFD50000)
+                                        const Color(0xFFD50000),
                                       ]
-                                    : [
-                                        AppColors.primary,
-                                        const Color(0xFF00C853)
-                                      ],
+                                    : gradient,
                               ),
                             ),
                             child: Center(
                               child: Text(confirmLabel,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,
-                                      color: Colors.white)),
+                                      color: isDestructive
+                                          ? Colors.white
+                                          : onAccent)),
                             ),
                           ),
                         ),
@@ -289,24 +269,22 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _showSnack(String msg, {bool isError = false}) {
+    final accent = AppColors.of(context, listen: false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: isError ? const Color(0xFFFF1744) : AppColors.primary,
+        backgroundColor: isError ? const Color(0xFFFF1744) : accent,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
       ),
     );
   }
 
-  void _saveSettings() {
-    _showSnack('Settings saved successfully!');
-  }
+  void _saveSettings() => _showSnack('Settings saved successfully!');
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // BUILD
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── BUILD ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -314,57 +292,67 @@ class _SettingsScreenState extends State<SettingsScreen>
     return _buildMobileLayout(isDark);
   }
 
-  // ═════════════════════════════════════════════════════════════════════════
-  // WEB LAYOUT — two-column: left nav + right content
-  // ═════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
+  // WEB LAYOUT — sidebar nav + full-width content panel
+  // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildWebLayout(bool isDark) {
+    final accent = AppColors.of(context);
     final textPrimary = isDark ? Colors.white : const Color(0xFF0A0A0A);
     final textSecondary =
         isDark ? const Color(0xFFB0B0B0) : const Color(0xFF555555);
-    final bgColor =
-        isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF0F2F5);
     final cardColor = isDark ? const Color(0xFF141414) : Colors.white;
     final borderColor =
         isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
-    final sidebarColor =
-        isDark ? const Color(0xFF0D0D0D) : const Color(0xFF1A1A2E);
+    final sidebarColor = AppColors.sidebarOf(context);
 
-    _expandedSection ??= 'Account';
+    _expandedSection ??= 'Appearance';
 
     return FadeTransition(
       opacity: _fadeAnim,
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Left settings nav ────────────────────────────────────────────
+          // ── Left settings nav ─────────────────────────────────────────────
           Container(
-            width: 220,
+            width: 230,
+            constraints: const BoxConstraints(minHeight: double.infinity),
             color: sidebarColor,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
                   child: Row(
                     children: [
                       Container(
-                        width: 34,
-                        height: 34,
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10),
-                          color: AppColors.primary.withOpacity(0.15),
-                          border: Border.all(
-                              color: AppColors.primary.withOpacity(0.4)),
+                          color: accent.withOpacity(0.15),
+                          border:
+                              Border.all(color: accent.withOpacity(0.4)),
                         ),
-                        child: const Center(
+                        child: Center(
                             child: Icon(Icons.settings_rounded,
-                                size: 17, color: AppColors.primary)),
+                                size: 18, color: accent)),
                       ),
-                      const SizedBox(width: 10),
-                      const Text('Settings',
-                          style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white)),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text('Settings',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white)),
+                          Text('Manage your preferences',
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.white38)),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -376,9 +364,11 @@ class _SettingsScreenState extends State<SettingsScreen>
                   return _WebSettingsNavItem(
                     icon: s['icon'] as IconData,
                     label: s['label'] as String,
+                    color: s['color'] as Color,
                     isActive: isActive,
-                    onTap: () =>
-                        setState(() => _expandedSection = s['label'] as String),
+                    accent: accent,
+                    onTap: () => setState(
+                        () => _expandedSection = s['label'] as String),
                   );
                 }),
                 const Spacer(),
@@ -389,12 +379,13 @@ class _SettingsScreenState extends State<SettingsScreen>
                     onTap: _isLoggingOut ? null : _handleLogout,
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
                         color: const Color(0xFFFF1744).withOpacity(0.1),
                         border: Border.all(
-                            color: const Color(0xFFFF1744).withOpacity(0.3)),
+                            color:
+                                const Color(0xFFFF1744).withOpacity(0.3)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -404,7 +395,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                                   width: 14,
                                   height: 14,
                                   child: CircularProgressIndicator(
-                                      color: Color(0xFFFF1744), strokeWidth: 2))
+                                      color: Color(0xFFFF1744),
+                                      strokeWidth: 2))
                               : const Icon(Icons.logout_rounded,
                                   size: 15, color: Color(0xFFFF1744)),
                           const SizedBox(width: 8),
@@ -423,23 +415,17 @@ class _SettingsScreenState extends State<SettingsScreen>
             ),
           ),
 
-          // ── Right content ────────────────────────────────────────────────
+          // ── Right content ─────────────────────────────────────────────────
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(28),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 700),
-                  child: _buildSectionContent(
-                    section: _expandedSection ?? 'Account',
-                    isDark: isDark,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    cardColor: cardColor,
-                    borderColor: borderColor,
-                    webMode: true,
-                  ),
-                ),
+              padding: const EdgeInsets.all(32),
+              child: _buildWebSectionContent(
+                section: _expandedSection ?? 'Appearance',
+                isDark: isDark,
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+                cardColor: cardColor,
+                borderColor: borderColor,
               ),
             ),
           ),
@@ -448,10 +434,235 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  // ═════════════════════════════════════════════════════════════════════════
-  // MOBILE LAYOUT — scrollable sections with accordion cards
-  // ═════════════════════════════════════════════════════════════════════════
+  // ── Web section content — full width, no ConstrainedBox cap ──────────────
+  Widget _buildWebSectionContent({
+    required String section,
+    required bool isDark,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color cardColor,
+    required Color borderColor,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section title header
+        Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: _sectionColor(section).withOpacity(0.12),
+              ),
+              child: Center(
+                  child: Icon(_sectionIcon(section),
+                      size: 20, color: _sectionColor(section))),
+            ),
+            const SizedBox(width: 14),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(section,
+                    style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: textPrimary)),
+                Text(_sectionSubtitle(section),
+                    style: TextStyle(
+                        fontSize: 13, color: textSecondary)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        // Section body
+        _buildSectionContent(
+          section: section,
+          isDark: isDark,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+          cardColor: cardColor,
+          borderColor: borderColor,
+          webMode: true,
+        ),
+        // Danger zone only on web for Account/Privacy
+        if (section == 'Privacy') ...[
+          const SizedBox(height: 24),
+          _buildWebDangerZone(isDark, textPrimary, textSecondary, cardColor,
+              borderColor),
+        ],
+      ],
+    );
+  }
+
+  IconData _sectionIcon(String section) {
+    switch (section) {
+      case 'Appearance':
+        return Icons.palette_rounded;
+      case 'Notifications':
+        return Icons.notifications_rounded;
+      case 'Workout Preferences':
+        return Icons.fitness_center_rounded;
+      case 'Diet Preferences':
+        return Icons.restaurant_rounded;
+      case 'Privacy':
+        return Icons.shield_rounded;
+      case 'App Info':
+        return Icons.info_rounded;
+      default:
+        return Icons.settings_rounded;
+    }
+  }
+
+  Color _sectionColor(String section) {
+    switch (section) {
+      case 'Appearance':
+        return const Color(0xFFFFD600);
+      case 'Notifications':
+        return const Color(0xFF2979FF);
+      case 'Workout Preferences':
+        return const Color(0xFFFF6D00);
+      case 'Diet Preferences':
+        return const Color(0xFF00BCD4);
+      case 'Privacy':
+        return const Color(0xFFAA00FF);
+      case 'App Info':
+        return const Color(0xFF2979FF);
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  String _sectionSubtitle(String section) {
+    switch (section) {
+      case 'Appearance':
+        return 'Customize how FitLife looks';
+      case 'Notifications':
+        return 'Control your push notifications';
+      case 'Workout Preferences':
+        return 'Set your training preferences';
+      case 'Diet Preferences':
+        return 'Configure your nutrition goals';
+      case 'Privacy':
+        return 'Manage your data and privacy';
+      case 'App Info':
+        return 'About this application';
+      default:
+        return '';
+    }
+  }
+
+  // ── Web danger zone ────────────────────────────────────────────────────────
+  Widget _buildWebDangerZone(bool isDark, Color textPrimary,
+      Color textSecondary, Color cardColor, Color borderColor) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: isDark ? const Color(0xFF1A0A0A) : const Color(0xFFFFF8F8),
+        border: Border.all(color: const Color(0xFFFF1744).withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded,
+                  size: 18, color: Color(0xFFFF1744)),
+              const SizedBox(width: 8),
+              Text('Danger Zone',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: textPrimary)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text('These actions are permanent and cannot be undone.',
+              style: TextStyle(fontSize: 13, color: textSecondary)),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: _isLoggingOut ? null : _handleLogout,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: const Color(0xFFFF1744).withOpacity(0.1),
+                    border: Border.all(
+                        color: const Color(0xFFFF1744).withOpacity(0.4)),
+                  ),
+                  child: Row(
+                    children: [
+                      _isLoggingOut
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                  color: Color(0xFFFF1744), strokeWidth: 2))
+                          : const Icon(Icons.logout_rounded,
+                              size: 15, color: Color(0xFFFF1744)),
+                      const SizedBox(width: 8),
+                      const Text('Sign Out',
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFFF1744))),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              if (_isLoggedIn)
+                GestureDetector(
+                  onTap: _isDeletingAccount ? null : _handleDeleteAccount,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                          color:
+                              const Color(0xFFFF1744).withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        _isDeletingAccount
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                    color: Color(0xFFFF1744),
+                                    strokeWidth: 2))
+                            : const Icon(Icons.delete_forever_rounded,
+                                size: 15, color: Color(0xFFFF1744)),
+                        const SizedBox(width: 8),
+                        Text('Delete Account',
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFFFF1744)
+                                    .withOpacity(0.7))),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MOBILE LAYOUT
+  // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildMobileLayout(bool isDark) {
+    final accent = AppColors.of(context);
     final textPrimary = isDark ? Colors.white : const Color(0xFF0A0A0A);
     final textSecondary =
         isDark ? const Color(0xFFB0B0B0) : const Color(0xFF555555);
@@ -467,10 +678,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         opacity: _fadeAnim,
         child: CustomScrollView(
           slivers: [
-            // ── App bar ───────────────────────────────────────────────────
             SliverAppBar(
               pinned: true,
-              backgroundColor: isDark ? const Color(0xFF0D0D0D) : Colors.white,
+              backgroundColor:
+                  isDark ? const Color(0xFF0D0D0D) : Colors.white,
               elevation: 0,
               leading: GestureDetector(
                 onTap: () => Navigator.pop(context),
@@ -495,16 +706,16 @@ class _SettingsScreenState extends State<SettingsScreen>
                   onTap: _saveSettings,
                   child: Container(
                     margin: const EdgeInsets.only(right: 14),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
-                      gradient: const LinearGradient(
-                          colors: [Color(0xFF5EFC82), Color(0xFF00C853)]),
+                      gradient: LinearGradient(
+                          colors: AppColors.gradientOf(context)),
                     ),
-                    child: const Text('Save',
+                    child: Text('Save',
                         style: TextStyle(
-                            color: Colors.black,
+                            color: AppColors.onAccentOf(context),
                             fontSize: 13,
                             fontWeight: FontWeight.w700)),
                   ),
@@ -515,27 +726,18 @@ class _SettingsScreenState extends State<SettingsScreen>
                 child: Divider(height: 1, color: borderColor),
               ),
             ),
-
-            // ── User header ───────────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-                child: _buildUserHeader(
-                    isDark, textPrimary, textSecondary, cardColor, borderColor),
-              ),
-            ),
-
-            // ── Accordion sections ────────────────────────────────────────
             SliverList(
               delegate: SliverChildListDelegate([
+                const SizedBox(height: 16),
                 ..._settingsSections.map((s) => Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                      padding:
+                          const EdgeInsets.fromLTRB(16, 0, 16, 10),
                       child: _MobileAccordionSection(
                         icon: s['icon'] as IconData,
                         label: s['label'] as String,
                         color: s['color'] as Color,
-                        isExpanded:
-                            _expandedSection == s['label'],
+                        accent: accent,
+                        isExpanded: _expandedSection == s['label'],
                         onToggle: () => setState(() {
                           _expandedSection =
                               _expandedSection == s['label']
@@ -555,12 +757,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                         ),
                       ),
                     )),
-
-                // Logout & Delete buttons
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: _buildDangerZone(
-                      isDark, textPrimary, textSecondary, cardColor, borderColor),
+                  child: _buildDangerZone(isDark, textPrimary, textSecondary,
+                      cardColor, borderColor),
                 ),
                 const SizedBox(height: 40),
               ]),
@@ -571,9 +771,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // SECTION ROUTER
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── SECTION ROUTER ─────────────────────────────────────────────────────────
   Widget _buildSectionContent({
     required String section,
     required bool isDark,
@@ -584,10 +782,6 @@ class _SettingsScreenState extends State<SettingsScreen>
     required bool webMode,
   }) {
     switch (section) {
-      case 'Account':
-        return _buildAccountSection(
-            isDark, textPrimary, textSecondary, cardColor, borderColor,
-            webMode: webMode);
       case 'Appearance':
         return _buildAppearanceSection(
             isDark, textPrimary, textSecondary, cardColor, borderColor,
@@ -617,184 +811,20 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // USER HEADER (mobile only)
-  // ─────────────────────────────────────────────────────────────────────────
-  Widget _buildUserHeader(bool isDark, Color textPrimary, Color textSecondary,
-      Color cardColor, Color borderColor) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: cardColor,
-        border: Border.all(color: borderColor),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.primary.withOpacity(0.15),
-              border:
-                  Border.all(color: AppColors.primary.withOpacity(0.4), width: 2),
-            ),
-            child: const Center(
-                child: Icon(Icons.person_rounded,
-                    size: 26, color: AppColors.primary)),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_userName,
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: textPrimary)),
-                const SizedBox(height: 2),
-                Text(_userEmail,
-                    style: TextStyle(fontSize: 12, color: textSecondary)),
-                const SizedBox(height: 4),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(6),
-                    color: AppColors.primary.withOpacity(0.15),
-                  ),
-                  child: Text(
-                    _isLoggedIn ? '✅ Free Plan' : '👤 Guest',
-                    style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // ACCOUNT SECTION
-  // ─────────────────────────────────────────────────────────────────────────
-  Widget _buildAccountSection(bool isDark, Color textPrimary,
-      Color textSecondary, Color cardColor, Color borderColor,
-      {required bool webMode}) {
-    return _SettingsGroup(
-      webMode: webMode,
-      isDark: isDark,
-      cardColor: cardColor,
-      borderColor: borderColor,
-      title: webMode ? 'Account' : null,
-      textPrimary: textPrimary,
-      textSecondary: textSecondary,
-      children: [
-        if (webMode)
-          _buildUserHeader(
-              isDark, textPrimary, textSecondary, cardColor, borderColor),
-        if (webMode) const SizedBox(height: 16),
-        _SettingsItem(
-          icon: Icons.person_outline_rounded,
-          label: 'Display Name',
-          value: _userName,
-          textPrimary: textPrimary,
-          textSecondary: textSecondary,
-          borderColor: borderColor,
-          onTap: () => _showSnack('Edit profile coming soon!'),
-        ),
-        _SettingsItem(
-          icon: Icons.email_outlined,
-          label: 'Email Address',
-          value: _userEmail,
-          textPrimary: textPrimary,
-          textSecondary: textSecondary,
-          borderColor: borderColor,
-          onTap: () => _showSnack('Email change coming soon!'),
-        ),
-        _SettingsItem(
-          icon: Icons.lock_outline_rounded,
-          label: 'Change Password',
-          value: '••••••••',
-          textPrimary: textPrimary,
-          textSecondary: textSecondary,
-          borderColor: borderColor,
-          onTap: () async {
-            if (!_isLoggedIn) {
-              _showSnack('Sign in to change password.', isError: true);
-              return;
-            }
-            final email = _supabase.auth.currentUser?.email;
-            if (email != null) {
-              await _supabase.auth.resetPasswordForEmail(email);
-              _showSnack('Password reset email sent!');
-            }
-          },
-        ),
-        _SettingsItem(
-          icon: Icons.workspace_premium_rounded,
-          label: 'Subscription Plan',
-          value: _isLoggedIn ? 'Free Plan' : 'Guest',
-          valueColor: AppColors.primary,
-          textPrimary: textPrimary,
-          textSecondary: textSecondary,
-          borderColor: borderColor,
-          onTap: () => _showSnack('Upgrade coming soon!'),
-        ),
-        if (!_isLoggedIn)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: GestureDetector(
-              onTap: () => Navigator.pushNamed(context, '/login'),
-              child: Container(
-                width: double.infinity,
-                height: 46,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: const LinearGradient(
-                      colors: [Color(0xFF5EFC82), Color(0xFF00C853)]),
-                ),
-                child: const Center(
-                    child: Text('Sign In to Unlock All Features',
-                        style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700))),
-              ),
-            ),
-          ),
-        if (webMode) ...[
-          const SizedBox(height: 20),
-          _buildDangerZone(
-              isDark, textPrimary, textSecondary, cardColor, borderColor),
-        ],
-      ],
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // APPEARANCE SECTION
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── APPEARANCE ─────────────────────────────────────────────────────────────
   Widget _buildAppearanceSection(bool isDark, Color textPrimary,
       Color textSecondary, Color cardColor, Color borderColor,
       {required bool webMode}) {
     return Consumer<ThemeProvider>(builder: (context, theme, _) {
+      final accent = theme.safeAccent;
       return _SettingsGroup(
         webMode: webMode,
         isDark: isDark,
         cardColor: cardColor,
         borderColor: borderColor,
-        title: webMode ? 'Appearance' : null,
         textPrimary: textPrimary,
         textSecondary: textSecondary,
         children: [
-          // Dark / Light mode
           _SettingsToggleItem(
             icon: isDark ? Icons.dark_mode_rounded : Icons.wb_sunny_rounded,
             iconColor: const Color(0xFFFFD600),
@@ -806,54 +836,77 @@ class _SettingsScreenState extends State<SettingsScreen>
             borderColor: borderColor,
             onChanged: (_) => theme.toggleTheme(),
           ),
-
-          // Theme color
           _SettingsRow(
             icon: Icons.palette_rounded,
-            iconColor: _selectedAccent,
+            iconColor: accent,
             label: 'Accent Colour',
-            subtitle: 'Choose your app accent colour',
+            subtitle: 'Changes app-wide color instantly',
             textPrimary: textPrimary,
             textSecondary: textSecondary,
             borderColor: borderColor,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _kAccentColors.map((color) {
-                final isSelected = _selectedAccent == color;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedAccent = color),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: color,
-                      border: Border.all(
-                        color: isSelected ? Colors.white : Colors.transparent,
-                        width: 2.5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children:
+                      List.generate(kAccentColors.length, (index) {
+                    final color = kAccentColors[index];
+                    final isSelected = theme.accentIndex == index;
+                    return GestureDetector(
+                      onTap: () => theme.setAccent(index),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: color,
+                          border: Border.all(
+                            color: isSelected
+                                ? Colors.white
+                                : Colors.transparent,
+                            width: 2.5,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                      color: color.withOpacity(0.6),
+                                      blurRadius: 10,
+                                      spreadRadius: 1),
+                                ]
+                              : [],
+                        ),
+                        child: isSelected
+                            ? const Icon(Icons.check_rounded,
+                                size: 16, color: Colors.white)
+                            : null,
                       ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                  color: color.withOpacity(0.5),
-                                  blurRadius: 8,
-                                  spreadRadius: 1)
-                            ]
-                          : [],
-                    ),
-                    child: isSelected
-                        ? const Icon(Icons.check_rounded,
-                            size: 14, color: Colors.white)
-                        : null,
+                    );
+                  }),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  height: 36,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    gradient:
+                        LinearGradient(colors: theme.accentGradient),
                   ),
-                );
-              }).toList(),
+                  child: Center(
+                    child: Text(
+                      'Preview — buttons, badges & icons use this colour',
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: theme.onAccent),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-
-          // Display density
           _SettingsRow(
             icon: Icons.density_medium_rounded,
             iconColor: const Color(0xFF2979FF),
@@ -876,18 +929,16 @@ class _SettingsScreenState extends State<SettingsScreen>
     });
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // NOTIFICATIONS SECTION
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── NOTIFICATIONS ──────────────────────────────────────────────────────────
   Widget _buildNotificationsSection(bool isDark, Color textPrimary,
       Color textSecondary, Color cardColor, Color borderColor,
       {required bool webMode}) {
+    final accent = AppColors.of(context);
     return _SettingsGroup(
       webMode: webMode,
       isDark: isDark,
       cardColor: cardColor,
       borderColor: borderColor,
-      title: webMode ? 'Notifications' : null,
       textPrimary: textPrimary,
       textSecondary: textSecondary,
       children: [
@@ -900,7 +951,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         const SizedBox(height: 12),
         _SettingsToggleItem(
           icon: Icons.fitness_center_rounded,
-          iconColor: AppColors.primary,
+          iconColor: accent,
           label: 'Workout Reminders',
           subtitle: 'Daily push notification for your workout',
           value: _workoutReminders,
@@ -968,25 +1019,22 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // WORKOUT PREFERENCES
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── WORKOUT PREFERENCES ────────────────────────────────────────────────────
   Widget _buildWorkoutPrefsSection(bool isDark, Color textPrimary,
       Color textSecondary, Color cardColor, Color borderColor,
       {required bool webMode}) {
+    final accent = AppColors.of(context);
     return _SettingsGroup(
       webMode: webMode,
       isDark: isDark,
       cardColor: cardColor,
       borderColor: borderColor,
-      title: webMode ? 'Workout Preferences' : null,
       textPrimary: textPrimary,
       textSecondary: textSecondary,
       children: [
-        // Preferred time
         _SettingsRow(
           icon: Icons.schedule_rounded,
-          iconColor: AppColors.primary,
+          iconColor: accent,
           label: 'Preferred Workout Time',
           subtitle: 'When do you usually train?',
           textPrimary: textPrimary,
@@ -996,13 +1044,11 @@ class _SettingsScreenState extends State<SettingsScreen>
             options: ['Morning', 'Afternoon', 'Evening', 'Night'],
             selected: _preferredWorkoutTime,
             onSelect: (v) => setState(() => _preferredWorkoutTime = v),
-            accentColor: AppColors.primary,
+            accentColor: accent,
             isDark: isDark,
             borderColor: borderColor,
           ),
         ),
-
-        // Fitness level
         _SettingsRow(
           icon: Icons.trending_up_rounded,
           iconColor: const Color(0xFF2979FF),
@@ -1020,8 +1066,6 @@ class _SettingsScreenState extends State<SettingsScreen>
             borderColor: borderColor,
           ),
         ),
-
-        // Workout duration slider
         _SettingsSliderItem(
           icon: Icons.timer_rounded,
           iconColor: const Color(0xFFFF6D00),
@@ -1038,10 +1082,9 @@ class _SettingsScreenState extends State<SettingsScreen>
           onChanged: (v) => setState(() => _workoutDuration = v.round()),
           formatValue: (v) => '${v.round()} min',
         ),
-
         _SettingsToggleItem(
           icon: Icons.self_improvement_rounded,
-          iconColor: AppColors.primary,
+          iconColor: accent,
           label: 'Warmup Reminder',
           subtitle: 'Remind to warm up before starting',
           value: _warmupReminder,
@@ -1065,9 +1108,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // DIET PREFERENCES
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── DIET PREFERENCES ───────────────────────────────────────────────────────
   Widget _buildDietPrefsSection(bool isDark, Color textPrimary,
       Color textSecondary, Color cardColor, Color borderColor,
       {required bool webMode}) {
@@ -1076,11 +1117,9 @@ class _SettingsScreenState extends State<SettingsScreen>
       isDark: isDark,
       cardColor: cardColor,
       borderColor: borderColor,
-      title: webMode ? 'Diet Preferences' : null,
       textPrimary: textPrimary,
       textSecondary: textSecondary,
       children: [
-        // Diet type
         _SettingsRow(
           icon: Icons.restaurant_menu_rounded,
           iconColor: const Color(0xFFFF6D00),
@@ -1092,25 +1131,29 @@ class _SettingsScreenState extends State<SettingsScreen>
           child: Wrap(
             spacing: 6,
             runSpacing: 6,
-            children: ['Balanced', 'Keto', 'Vegan', 'Vegetarian', 'Paleo']
-                .map((d) {
+            children: [
+              'Balanced',
+              'Keto',
+              'Vegan',
+              'Vegetarian',
+              'Paleo'
+            ].map((d) {
               final sel = _dietType == d;
               return GestureDetector(
                 onTap: () => setState(() => _dietType = d),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
                     color: sel
                         ? const Color(0xFFFF6D00).withOpacity(0.15)
                         : Colors.transparent,
                     border: Border.all(
-                      color: sel
-                          ? const Color(0xFFFF6D00)
-                          : borderColor,
-                    ),
+                        color: sel
+                            ? const Color(0xFFFF6D00)
+                            : borderColor),
                   ),
                   child: Text(d,
                       style: TextStyle(
@@ -1124,8 +1167,6 @@ class _SettingsScreenState extends State<SettingsScreen>
             }).toList(),
           ),
         ),
-
-        // Daily calorie goal
         _SettingsSliderItem(
           icon: Icons.local_fire_department_rounded,
           iconColor: const Color(0xFFFF1744),
@@ -1143,8 +1184,6 @@ class _SettingsScreenState extends State<SettingsScreen>
               setState(() => _dailyCalorieGoal = (v / 50).round() * 50),
           formatValue: (v) => '${((v / 50).round() * 50).toInt()} kcal',
         ),
-
-        // Water goal
         _SettingsSliderItem(
           icon: Icons.local_drink_rounded,
           iconColor: const Color(0xFF00BCD4),
@@ -1161,10 +1200,9 @@ class _SettingsScreenState extends State<SettingsScreen>
           onChanged: (v) => setState(() => _waterGoalLiters = v.round()),
           formatValue: (v) => '${v.toStringAsFixed(1)} L',
         ),
-
         _SettingsToggleItem(
           icon: Icons.food_bank_rounded,
-          iconColor: AppColors.primary,
+          iconColor: AppColors.of(context),
           label: 'Meal Prep Mode',
           subtitle: 'Show bulk-prep friendly recipes',
           value: _mealPrepMode,
@@ -1177,18 +1215,16 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // PRIVACY SECTION
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── PRIVACY ────────────────────────────────────────────────────────────────
   Widget _buildPrivacySection(bool isDark, Color textPrimary,
       Color textSecondary, Color cardColor, Color borderColor,
       {required bool webMode}) {
+    final accent = AppColors.of(context);
     return _SettingsGroup(
       webMode: webMode,
       isDark: isDark,
       cardColor: cardColor,
       borderColor: borderColor,
-      title: webMode ? 'Privacy & Security' : null,
       textPrimary: textPrimary,
       textSecondary: textSecondary,
       children: [
@@ -1205,7 +1241,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         ),
         _SettingsToggleItem(
           icon: Icons.analytics_rounded,
-          iconColor: AppColors.primary,
+          iconColor: accent,
           label: 'Analytics',
           subtitle: 'Help improve FitLife with anonymous usage data',
           value: _analyticsEnabled,
@@ -1256,18 +1292,17 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // APP INFO SECTION
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── APP INFO ───────────────────────────────────────────────────────────────
   Widget _buildAppInfoSection(bool isDark, Color textPrimary,
       Color textSecondary, Color cardColor, Color borderColor,
       {required bool webMode}) {
+    final accent = AppColors.of(context);
+    final gradient = AppColors.gradientOf(context);
     return _SettingsGroup(
       webMode: webMode,
       isDark: isDark,
       cardColor: cardColor,
       borderColor: borderColor,
-      title: webMode ? 'App Info' : null,
       textPrimary: textPrimary,
       textSecondary: textSecondary,
       children: [
@@ -1291,7 +1326,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           icon: Icons.cloud_outlined,
           label: 'Backend',
           value: 'Supabase (Connected)',
-          valueColor: AppColors.primary,
+          valueColor: accent,
           textPrimary: textPrimary,
           textSecondary: textSecondary,
           borderColor: borderColor,
@@ -1328,9 +1363,8 @@ class _SettingsScreenState extends State<SettingsScreen>
           child: Column(
             children: [
               ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [Color(0xFF5EFC82), Color(0xFF00C853)],
-                ).createShader(bounds),
+                shaderCallback: (bounds) =>
+                    LinearGradient(colors: gradient).createShader(bounds),
                 child: const Text('FitLife',
                     style: TextStyle(
                         fontSize: 22,
@@ -1340,7 +1374,8 @@ class _SettingsScreenState extends State<SettingsScreen>
               ),
               const SizedBox(height: 4),
               Text('Built with ❤️ · Free forever',
-                  style: TextStyle(fontSize: 11, color: textSecondary)),
+                  style:
+                      TextStyle(fontSize: 11, color: textSecondary)),
             ],
           ),
         ),
@@ -1348,14 +1383,11 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // DANGER ZONE (logout + delete)
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── MOBILE DANGER ZONE ─────────────────────────────────────────────────────
   Widget _buildDangerZone(bool isDark, Color textPrimary, Color textSecondary,
       Color cardColor, Color borderColor) {
     return Column(
       children: [
-        // Logout
         GestureDetector(
           onTap: _isLoggingOut ? null : _handleLogout,
           child: Container(
@@ -1391,7 +1423,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
         ),
         const SizedBox(height: 10),
-        // Delete account
         if (_isLoggedIn)
           GestureDetector(
             onTap: _isDeletingAccount ? null : _handleDeleteAccount,
@@ -1420,7 +1451,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                       style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xFFFF1744).withOpacity(0.7))),
+                          color:
+                              const Color(0xFFFF1744).withOpacity(0.7))),
                 ],
               ),
             ),
@@ -1429,9 +1461,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // HELPERS
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── HELPER WIDGETS ─────────────────────────────────────────────────────────
   Widget _buildChipRow({
     required List<String> options,
     required String selected,
@@ -1449,11 +1479,14 @@ class _SettingsScreenState extends State<SettingsScreen>
           onTap: () => onSelect(o),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              color: sel ? accentColor.withOpacity(0.15) : Colors.transparent,
-              border: Border.all(color: sel ? accentColor : borderColor),
+              color:
+                  sel ? accentColor.withOpacity(0.15) : Colors.transparent,
+              border: Border.all(
+                  color: sel ? accentColor : borderColor),
             ),
             child: Text(o,
                 style: TextStyle(
@@ -1481,23 +1514,45 @@ class _SettingsScreenState extends State<SettingsScreen>
           const SizedBox(width: 8),
           Expanded(
               child: Text(text,
-                  style: TextStyle(fontSize: 11, color: color, height: 1.4))),
+                  style:
+                      TextStyle(fontSize: 11, color: color, height: 1.4))),
         ],
       ),
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // SECTIONS METADATA
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── SECTIONS METADATA ──────────────────────────────────────────────────────
   static const List<Map<String, dynamic>> _settingsSections = [
-    {'icon': Icons.person_rounded, 'label': 'Account', 'color': Color(0xFF00C853)},
-    {'icon': Icons.palette_rounded, 'label': 'Appearance', 'color': Color(0xFFFFD600)},
-    {'icon': Icons.notifications_rounded, 'label': 'Notifications', 'color': Color(0xFF2979FF)},
-    {'icon': Icons.fitness_center_rounded, 'label': 'Workout Preferences', 'color': Color(0xFFFF6D00)},
-    {'icon': Icons.restaurant_rounded, 'label': 'Diet Preferences', 'color': Color(0xFF00BCD4)},
-    {'icon': Icons.shield_rounded, 'label': 'Privacy', 'color': Color(0xFFAA00FF)},
-    {'icon': Icons.info_rounded, 'label': 'App Info', 'color': Color(0xFF2979FF)},
+    {
+      'icon': Icons.palette_rounded,
+      'label': 'Appearance',
+      'color': Color(0xFFFFD600),
+    },
+    {
+      'icon': Icons.notifications_rounded,
+      'label': 'Notifications',
+      'color': Color(0xFF2979FF),
+    },
+    {
+      'icon': Icons.fitness_center_rounded,
+      'label': 'Workout Preferences',
+      'color': Color(0xFFFF6D00),
+    },
+    {
+      'icon': Icons.restaurant_rounded,
+      'label': 'Diet Preferences',
+      'color': Color(0xFF00BCD4),
+    },
+    {
+      'icon': Icons.shield_rounded,
+      'label': 'Privacy',
+      'color': Color(0xFFAA00FF),
+    },
+    {
+      'icon': Icons.info_rounded,
+      'label': 'App Info',
+      'color': Color(0xFF2979FF),
+    },
   ];
 }
 
@@ -1505,13 +1560,11 @@ class _SettingsScreenState extends State<SettingsScreen>
 // REUSABLE WIDGETS
 // ═══════════════════════════════════════════════════════════════════════════
 
-/// Groups a list of settings items with optional title
 class _SettingsGroup extends StatelessWidget {
   final bool webMode;
   final bool isDark;
   final Color cardColor;
   final Color borderColor;
-  final String? title;
   final Color textPrimary;
   final Color textSecondary;
   final List<Widget> children;
@@ -1524,62 +1577,48 @@ class _SettingsGroup extends StatelessWidget {
     required this.textPrimary,
     required this.textSecondary,
     required this.children,
-    this.title,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (title != null && webMode) ...[
-          Text(title!,
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: textPrimary)),
-          const SizedBox(height: 16),
-        ],
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: cardColor,
-            border: Border.all(color: borderColor),
-            boxShadow: isDark
-                ? []
-                : [
-                    BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4))
-                  ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (int i = 0; i < children.length; i++) ...[
-                  children[i],
-                  if (i < children.length - 1 &&
-                      children[i] is! SizedBox &&
-                      children[i + 1] is! SizedBox)
-                    Divider(
-                        height: 1,
-                        color: borderColor,
-                        indent: 52,
-                        endIndent: 16),
-                ],
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: cardColor,
+        border: Border.all(color: borderColor),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4))
               ],
-            ),
-          ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (int i = 0; i < children.length; i++) ...[
+              children[i],
+              if (i < children.length - 1 &&
+                  children[i] is! SizedBox &&
+                  children[i + 1] is! SizedBox)
+                Divider(
+                    height: 1,
+                    color: borderColor,
+                    indent: 52,
+                    endIndent: 16),
+            ],
+          ],
         ),
-      ],
+      ),
     );
   }
 }
 
-/// Simple tappable row: icon | label + subtitle | value + chevron
 class _SettingsItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -1603,6 +1642,7 @@ class _SettingsItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = AppColors.of(context);
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -1610,7 +1650,7 @@ class _SettingsItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: AppColors.primary),
+            Icon(icon, size: 20, color: accent),
             const SizedBox(width: 14),
             Expanded(
               child: Text(label,
@@ -1639,7 +1679,6 @@ class _SettingsItem extends StatelessWidget {
   }
 }
 
-/// Row with icon | label + subtitle | custom child widget below
 class _SettingsRow extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
@@ -1681,21 +1720,21 @@ class _SettingsRow extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           color: textPrimary)),
                   Text(subtitle,
-                      style:
-                          TextStyle(fontSize: 11, color: textSecondary)),
+                      style: TextStyle(
+                          fontSize: 11, color: textSecondary)),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 12),
-          Padding(padding: const EdgeInsets.only(left: 34), child: child),
+          Padding(
+              padding: const EdgeInsets.only(left: 34), child: child),
         ],
       ),
     );
   }
 }
 
-/// Toggle row
 class _SettingsToggleItem extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
@@ -1737,23 +1776,18 @@ class _SettingsToggleItem extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                         color: textPrimary)),
                 Text(subtitle,
-                    style: TextStyle(fontSize: 11, color: textSecondary)),
+                    style: TextStyle(
+                        fontSize: 11, color: textSecondary)),
               ],
             ),
           ),
-          Switch.adaptive(
-            value: value,
-            onChanged: onChanged,
-            activeColor: AppColors.primary,
-            activeTrackColor: AppColors.primary.withOpacity(0.3),
-          ),
+          Switch.adaptive(value: value, onChanged: onChanged),
         ],
       ),
     );
   }
 }
 
-/// Slider row
 class _SettingsSliderItem extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
@@ -1809,13 +1843,15 @@ class _SettingsSliderItem extends StatelessWidget {
                             color: textPrimary)),
                     Text(subtitle,
                         style: TextStyle(
-                            fontSize: 11, color: accentColor, fontWeight: FontWeight.w600)),
+                            fontSize: 11,
+                            color: accentColor,
+                            fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
                   color: accentColor.withOpacity(0.12),
@@ -1828,22 +1864,12 @@ class _SettingsSliderItem extends StatelessWidget {
               ),
             ],
           ),
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: accentColor,
-              inactiveTrackColor: accentColor.withOpacity(0.15),
-              thumbColor: accentColor,
-              overlayColor: accentColor.withOpacity(0.15),
-              trackHeight: 4,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
-            ),
-            child: Slider(
-              value: value,
-              min: min,
-              max: max,
-              divisions: divisions,
-              onChanged: onChanged,
-            ),
+          Slider(
+            value: value,
+            min: min,
+            max: max,
+            divisions: divisions,
+            onChanged: onChanged,
           ),
         ],
       ),
@@ -1851,17 +1877,20 @@ class _SettingsSliderItem extends StatelessWidget {
   }
 }
 
-/// Web left-nav item
 class _WebSettingsNavItem extends StatefulWidget {
   final IconData icon;
   final String label;
+  final Color color;
   final bool isActive;
+  final Color accent;
   final VoidCallback onTap;
 
   const _WebSettingsNavItem({
     required this.icon,
     required this.label,
+    required this.color,
     required this.isActive,
+    required this.accent,
     required this.onTap,
   });
 
@@ -1876,6 +1905,8 @@ class _WebSettingsNavItemState extends State<_WebSettingsNavItem> {
   Widget build(BuildContext context) {
     final isActive = widget.isActive;
     final isHovered = _hovered;
+    final accent = widget.accent;
+    final color = widget.color;
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -1885,39 +1916,52 @@ class _WebSettingsNavItemState extends State<_WebSettingsNavItem> {
         onTap: widget.onTap,
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             color: isActive
-                ? AppColors.primary.withOpacity(0.18)
+                ? accent.withOpacity(0.18)
                 : isHovered
-                    ? AppColors.primary.withOpacity(0.09)
+                    ? accent.withOpacity(0.09)
                     : Colors.transparent,
           ),
           child: Row(
             children: [
-              Icon(widget.icon,
-                  size: 17,
-                  color: isActive || isHovered
-                      ? AppColors.primary
-                      : Colors.white.withOpacity(0.5)),
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: isActive
+                      ? color.withOpacity(0.2)
+                      : color.withOpacity(0.08),
+                ),
+                child: Center(
+                    child: Icon(widget.icon,
+                        size: 15,
+                        color: isActive || isHovered
+                            ? color
+                            : Colors.white.withOpacity(0.5))),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(widget.label,
                     style: TextStyle(
                         fontSize: 13,
-                        fontWeight:
-                            isActive ? FontWeight.w700 : FontWeight.w400,
+                        fontWeight: isActive
+                            ? FontWeight.w700
+                            : FontWeight.w400,
                         color: isActive || isHovered
-                            ? AppColors.primary
+                            ? Colors.white
                             : Colors.white.withOpacity(0.6))),
               ),
               if (isActive)
                 Container(
                     width: 5,
                     height: 5,
-                    decoration: const BoxDecoration(
-                        shape: BoxShape.circle, color: AppColors.primary)),
+                    decoration: BoxDecoration(
+                        shape: BoxShape.circle, color: accent)),
             ],
           ),
         ),
@@ -1926,11 +1970,11 @@ class _WebSettingsNavItemState extends State<_WebSettingsNavItem> {
   }
 }
 
-/// Mobile accordion wrapper
 class _MobileAccordionSection extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
+  final Color accent;
   final bool isExpanded;
   final VoidCallback onToggle;
   final Widget child;
@@ -1939,6 +1983,7 @@ class _MobileAccordionSection extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.color,
+    required this.accent,
     required this.isExpanded,
     required this.onToggle,
     required this.child,
@@ -1958,7 +2003,7 @@ class _MobileAccordionSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         color: cardColor,
         border: Border.all(
-            color: isExpanded ? color.withOpacity(0.4) : borderColor,
+            color: isExpanded ? accent.withOpacity(0.4) : borderColor,
             width: isExpanded ? 1.5 : 1),
         boxShadow: isDark
             ? []
@@ -1973,7 +2018,6 @@ class _MobileAccordionSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         child: Column(
           children: [
-            // Header
             GestureDetector(
               onTap: onToggle,
               behavior: HitTestBehavior.opaque,
@@ -1982,16 +2026,15 @@ class _MobileAccordionSection extends StatelessWidget {
                 child: Row(
                   children: [
                     Container(
-                      width: 34,
-                      height: 34,
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
                         color: color.withOpacity(0.13),
                         border: Border.all(color: color.withOpacity(0.3)),
                       ),
                       child: Center(
-                          child:
-                              Icon(icon, size: 17, color: color)),
+                          child: Icon(icon, size: 17, color: color)),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -2006,13 +2049,12 @@ class _MobileAccordionSection extends StatelessWidget {
                       duration: const Duration(milliseconds: 200),
                       child: Icon(Icons.expand_more_rounded,
                           size: 20,
-                          color: isExpanded ? color : Colors.grey),
+                          color: isExpanded ? accent : Colors.grey),
                     ),
                   ],
                 ),
               ),
             ),
-            // Content
             AnimatedCrossFade(
               duration: const Duration(milliseconds: 220),
               crossFadeState: isExpanded

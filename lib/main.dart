@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -20,7 +21,6 @@ import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/settings/settings_screen.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -42,12 +42,17 @@ class FitLifeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to ThemeProvider so MaterialApp rebuilds on accent OR dark/light change.
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final accent = themeProvider.accentColor;
+
     return MaterialApp(
       title: 'FitLife',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      // Pass the current accent into both themes so Material widgets
+      // (Switch, Slider, ProgressIndicator, etc.) all inherit it.
+      theme: AppTheme.lightTheme(accent: accent),
+      darkTheme: AppTheme.darkTheme(accent: accent),
       themeMode: themeProvider.themeMode,
       initialRoute: '/',
       routes: {
@@ -66,9 +71,7 @@ class FitLifeApp extends StatelessWidget {
         '/equipment-selection': (context) => const EquipmentSelectionScreen(),
 
         // ── Workout ──
-        '/workout': (context) => WorkoutScreen(
-              userTier: 'guest',
-            ),
+        '/workout': (context) => WorkoutScreen(userTier: 'guest'),
         '/exercise-detail': (context) {
           final args = ModalRoute.of(context)!.settings.arguments;
           if (args == null) return const HomeScreen();
@@ -79,9 +82,7 @@ class FitLifeApp extends StatelessWidget {
         },
 
         // ── Meals / Diet ──
-        '/diet': (context) => MealsScreen(
-              userTier: 'guest',
-            ),
+        '/diet': (context) => MealsScreen(userTier: 'guest'),
         '/meal-detail': (context) {
           final args = ModalRoute.of(context)!.settings.arguments;
           if (args == null) return const HomeScreen();
