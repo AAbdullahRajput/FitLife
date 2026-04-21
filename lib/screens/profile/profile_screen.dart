@@ -277,6 +277,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _showSnack(String msg, {bool isError = false}) {
+    if (!mounted) return;
     final accent = AppColors.of(context, listen: false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -586,24 +587,30 @@ class _ProfileScreenState extends State<ProfileScreen>
     final borderColor =
         isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
 
+    // FIX: Only show back button if there is a route to go back to.
+    final canPop = Navigator.canPop(context);
+
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
         backgroundColor: isDark ? const Color(0xFF0D0D0D) : Colors.white,
         elevation: 0,
-        leading: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: Container(
-            margin: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: cardColor,
-              border: Border.all(color: borderColor),
-            ),
-            child: Icon(Icons.arrow_back_ios_new_rounded,
-                size: 15, color: textPrimary),
-          ),
-        ),
+        automaticallyImplyLeading: false,
+        leading: canPop
+            ? GestureDetector(
+                onTap: () => Navigator.maybePop(context),
+                child: Container(
+                  margin: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: cardColor,
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Icon(Icons.arrow_back_ios_new_rounded,
+                      size: 15, color: textPrimary),
+                ),
+              )
+            : null,
         title: Text('Profile',
             style: TextStyle(
                 fontSize: 18,
@@ -763,7 +770,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  // ── Mobile achievements grid — fixed aspect ratio, NO Positioned in Column ─
+  // ── Mobile achievements grid — fixed aspect ratio ─────────────────────────
   Widget _buildMobileAchievementsGrid(bool isDark, Color accent,
       Color textPrimary, Color textSecondary, Color cardColor, Color borderColor) {
     return GridView.count(
@@ -790,7 +797,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // FIX: Removed the broken Positioned widget — just use a Stack or simple Column
               if (unlocked)
                 Text(a['icon'] as String,
                     style: const TextStyle(fontSize: 24))
@@ -1171,6 +1177,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         'label': 'Change Password',
         'subtitle': 'Update your account password',
         'color': const Color(0xFF2979FF),
+        // FIX: Wrapped in try-catch to handle AuthApiException (rate limit, etc.)
         'onTap': () async {
           if (!_isLoggedIn) {
             _showSnack('Sign in to change password.', isError: true);
@@ -1178,8 +1185,16 @@ class _ProfileScreenState extends State<ProfileScreen>
           }
           final email = _supabase.auth.currentUser?.email;
           if (email != null) {
-            await _supabase.auth.resetPasswordForEmail(email);
-            _showSnack('Password reset email sent!');
+            try {
+              await _supabase.auth.resetPasswordForEmail(email);
+              _showSnack('Password reset email sent!');
+            } on AuthException catch (e) {
+              _showSnack(e.message, isError: true);
+            } catch (_) {
+              _showSnack(
+                  'Failed to send reset email. Please try again later.',
+                  isError: true);
+            }
           }
         },
       },

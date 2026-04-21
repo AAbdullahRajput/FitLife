@@ -506,7 +506,7 @@ class _HomeScreenState extends State<HomeScreen>
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildWebSidebar(isDark, sidebarColor),
+                  if (_sidebarExpanded) _buildWebSidebar(isDark, sidebarColor),
                   Expanded(
                     child: _buildWebContent(
                         isDark, textPrimary, textSecondary, cardColor, borderColor),
@@ -835,85 +835,68 @@ class _HomeScreenState extends State<HomeScreen>
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOut,
-      width: _sidebarExpanded ? 220 : 60,
+      width: 220,
       color: sidebarColor,
       child: Column(
         children: [
           const SizedBox(height: 18),
           // ── User avatar ────────────────────────────────────────────────────
-          if (_sidebarExpanded)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary.withOpacity(0.2),
-                      border: Border.all(
-                          color: AppColors.primary.withOpacity(0.5)),
-                    ),
-                    child: const Center(
-                        child: Icon(Icons.person_rounded,
-                            size: 17, color: AppColors.primary)),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(userName,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white)),
-                        Row(
-                          children: [
-                            Icon(
-                              _isLoggedIn
-                                  ? Icons.verified_rounded
-                                  : Icons.person_outline_rounded,
-                              size: 10,
-                              color: _isLoggedIn
-                                  ? AppColors.primary
-                                  : Colors.white.withOpacity(0.4),
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              _isLoggedIn ? 'Member' : 'Guest',
-                              style: TextStyle(
-                                  fontSize: 10,
-                                  color: _isLoggedIn
-                                      ? AppColors.primary
-                                      : Colors.white.withOpacity(0.4)),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            Center(
-              child: Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary.withOpacity(0.2),
-                  border:
-                      Border.all(color: AppColors.primary.withOpacity(0.5)),
+          Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 14),
+  child: Row(
+    children: [
+      Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppColors.primary.withOpacity(0.2),
+          border: Border.all(
+              color: AppColors.primary.withOpacity(0.5)),
+        ),
+        child: const Center(
+            child: Icon(Icons.person_rounded,
+                size: 17, color: AppColors.primary)),
+      ),
+      const SizedBox(width: 10),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(userName,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white)),
+            Row(
+              children: [
+                Icon(
+                  _isLoggedIn
+                      ? Icons.verified_rounded
+                      : Icons.person_outline_rounded,
+                  size: 10,
+                  color: _isLoggedIn
+                      ? AppColors.primary
+                      : Colors.white.withOpacity(0.4),
                 ),
-                child: const Center(
-                    child: Icon(Icons.person_rounded,
-                        size: 17, color: AppColors.primary)),
-              ),
+                const SizedBox(width: 3),
+                Text(
+                  _isLoggedIn ? 'Member' : 'Guest',
+                  style: TextStyle(
+                      fontSize: 10,
+                      color: _isLoggedIn
+                          ? AppColors.primary
+                          : Colors.white.withOpacity(0.4)),
+                ),
+              ],
             ),
+          ],
+        ),
+      ),
+    ],
+  ),
+),
           const SizedBox(height: 14),
           Divider(color: Colors.white.withOpacity(0.08), height: 1),
           const SizedBox(height: 10),
@@ -972,49 +955,42 @@ class _HomeScreenState extends State<HomeScreen>
                       : () => setState(() => _webSection = label),
                   child: Container(
                     // Plain Container — color is instant (no AnimatedContainer)
-                    margin: EdgeInsets.symmetric(
-                        horizontal: _sidebarExpanded ? 10 : 7, vertical: 2),
-                    padding: EdgeInsets.symmetric(
-                        horizontal: _sidebarExpanded ? 12 : 0, vertical: 10),
+                    margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
                       color: bgColor,
                     ),
-                    child: _sidebarExpanded
-                        ? Row(
-                            children: [
-                              const SizedBox(width: 2),
-                              Icon(item['icon'] as IconData,
-                                  size: 18, color: iconColor),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(label,
-                                    style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: isActive
-                                            ? FontWeight.w700
-                                            : FontWeight.w400,
-                                        color: textColor)),
-                              ),
-                              if (isLocked)
-                                Icon(Icons.lock_outline_rounded,
-                                    size: 13,
-                                    color: Colors.white.withOpacity(0.2)),
-                              if (isActive && !isLocked)
-                                Container(
-                                  width: 5,
-                                  height: 5,
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                            ],
-                          )
-                        : Center(
-                            child: Icon(item['icon'] as IconData,
-                                size: 20, color: iconColor),
-                          ),
+                    child: Row(
+  children: [
+    const SizedBox(width: 2),
+    Icon(item['icon'] as IconData,
+        size: 18, color: iconColor),
+    const SizedBox(width: 12),
+    Expanded(
+      child: Text(label,
+          style: TextStyle(
+              fontSize: 13,
+              fontWeight: isActive
+                  ? FontWeight.w700
+                  : FontWeight.w400,
+              color: textColor)),
+    ),
+    if (isLocked)
+      Icon(Icons.lock_outline_rounded,
+          size: 13,
+          color: Colors.white.withOpacity(0.2)),
+    if (isActive && !isLocked)
+      Container(
+        width: 5,
+        height: 5,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppColors.primary,
+        ),
+      ),
+  ],
+),
                   ),
                 ),
               ),

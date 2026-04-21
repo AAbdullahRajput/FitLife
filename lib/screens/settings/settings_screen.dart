@@ -269,6 +269,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _showSnack(String msg, {bool isError = false}) {
+    if (!mounted) return;
     final accent = AppColors.of(context, listen: false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -683,19 +684,24 @@ class _SettingsScreenState extends State<SettingsScreen>
               backgroundColor:
                   isDark ? const Color(0xFF0D0D0D) : Colors.white,
               elevation: 0,
-              leading: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: cardColor,
-                    border: Border.all(color: borderColor),
-                  ),
-                  child: Icon(Icons.arrow_back_ios_new_rounded,
-                      size: 15, color: textPrimary),
-                ),
-              ),
+              // FIX: Use Navigator.maybePop so it only pops if there is a
+              // route underneath — prevents the black screen.
+              automaticallyImplyLeading: false,
+              leading: Navigator.canPop(context)
+                  ? GestureDetector(
+                      onTap: () => Navigator.maybePop(context),
+                      child: Container(
+                        margin: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: cardColor,
+                          border: Border.all(color: borderColor),
+                        ),
+                        child: Icon(Icons.arrow_back_ios_new_rounded,
+                            size: 15, color: textPrimary),
+                      ),
+                    )
+                  : null,
               title: Text('Settings',
                   style: TextStyle(
                       fontSize: 18,
