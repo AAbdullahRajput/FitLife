@@ -29,12 +29,18 @@ class _HomeScreenState extends State<HomeScreen>
   bool _isLoggedIn = false;
   bool _isLoadingData = false;
 
-  // Hover state tracking for sidebar items
+  // ── Sidebar collapsed/expanded ──────────────────────────────────────────────
+  bool _sidebarExpanded = false;
+
+  // ── Profile dropdown ─────────────────────────────────────────────────────────
+  bool _showProfileDropdown = false;
+  OverlayEntry? _profileDropdownOverlay;
+
+  // ── Hover states (instant — plain setState, no AnimatedContainer) ────────────
   String? _hoveredSidebarItem;
-  // Hover state tracking for nav links
   String? _hoveredNavLink;
 
-  // Tooltip overlay for long press
+  // ── Tooltip overlay ──────────────────────────────────────────────────────────
   OverlayEntry? _tooltipOverlay;
 
   late List<Map<String, dynamic>> _todayWorkouts;
@@ -85,9 +91,7 @@ class _HomeScreenState extends State<HomeScreen>
     try {
       final exercises = await SupabaseService.getExercises(tier: 'guest');
       final meals = await SupabaseService.getMeals(tier: 'guest');
-
       if (!mounted) return;
-
       setState(() {
         if (exercises.isNotEmpty) {
           _todayWorkouts = exercises.take(4).map((ex) => {
@@ -102,7 +106,6 @@ class _HomeScreenState extends State<HomeScreen>
             'id': ex['id'],
           }).toList();
         }
-
         if (meals.isNotEmpty) {
           _todayMeals = [];
           for (final type in ['breakfast', 'lunch', 'snack', 'dinner']) {
@@ -189,59 +192,198 @@ class _HomeScreenState extends State<HomeScreen>
     return map[type] ?? const Color(0xFF00C853);
   }
 
-  // ── Tooltip helpers ─────────────────────────────────────────────────────────
-
-  void _showTooltip(BuildContext context, String title, String message,
-      IconData icon, Color color, {Offset? globalPosition}) {
-    _removeTooltip();
-
-    final overlay = Overlay.of(context);
-    final renderBox = context.findRenderObject() as RenderBox?;
-    Offset position = globalPosition ?? Offset.zero;
-
-    if (renderBox != null && globalPosition == null) {
-      final boxPos = renderBox.localToGlobal(Offset.zero);
-      final size = renderBox.size;
-      position = Offset(boxPos.dx + size.width / 2, boxPos.dy - 8);
+  // ── Profile dropdown ─────────────────────────────────────────────────────────
+  void _toggleProfileDropdown(BuildContext context) {
+    if (_showProfileDropdown) {
+      _removeProfileDropdown();
+      setState(() => _showProfileDropdown = false);
+    } else {
+      setState(() => _showProfileDropdown = true);
+      _openProfileDropdown(context);
     }
+  }
 
+  void _openProfileDropdown(BuildContext context) {
+    final overlay = Overlay.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final borderColor =
+        isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0A0A0A);
+
+    _profileDropdownOverlay = OverlayEntry(
+      builder: (ctx) => GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () {
+          _removeProfileDropdown();
+          setState(() => _showProfileDropdown = false);
+        },
+        child: Stack(
+          children: [
+            Positioned.fill(child: Container(color: Colors.transparent)),
+            Positioned(
+              top: 68,
+              right: 12,
+              child: Material(
+                color: Colors.transparent,
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.85, end: 1.0),
+                  duration: const Duration(milliseconds: 120),
+                  curve: Curves.easeOut,
+                  builder: (c, v, child) =>
+                      Transform.scale(scale: v, alignment: Alignment.topRight, child: child),
+                  child: Container(
+                    width: 210,
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: borderColor),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.35),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.primary.withOpacity(0.15),
+                                  border: Border.all(
+                                      color: AppColors.primary.withOpacity(0.4)),
+                                ),
+                                child: const Center(
+                                    child: Icon(Icons.person_rounded,
+                                        size: 20, color: AppColors.primary)),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(userName,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            color: textPrimary)),
+                                    Text(
+                                      _isLoggedIn ? 'Member' : 'Guest',
+                                      style: const TextStyle(
+                                          fontSize: 11, color: AppColors.primary),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Divider(height: 1, color: borderColor),
+                        _DropdownItemHover(
+                          icon: Icons.person_outline_rounded,
+                          label: 'Profile',
+                          textColor: textPrimary,
+                          isDestructive: false,
+                          onTap: () {
+                            _removeProfileDropdown();
+                            setState(() {
+                              _showProfileDropdown = false;
+                              _webSection = 'Profile';
+                            });
+                          },
+                        ),
+                        _DropdownItemHover(
+                          icon: Icons.settings_outlined,
+                          label: 'Settings',
+                          textColor: textPrimary,
+                          isDestructive: false,
+                          onTap: () {
+                            _removeProfileDropdown();
+                            setState(() {
+                              _showProfileDropdown = false;
+                              _webSection = 'Settings';
+                            });
+                          },
+                        ),
+                        Divider(height: 1, color: borderColor),
+                        _DropdownItemHover(
+                          icon: Icons.logout_rounded,
+                          label: 'Logout',
+                          textColor: const Color(0xFFFF4444),
+                          isDestructive: true,
+                          onTap: () async {
+                            _removeProfileDropdown();
+                            setState(() => _showProfileDropdown = false);
+                            await Supabase.instance.client.auth.signOut();
+                            if (mounted) {
+                              Navigator.pushReplacementNamed(context, '/login');
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 4),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    overlay.insert(_profileDropdownOverlay!);
+  }
+
+  void _removeProfileDropdown() {
+    _profileDropdownOverlay?.remove();
+    _profileDropdownOverlay = null;
+  }
+
+  // ── Tooltip ──────────────────────────────────────────────────────────────────
+  void _showTooltip(BuildContext context, String title, String message,
+      IconData icon, Color color) {
+    _removeTooltip();
+    final overlay = Overlay.of(context);
     _tooltipOverlay = OverlayEntry(
       builder: (context) => Positioned(
         left: 0,
         right: 0,
-        top: position.dy - 100,
+        top: MediaQuery.of(context).size.height * 0.35,
         child: IgnorePointer(
           child: Center(
             child: Material(
               color: Colors.transparent,
               child: TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOutBack,
-                builder: (context, value, child) => Transform.scale(
-                  scale: value,
-                  child: child,
-                ),
+                builder: (c, v, child) =>
+                    Transform.scale(scale: v, child: child),
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 280),
                   margin: const EdgeInsets.symmetric(horizontal: 24),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1A1A1A),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: color.withOpacity(0.4)),
                     boxShadow: [
-                      BoxShadow(
-                        color: color.withOpacity(0.2),
-                        blurRadius: 20,
-                        spreadRadius: 0,
-                      ),
+                      BoxShadow(color: color.withOpacity(0.2), blurRadius: 20),
                       const BoxShadow(
-                        color: Colors.black54,
-                        blurRadius: 12,
-                        offset: Offset(0, 4),
-                      ),
+                          color: Colors.black54,
+                          blurRadius: 12,
+                          offset: Offset(0, 4)),
                     ],
                   ),
                   child: Column(
@@ -253,9 +395,8 @@ class _HomeScreenState extends State<HomeScreen>
                           Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: color.withOpacity(0.15),
-                            ),
+                                shape: BoxShape.circle,
+                                color: color.withOpacity(0.15)),
                             child: Icon(icon, size: 14, color: color),
                           ),
                           const SizedBox(width: 8),
@@ -272,17 +413,14 @@ class _HomeScreenState extends State<HomeScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Icon(Icons.info_outline_rounded,
-                              size: 12,
-                              color: Colors.white.withOpacity(0.5)),
+                              size: 12, color: Colors.white.withOpacity(0.5)),
                           const SizedBox(width: 6),
                           Flexible(
-                            child: Text(
-                              message,
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white.withOpacity(0.8),
-                                  height: 1.4),
-                            ),
+                            child: Text(message,
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white.withOpacity(0.8),
+                                    height: 1.4)),
                           ),
                         ],
                       ),
@@ -293,8 +431,7 @@ class _HomeScreenState extends State<HomeScreen>
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
                           color: color.withOpacity(0.12),
-                          border:
-                              Border.all(color: color.withOpacity(0.3)),
+                          border: Border.all(color: color.withOpacity(0.3)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -302,7 +439,7 @@ class _HomeScreenState extends State<HomeScreen>
                             Icon(Icons.touch_app_rounded,
                                 size: 10, color: color),
                             const SizedBox(width: 4),
-                            Text('Long press to mark complete',
+                            Text('Long press to toggle complete',
                                 style: TextStyle(
                                     fontSize: 10,
                                     color: color,
@@ -319,10 +456,7 @@ class _HomeScreenState extends State<HomeScreen>
         ),
       ),
     );
-
     overlay.insert(_tooltipOverlay!);
-
-    // Auto-dismiss after 2.5 seconds
     Future.delayed(const Duration(milliseconds: 2500), _removeTooltip);
   }
 
@@ -334,6 +468,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void dispose() {
     _removeTooltip();
+    _removeProfileDropdown();
     _animController.dispose();
     super.dispose();
   }
@@ -345,15 +480,14 @@ class _HomeScreenState extends State<HomeScreen>
     return _buildMobileLayout(isDark);
   }
 
-  // ═══════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
   // WEB LAYOUT
-  // ═══════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildWebLayout(bool isDark) {
     final textPrimary = isDark ? Colors.white : const Color(0xFF0A0A0A);
     final textSecondary =
         isDark ? const Color(0xFFB0B0B0) : const Color(0xFF555555);
-    final bgColor =
-        isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF0F2F5);
+    final bgColor = isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF0F2F5);
     final cardColor = isDark ? const Color(0xFF141414) : Colors.white;
     final borderColor =
         isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
@@ -373,8 +507,8 @@ class _HomeScreenState extends State<HomeScreen>
                 children: [
                   _buildWebSidebar(isDark, sidebarColor),
                   Expanded(
-                    child: _buildWebContent(isDark, textPrimary,
-                        textSecondary, cardColor, borderColor),
+                    child: _buildWebContent(
+                        isDark, textPrimary, textSecondary, cardColor, borderColor),
                   ),
                 ],
               ),
@@ -389,13 +523,10 @@ class _HomeScreenState extends State<HomeScreen>
       Color cardColor, Color borderColor) {
     switch (_webSection) {
       case 'Workouts':
-      case 'Workouts (Locked)':
         return WorkoutScreen(userTier: _userTier);
       case 'Diet Plan':
-      case 'Diet Plan (Locked)':
         return MealsScreen(userTier: _userTier);
       case 'Progress':
-      case 'Progress (Locked)':
         return const ProgressScreen();
       case 'Profile':
         return const ProfileScreen();
@@ -422,21 +553,21 @@ class _HomeScreenState extends State<HomeScreen>
                     children: [
                       Expanded(
                         flex: 3,
-                        child: _buildWebWorkoutCard(isDark, textPrimary,
-                            textSecondary, cardColor, borderColor),
+                        child: _buildWebWorkoutCard(
+                            isDark, textPrimary, textSecondary, cardColor, borderColor),
                       ),
                       const SizedBox(width: 20),
                       Expanded(
                         flex: 2,
-                        child: _buildWebDietCard(isDark, textPrimary,
-                            textSecondary, cardColor, borderColor),
+                        child: _buildWebDietCard(
+                            isDark, textPrimary, textSecondary, cardColor, borderColor),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
                   if (!_isLoggedIn)
-                    _buildWebLockedSection(isDark, textPrimary,
-                        textSecondary, cardColor, borderColor),
+                    _buildWebLockedSection(
+                        isDark, textPrimary, textSecondary, cardColor, borderColor),
                 ],
               ),
             ),
@@ -445,81 +576,39 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  Widget _buildWebTopNav(bool isDark, Color textPrimary, Color cardColor,
-      Color borderColor) {
+  // ── TOP NAV ──────────────────────────────────────────────────────────────────
+  Widget _buildWebTopNav(
+      bool isDark, Color textPrimary, Color cardColor, Color borderColor) {
     return Container(
       height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 28),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: cardColor,
         border: Border(bottom: BorderSide(color: borderColor)),
       ),
       child: Row(
         children: [
-          // Logo with pointer cursor
+          // ── Hamburger ─────────────────────────────────────────────────────
           MouseRegion(
             cursor: SystemMouseCursors.click,
-            child: Row(
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary.withOpacity(0.15),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.4)),
-                  ),
-                  child: const Center(
-                      child: Icon(Icons.fitness_center_rounded,
-                          size: 16, color: AppColors.primary)),
+            child: GestureDetector(
+              onTap: () => setState(() => _sidebarExpanded = !_sidebarExpanded),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.primary.withOpacity(0.08),
                 ),
-                const SizedBox(width: 10),
-                ShaderMask(
-                  shaderCallback: (bounds) => const LinearGradient(
-                    colors: [Color(0xFF5EFC82), Color(0xFF00C853)],
-                  ).createShader(bounds),
-                  child: const Text(
-                    'FitLife',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Spacer(),
-          if (_isLoggedIn) ...[
-            _buildNavLink('Dashboard', _webSection == 'Dashboard', textPrimary),
-            const SizedBox(width: 4),
-            _buildNavLink('Workouts', _webSection == 'Workouts', textPrimary),
-            const SizedBox(width: 4),
-            _buildNavLink('Diet', _webSection == 'Diet Plan', textPrimary),
-            const SizedBox(width: 4),
-            _buildNavLink('Progress', _webSection == 'Progress', textPrimary),
-            const SizedBox(width: 20),
-          ],
-          Consumer<ThemeProvider>(
-            builder: (context, theme, _) => MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: () => Provider.of<ThemeProvider>(context, listen: false)
-                    .toggleTheme(),
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary.withOpacity(0.1),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-                  ),
-                  child: Center(
+                child: Center(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 150),
                     child: Icon(
-                      theme.isDark ? Icons.wb_sunny_rounded : Icons.dark_mode_rounded,
-                      size: 17,
+                      _sidebarExpanded
+                          ? Icons.close_rounded
+                          : Icons.menu_rounded,
+                      key: ValueKey(_sidebarExpanded),
+                      size: 20,
                       color: AppColors.primary,
                     ),
                   ),
@@ -528,16 +617,99 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
           const SizedBox(width: 12),
+          // ── Logo → Dashboard ──────────────────────────────────────────────
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () => setState(() => _webSection = 'Dashboard'),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary.withOpacity(0.15),
+                      border:
+                          Border.all(color: AppColors.primary.withOpacity(0.4)),
+                    ),
+                    child: const Center(
+                        child: Icon(Icons.fitness_center_rounded,
+                            size: 16, color: AppColors.primary)),
+                  ),
+                  const SizedBox(width: 10),
+                  ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [Color(0xFF5EFC82), Color(0xFF00C853)],
+                    ).createShader(bounds),
+                    child: const Text(
+                      'FitLife',
+                      style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 1),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Spacer(),
+          // ── Nav links ─────────────────────────────────────────────────────
+          if (_isLoggedIn) ...[
+            _buildNavLink('Dashboard', _webSection == 'Dashboard', textPrimary),
+            const SizedBox(width: 4),
+            _buildNavLink('Workouts', _webSection == 'Workouts', textPrimary),
+            const SizedBox(width: 4),
+            _buildNavLink('Diet', _webSection == 'Diet Plan', textPrimary),
+            const SizedBox(width: 4),
+            _buildNavLink('Progress', _webSection == 'Progress', textPrimary),
+            const SizedBox(width: 16),
+          ],
+          // ── Theme toggle ──────────────────────────────────────────────────
+          Consumer<ThemeProvider>(
+            builder: (context, theme, _) => MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () =>
+                    Provider.of<ThemeProvider>(context, listen: false)
+                        .toggleTheme(),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.primary.withOpacity(0.1),
+                    border:
+                        Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      theme.isDark
+                          ? Icons.wb_sunny_rounded
+                          : Icons.dark_mode_rounded,
+                      size: 17,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
           if (!_isLoggedIn) ...[
             MouseRegion(
               cursor: SystemMouseCursors.click,
               child: GestureDetector(
                 onTap: () => Navigator.pushNamed(context, '/login'),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+                    border: Border.all(
+                        color: AppColors.primary.withOpacity(0.4)),
                   ),
                   child: const Text('Sign In',
                       style: TextStyle(
@@ -553,7 +725,8 @@ class _HomeScreenState extends State<HomeScreen>
               child: GestureDetector(
                 onTap: () => Navigator.pushNamed(context, '/register'),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
                     gradient: const LinearGradient(
@@ -568,28 +741,40 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
           ] else ...[
+            // ── Profile avatar → dropdown ────────────────────────────────────
             MouseRegion(
               cursor: SystemMouseCursors.click,
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary.withOpacity(0.15),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+              child: GestureDetector(
+                onTap: () => _toggleProfileDropdown(context),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _showProfileDropdown
+                        ? AppColors.primary.withOpacity(0.28)
+                        : AppColors.primary.withOpacity(0.15),
+                    border: Border.all(
+                      color: _showProfileDropdown
+                          ? AppColors.primary
+                          : AppColors.primary.withOpacity(0.4),
+                      width: _showProfileDropdown ? 2 : 1.5,
+                    ),
+                  ),
+                  child: const Center(
+                      child: Icon(Icons.person_rounded,
+                          size: 18, color: AppColors.primary)),
                 ),
-                child: const Center(
-                    child: Icon(Icons.person_rounded, size: 18,
-                        color: AppColors.primary)),
               ),
             ),
           ],
+          const SizedBox(width: 8),
         ],
       ),
     );
   }
 
-  // ── FIXED: Nav link with proper hover color change ──────────────────────────
+  // ── Nav link — NO AnimatedContainer, instant color change ───────────────────
   Widget _buildNavLink(String label, bool isActive, Color textPrimary) {
     final isHovered = _hoveredNavLink == label;
     return MouseRegion(
@@ -597,41 +782,35 @@ class _HomeScreenState extends State<HomeScreen>
       onEnter: (_) => setState(() => _hoveredNavLink = label),
       onExit: (_) => setState(() => _hoveredNavLink = null),
       child: GestureDetector(
-        onTap: () {
-          setState(() {
-            if (label == 'Dashboard') _webSection = 'Dashboard';
-            else if (label == 'Workouts') _webSection = 'Workouts';
-            else if (label == 'Diet') _webSection = 'Diet Plan';
-            else if (label == 'Progress') _webSection = 'Progress';
-          });
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+        onTap: () => setState(() {
+          if (label == 'Dashboard') _webSection = 'Dashboard';
+          else if (label == 'Workouts') _webSection = 'Workouts';
+          else if (label == 'Diet') _webSection = 'Diet Plan';
+          else if (label == 'Progress') _webSection = 'Progress';
+        }),
+        child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             color: isActive
                 ? AppColors.primary.withOpacity(0.15)
                 : isHovered
-                    ? AppColors.primary.withOpacity(0.08)
+                    ? AppColors.primary.withOpacity(0.09)
                     : Colors.transparent,
           ),
           child: Text(label,
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                color: isActive
-                    ? AppColors.primary
-                    : isHovered
-                        ? AppColors.primary.withOpacity(0.8)
-                        : textPrimary.withOpacity(0.6),
-              )),
+                  fontSize: 13,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  color: isActive || isHovered
+                      ? AppColors.primary
+                      : textPrimary.withOpacity(0.6))),
         ),
       ),
     );
   }
 
-  // ── FIXED: Sidebar with proper hover color change ────────────────────────────
+  // ── COLLAPSIBLE SIDEBAR — 60px icons-only / 220px full ──────────────────────
   Widget _buildWebSidebar(bool isDark, Color sidebarColor) {
     final items = _isLoggedIn
         ? [
@@ -650,144 +829,205 @@ class _HomeScreenState extends State<HomeScreen>
             {'icon': Icons.lock_rounded, 'label': 'Progress', 'locked': true},
           ];
 
-    return Container(
-      width: 220,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      width: _sidebarExpanded ? 220 : 60,
       color: sidebarColor,
       child: Column(
         children: [
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary.withOpacity(0.2),
-                    border:
-                        Border.all(color: AppColors.primary.withOpacity(0.5)),
+          const SizedBox(height: 18),
+          // ── User avatar ────────────────────────────────────────────────────
+          if (_sidebarExpanded)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary.withOpacity(0.2),
+                      border: Border.all(
+                          color: AppColors.primary.withOpacity(0.5)),
+                    ),
+                    child: const Center(
+                        child: Icon(Icons.person_rounded,
+                            size: 17, color: AppColors.primary)),
                   ),
-                  child: const Center(
-                      child: Icon(Icons.person_rounded, size: 20,
-                          color: AppColors.primary)),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(userName,
-                          style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white)),
-                      Row(
-                        children: [
-                          Icon(
-                            _isLoggedIn
-                                ? Icons.verified_rounded
-                                : Icons.person_outline_rounded,
-                            size: 11,
-                            color: _isLoggedIn
-                                ? AppColors.primary
-                                : Colors.white.withOpacity(0.4),
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            _isLoggedIn ? 'Member' : 'Guest',
-                            style: TextStyle(
-                              fontSize: 11,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(userName,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white)),
+                        Row(
+                          children: [
+                            Icon(
+                              _isLoggedIn
+                                  ? Icons.verified_rounded
+                                  : Icons.person_outline_rounded,
+                              size: 10,
                               color: _isLoggedIn
                                   ? AppColors.primary
                                   : Colors.white.withOpacity(0.4),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            const SizedBox(width: 3),
+                            Text(
+                              _isLoggedIn ? 'Member' : 'Guest',
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  color: _isLoggedIn
+                                      ? AppColors.primary
+                                      : Colors.white.withOpacity(0.4)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
+                ],
+              ),
+            )
+          else
+            Center(
+              child: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary.withOpacity(0.2),
+                  border:
+                      Border.all(color: AppColors.primary.withOpacity(0.5)),
                 ),
-              ],
+                child: const Center(
+                    child: Icon(Icons.person_rounded,
+                        size: 17, color: AppColors.primary)),
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 14),
           Divider(color: Colors.white.withOpacity(0.08), height: 1),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
+          // ── Items ──────────────────────────────────────────────────────────
           ...items.map((item) {
             final label = item['label'] as String;
             final isLocked = item['locked'] as bool;
-            final isActive = label == _webSection ||
-                (label == 'Dashboard' && _webSection == 'Dashboard');
+            final isActive = label == _webSection;
             final isHovered = _hoveredSidebarItem == label && !isLocked;
 
-            return MouseRegion(
-              cursor: isLocked
-                  ? SystemMouseCursors.forbidden
-                  : SystemMouseCursors.click,
-              onEnter: (_) {
-                if (!isLocked) setState(() => _hoveredSidebarItem = label);
-              },
-              onExit: (_) => setState(() => _hoveredSidebarItem = null),
-              child: GestureDetector(
-                onTap: isLocked
-                    ? null
-                    : () => setState(() => _webSection = label),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: isActive
-                        ? AppColors.primary.withOpacity(0.18)
-                        : isHovered
-                            ? AppColors.primary.withOpacity(0.08)
-                            : Colors.transparent,
-                  ),
-                  child: ListTile(
-                    dense: true,
-                    leading: Icon(item['icon'] as IconData,
-                        size: 18,
-                        color: isActive
-                            ? AppColors.primary
-                            : isHovered
-                                ? AppColors.primary.withOpacity(0.7)
-                                : isLocked
-                                    ? Colors.white.withOpacity(0.2)
-                                    : Colors.white.withOpacity(0.5)),
-                    title: Text(label,
-                        style: TextStyle(
-                            fontSize: 13,
-                            fontWeight:
-                                isActive ? FontWeight.w700 : FontWeight.w400,
-                            color: isActive
-                                ? AppColors.primary
-                                : isHovered
-                                    ? AppColors.primary.withOpacity(0.8)
-                                    : isLocked
-                                        ? Colors.white.withOpacity(0.2)
-                                        : Colors.white.withOpacity(0.6))),
-                    trailing: isLocked
-                        ? Icon(Icons.lock_outline_rounded,
-                            size: 14, color: Colors.white.withOpacity(0.2))
-                        : null,
+            final iconColor = isActive
+                ? AppColors.primary
+                : isHovered
+                    ? AppColors.primary.withOpacity(0.85)
+                    : isLocked
+                        ? Colors.white.withOpacity(0.18)
+                        : Colors.white.withOpacity(0.5);
+
+            final textColor = isActive
+                ? AppColors.primary
+                : isHovered
+                    ? AppColors.primary.withOpacity(0.9)
+                    : isLocked
+                        ? Colors.white.withOpacity(0.18)
+                        : Colors.white.withOpacity(0.6);
+
+            final bgColor = isActive
+                ? AppColors.primary.withOpacity(0.18)
+                : isHovered
+                    ? AppColors.primary.withOpacity(0.10)
+                    : Colors.transparent;
+
+            return Tooltip(
+              // Show label as tooltip when collapsed
+              message: _sidebarExpanded ? '' : label,
+              preferBelow: false,
+              waitDuration: Duration.zero,
+              decoration: BoxDecoration(
+                color: const Color(0xFF222222),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              textStyle:
+                  const TextStyle(color: Colors.white, fontSize: 12),
+              child: MouseRegion(
+                // Immediate cursor + hover
+                cursor: isLocked
+                    ? SystemMouseCursors.forbidden
+                    : SystemMouseCursors.click,
+                onEnter: (_) {
+                  if (!isLocked) setState(() => _hoveredSidebarItem = label);
+                },
+                onExit: (_) => setState(() => _hoveredSidebarItem = null),
+                child: GestureDetector(
+                  onTap: isLocked
+                      ? null
+                      : () => setState(() => _webSection = label),
+                  child: Container(
+                    // Plain Container — color is instant (no AnimatedContainer)
+                    margin: EdgeInsets.symmetric(
+                        horizontal: _sidebarExpanded ? 10 : 7, vertical: 2),
+                    padding: EdgeInsets.symmetric(
+                        horizontal: _sidebarExpanded ? 12 : 0, vertical: 10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: bgColor,
+                    ),
+                    child: _sidebarExpanded
+                        ? Row(
+                            children: [
+                              const SizedBox(width: 2),
+                              Icon(item['icon'] as IconData,
+                                  size: 18, color: iconColor),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(label,
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: isActive
+                                            ? FontWeight.w700
+                                            : FontWeight.w400,
+                                        color: textColor)),
+                              ),
+                              if (isLocked)
+                                Icon(Icons.lock_outline_rounded,
+                                    size: 13,
+                                    color: Colors.white.withOpacity(0.2)),
+                              if (isActive && !isLocked)
+                                Container(
+                                  width: 5,
+                                  height: 5,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                            ],
+                          )
+                        : Center(
+                            child: Icon(item['icon'] as IconData,
+                                size: 20, color: iconColor),
+                          ),
                   ),
                 ),
               ),
             );
           }),
           const Spacer(),
-          if (!_isLoggedIn)
+          if (!_isLoggedIn && _sidebarExpanded)
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: MouseRegion(
                 cursor: SystemMouseCursors.click,
                 child: GestureDetector(
                   onTap: () => Navigator.pushNamed(context, '/register'),
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 11),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
                       gradient: const LinearGradient(
@@ -815,6 +1055,8 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     );
   }
+
+  // ── remaining widget builders (unchanged from previous version) ──────────────
 
   Widget _buildWebWelcomeBanner(bool isDark, Color textPrimary,
       Color textSecondary, Color cardColor, Color borderColor) {
@@ -846,16 +1088,17 @@ class _HomeScreenState extends State<HomeScreen>
                 Text("Here's your fitness overview for today",
                     style: TextStyle(fontSize: 14, color: textSecondary)),
                 const SizedBox(height: 12),
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
                   children: [
-                    _buildWebBadge(userGoal, Icons.flag_rounded, AppColors.primary),
-                    const SizedBox(width: 8),
+                    _buildWebBadge(
+                        userGoal, Icons.flag_rounded, AppColors.primary),
                     _buildWebBadge(
                       'BMI ${Helpers.calculateBMI(userWeight, userHeight).toStringAsFixed(1)} · ${Helpers.getBMICategory(Helpers.calculateBMI(userWeight, userHeight))}',
                       Icons.monitor_heart_rounded,
                       const Color(0xFF2979FF),
                     ),
-                    const SizedBox(width: 8),
                     _buildWebBadge(
                       '$completedWorkouts/${_todayWorkouts.length} workouts done',
                       Icons.check_circle_rounded,
@@ -915,7 +1158,6 @@ class _HomeScreenState extends State<HomeScreen>
       {'label': 'BMI', 'value': Helpers.calculateBMI(userWeight, userHeight).toStringAsFixed(1), 'icon': Icons.analytics_rounded, 'color': AppColors.primary},
       {'label': 'Workouts', 'value': '$completedWorkouts/${_todayWorkouts.length}', 'icon': Icons.fitness_center_rounded, 'color': const Color(0xFF00C853)},
     ];
-
     return GridView.count(
       crossAxisCount: 3,
       crossAxisSpacing: 16,
@@ -1093,14 +1335,14 @@ class _HomeScreenState extends State<HomeScreen>
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.check_circle_rounded, size: 13, color: AppColors.primary),
+        const Icon(Icons.check_circle_rounded,
+            size: 13, color: AppColors.primary),
         const SizedBox(width: 4),
         Text(text, style: TextStyle(fontSize: 12, color: textSecondary)),
       ],
     );
   }
 
-  // ── UPDATED: Web workout card with long-press tooltip ──────────────────────
   Widget _buildWebWorkoutCard(bool isDark, Color textPrimary,
       Color textSecondary, Color cardColor, Color borderColor) {
     return Container(
@@ -1146,14 +1388,14 @@ class _HomeScreenState extends State<HomeScreen>
           const SizedBox(height: 4),
           Text(Helpers.formatDate(DateTime.now()),
               style: TextStyle(fontSize: 12, color: textSecondary)),
-          // ── Tip hint ──────────────────────────────────────────────────────
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
               color: AppColors.primary.withOpacity(0.06),
-              border: Border.all(color: AppColors.primary.withOpacity(0.15)),
+              border:
+                  Border.all(color: AppColors.primary.withOpacity(0.15)),
             ),
             child: Row(
               children: [
@@ -1178,7 +1420,6 @@ class _HomeScreenState extends State<HomeScreen>
             final isDone = workout['done'] as bool;
             final icon =
                 workout['icon'] as IconData? ?? Icons.fitness_center_rounded;
-
             return MouseRegion(
               cursor: SystemMouseCursors.click,
               child: GestureDetector(
@@ -1191,7 +1432,7 @@ class _HomeScreenState extends State<HomeScreen>
                     isDone ? 'Marked Incomplete' : 'Workout Complete! 🎉',
                     isDone
                         ? '${workout['name']} has been unchecked.'
-                        : '${workout['name']} marked as done. Great job! Keep going!',
+                        : '${workout['name']} marked as done. Great job!',
                     isDone
                         ? Icons.remove_circle_outline_rounded
                         : Icons.check_circle_rounded,
@@ -1210,7 +1451,8 @@ class _HomeScreenState extends State<HomeScreen>
                             ? const Color(0xFF1A1A1A)
                             : const Color(0xFFF8F8F8)),
                     border: Border.all(
-                        color: isDone ? color.withOpacity(0.4) : borderColor),
+                        color:
+                            isDone ? color.withOpacity(0.4) : borderColor),
                   ),
                   child: Row(
                     children: [
@@ -1256,23 +1498,20 @@ class _HomeScreenState extends State<HomeScreen>
                                 fontWeight: FontWeight.w600)),
                       ),
                       const SizedBox(width: 10),
-                      Tooltip(
-                        message: isDone ? 'Long press to uncheck' : 'Long press to complete',
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          width: 22,
-                          height: 22,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isDone ? color : Colors.transparent,
-                            border: Border.all(
-                                color: isDone ? color : borderColor, width: 2),
-                          ),
-                          child: isDone
-                              ? const Icon(Icons.check,
-                                  size: 12, color: Colors.white)
-                              : null,
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isDone ? color : Colors.transparent,
+                          border: Border.all(
+                              color: isDone ? color : borderColor, width: 2),
                         ),
+                        child: isDone
+                            ? const Icon(Icons.check,
+                                size: 12, color: Colors.white)
+                            : null,
                       ),
                     ],
                   ),
@@ -1285,8 +1524,8 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildWebDietCard(bool isDark, Color textPrimary, Color textSecondary,
-      Color cardColor, Color borderColor) {
+  Widget _buildWebDietCard(bool isDark, Color textPrimary,
+      Color textSecondary, Color cardColor, Color borderColor) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1356,15 +1595,13 @@ class _HomeScreenState extends State<HomeScreen>
               child: GestureDetector(
                 onTap: () => Navigator.pushNamed(context, '/meal-detail',
                     arguments: meal),
-                onLongPress: () {
-                  _showTooltip(
-                    context,
-                    meal['meal'] as String,
-                    '${meal['items']} · ${meal['calories']} kcal · ${meal['time']}',
-                    icon,
-                    color,
-                  );
-                },
+                onLongPress: () => _showTooltip(
+                  context,
+                  meal['meal'] as String,
+                  '${meal['items']} · ${meal['calories']} kcal · ${meal['time']}',
+                  icon,
+                  color,
+                ),
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(12),
@@ -1429,38 +1666,18 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildWebLockedSection(bool isDark, Color textPrimary,
       Color textSecondary, Color cardColor, Color borderColor) {
     final features = [
-      {
-        'icon': Icons.fitness_center_rounded,
-        'title': 'Full Exercise Library',
-        'desc': '200+ exercises with video demos',
-        'color': const Color(0xFF2979FF)
-      },
-      {
-        'icon': Icons.restaurant_menu_rounded,
-        'title': 'Advanced Diet Plans',
-        'desc': 'AI-generated meal plans',
-        'color': const Color(0xFF00C853)
-      },
-      {
-        'icon': Icons.insights_rounded,
-        'title': 'Progress Analytics',
-        'desc': 'Charts and insights over time',
-        'color': const Color(0xFFFF6D00)
-      },
-      {
-        'icon': Icons.cloud_sync_rounded,
-        'title': 'Cloud Backup',
-        'desc': 'Never lose your data',
-        'color': const Color(0xFFAA00FF)
-      },
+      {'icon': Icons.fitness_center_rounded, 'title': 'Full Exercise Library', 'desc': '200+ exercises with video demos', 'color': const Color(0xFF2979FF)},
+      {'icon': Icons.restaurant_menu_rounded, 'title': 'Advanced Diet Plans', 'desc': 'AI-generated meal plans', 'color': const Color(0xFF00C853)},
+      {'icon': Icons.insights_rounded, 'title': 'Progress Analytics', 'desc': 'Charts and insights over time', 'color': const Color(0xFFFF6D00)},
+      {'icon': Icons.cloud_sync_rounded, 'title': 'Cloud Backup', 'desc': 'Never lose your data', 'color': const Color(0xFFAA00FF)},
     ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Icon(Icons.lock_rounded, size: 18, color: AppColors.primary),
+            const Icon(Icons.lock_rounded,
+                size: 18, color: AppColors.primary),
             const SizedBox(width: 8),
             Text('Unlock Premium Features',
                 style: TextStyle(
@@ -1498,10 +1715,10 @@ class _HomeScreenState extends State<HomeScreen>
                     width: 34,
                     height: 34,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(9),
-                      color: color.withOpacity(0.12),
-                    ),
-                    child: Center(child: Icon(icon, size: 18, color: color)),
+                        borderRadius: BorderRadius.circular(9),
+                        color: color.withOpacity(0.12)),
+                    child:
+                        Center(child: Icon(icon, size: 18, color: color)),
                   ),
                   const SizedBox(height: 8),
                   Text(f['title'] as String,
@@ -1510,8 +1727,7 @@ class _HomeScreenState extends State<HomeScreen>
                           fontWeight: FontWeight.w700,
                           color: textPrimary)),
                   Text(f['desc'] as String,
-                      style:
-                          TextStyle(fontSize: 10, color: textSecondary)),
+                      style: TextStyle(fontSize: 10, color: textSecondary)),
                 ],
               ),
             );
@@ -1524,8 +1740,8 @@ class _HomeScreenState extends State<HomeScreen>
             child: GestureDetector(
               onTap: () => Navigator.pushNamed(context, '/register'),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 40, vertical: 14),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   gradient: const LinearGradient(
@@ -1558,9 +1774,9 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ═══════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
   // MOBILE LAYOUT
-  // ═══════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
 
   Widget _buildMobileDashboard() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1584,28 +1800,29 @@ class _HomeScreenState extends State<HomeScreen>
             _buildMobileUnlockBanner(isDark, textPrimary, textSecondary),
             const SizedBox(height: 20),
           ],
-          if (_isLoadingData) ...[
+          if (_isLoadingData)
             const Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 40),
                 child: CircularProgressIndicator(
                     color: AppColors.primary, strokeWidth: 2.5),
               ),
-            ),
-          ] else ...[
+            )
+          else ...[
             _buildSectionTitle(
                 "Today's Workout",
                 "$completedWorkouts/${_todayWorkouts.length} done",
                 textPrimary,
                 Icons.fitness_center_rounded),
             const SizedBox(height: 8),
-            // ── Mobile workout tip hint ──────────────────────────────────
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 color: AppColors.primary.withOpacity(0.06),
-                border: Border.all(color: AppColors.primary.withOpacity(0.15)),
+                border:
+                    Border.all(color: AppColors.primary.withOpacity(0.15)),
               ),
               child: Row(
                 children: [
@@ -1776,32 +1993,11 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildMobileStatsRow(Color textPrimary) {
     final stats = [
-      {
-        'label': 'Weight',
-        'value': '${userWeight}kg',
-        'icon': Icons.monitor_weight_rounded,
-        'color': const Color(0xFF2979FF)
-      },
-      {
-        'label': 'Height',
-        'value': '${userHeight}cm',
-        'icon': Icons.height_rounded,
-        'color': const Color(0xFFFF6D00)
-      },
-      {
-        'label': 'Age',
-        'value': '${userAge}yrs',
-        'icon': Icons.cake_rounded,
-        'color': const Color(0xFFAA00FF)
-      },
-      {
-        'label': 'Calories',
-        'value': '$totalCalories',
-        'icon': Icons.local_fire_department_rounded,
-        'color': const Color(0xFFFFD600)
-      },
+      {'label': 'Weight', 'value': '${userWeight}kg', 'icon': Icons.monitor_weight_rounded, 'color': const Color(0xFF2979FF)},
+      {'label': 'Height', 'value': '${userHeight}cm', 'icon': Icons.height_rounded, 'color': const Color(0xFFFF6D00)},
+      {'label': 'Age', 'value': '${userAge}yrs', 'icon': Icons.cake_rounded, 'color': const Color(0xFFAA00FF)},
+      {'label': 'Calories', 'value': '$totalCalories', 'icon': Icons.local_fire_department_rounded, 'color': const Color(0xFFFFD600)},
     ];
-
     return Row(
       children: stats.asMap().entries.map((entry) {
         final i = entry.key;
@@ -1830,8 +2026,7 @@ class _HomeScreenState extends State<HomeScreen>
                 const SizedBox(height: 2),
                 Text(stat['label'] as String,
                     style: TextStyle(
-                        fontSize: 9,
-                        color: textPrimary.withOpacity(0.4))),
+                        fontSize: 9, color: textPrimary.withOpacity(0.4))),
               ],
             ),
           ),
@@ -2030,7 +2225,6 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ── UPDATED: Mobile workout list with tooltip on long press ─────────────────
   Widget _buildMobileWorkoutList(Color cardColor, Color borderColor,
       Color textPrimary, Color textSecondary) {
     return Column(
@@ -2041,7 +2235,6 @@ class _HomeScreenState extends State<HomeScreen>
         final isDone = workout['done'] as bool;
         final icon =
             workout['icon'] as IconData? ?? Icons.fitness_center_rounded;
-
         return GestureDetector(
           onTap: () => Navigator.pushNamed(context, '/exercise-detail',
               arguments: workout),
@@ -2052,7 +2245,7 @@ class _HomeScreenState extends State<HomeScreen>
               isDone ? 'Marked Incomplete' : 'Workout Complete! 🎉',
               isDone
                   ? '${workout['name']} has been unchecked.'
-                  : '${workout['name']} marked as done!\n${workout['sets']} sets × ${workout['reps']} reps finished. Great work!',
+                  : '${workout['name']} marked as done!\n${workout['sets']} sets × ${workout['reps']} reps finished.',
               isDone
                   ? Icons.remove_circle_outline_rounded
                   : Icons.check_circle_rounded,
@@ -2145,19 +2338,18 @@ class _HomeScreenState extends State<HomeScreen>
     return Column(
       children: _todayMeals.map((meal) {
         final color = meal['color'] as Color;
-        final icon = meal['icon'] as IconData? ?? Icons.restaurant_rounded;
+        final icon =
+            meal['icon'] as IconData? ?? Icons.restaurant_rounded;
         return GestureDetector(
           onTap: () =>
               Navigator.pushNamed(context, '/meal-detail', arguments: meal),
-          onLongPress: () {
-            _showTooltip(
-              context,
-              meal['meal'] as String,
-              '${meal['items']} · ${meal['calories']} kcal · ${meal['time']}',
-              icon,
-              color,
-            );
-          },
+          onLongPress: () => _showTooltip(
+            context,
+            meal['meal'] as String,
+            '${meal['items']} · ${meal['calories']} kcal · ${meal['time']}',
+            icon,
+            color,
+          ),
           child: Container(
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(14),
@@ -2213,7 +2405,6 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ── FIXED: Mobile bottom nav with proper active tab color ───────────────────
   Widget _buildMobileBottomNav(bool isDark, Color textPrimary) {
     final navBg = isDark ? const Color(0xFF141414) : Colors.white;
     final navBorder =
@@ -2300,9 +2491,9 @@ class _HomeScreenState extends State<HomeScreen>
           final isSelected = _selectedTab == index;
           return GestureDetector(
             onTap: () => setState(() => _selectedTab = index),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 color: isSelected
@@ -2312,47 +2503,91 @@ class _HomeScreenState extends State<HomeScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // ── Animated icon with color transition ─────────────────
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: Icon(
-                      tab['icon'] as IconData,
-                      key: ValueKey(isSelected),
+                  Icon(tab['icon'] as IconData,
                       color: isSelected
                           ? AppColors.primary
                           : textPrimary.withOpacity(0.35),
-                      size: isSelected ? 24 : 22,
-                    ),
-                  ),
+                      size: isSelected ? 24 : 22),
                   const SizedBox(height: 3),
-                  AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 200),
-                    style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: isSelected
-                            ? FontWeight.w700
-                            : FontWeight.w400,
-                        color: isSelected
-                            ? AppColors.primary
-                            : textPrimary.withOpacity(0.35)),
-                    child: Text(tab['label'] as String),
-                  ),
-                  // ── Active indicator dot ──────────────────────────────
+                  Text(tab['label'] as String,
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w400,
+                          color: isSelected
+                              ? AppColors.primary
+                              : textPrimary.withOpacity(0.35))),
                   const SizedBox(height: 3),
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     width: isSelected ? 4 : 0,
                     height: isSelected ? 4 : 0,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary,
-                    ),
+                    decoration: const BoxDecoration(
+                        shape: BoxShape.circle, color: AppColors.primary),
                   ),
                 ],
               ),
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+}
+
+// ── Stateful hover widget for dropdown items ─────────────────────────────────
+class _DropdownItemHover extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final Color textColor;
+  final bool isDestructive;
+  final VoidCallback onTap;
+
+  const _DropdownItemHover({
+    required this.icon,
+    required this.label,
+    required this.textColor,
+    required this.isDestructive,
+    required this.onTap,
+  });
+
+  @override
+  State<_DropdownItemHover> createState() => _DropdownItemHoverState();
+}
+
+class _DropdownItemHoverState extends State<_DropdownItemHover> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Container(
+          width: double.infinity,
+          padding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          color: _hovered
+              ? (widget.isDestructive
+                  ? const Color(0xFFFF4444).withOpacity(0.09)
+                  : AppColors.primary.withOpacity(0.07))
+              : Colors.transparent,
+          child: Row(
+            children: [
+              Icon(widget.icon, size: 16, color: widget.textColor),
+              const SizedBox(width: 10),
+              Text(widget.label,
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: widget.textColor)),
+            ],
+          ),
+        ),
       ),
     );
   }
