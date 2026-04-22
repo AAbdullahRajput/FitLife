@@ -262,7 +262,6 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
     try {
       final vars = await SupabaseService.getExerciseVariations(exerciseId as int);
       if (mounted && vars.isNotEmpty) {
-        // Map DB variations to display format
         final mapped = vars.map((v) {
           final tierRaw = v['tier_required'] as String? ?? 'guest';
           final steps = (v['steps'] as List?)?.cast<String>() ?? [];
@@ -533,7 +532,6 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                       ),
                     ),
                   ),
-                  // Gradient overlay for text readability
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -546,7 +544,6 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                       ),
                     ),
                   ),
-                  // Content on photo
                   Positioned(
                     left: 16, right: 16, bottom: 14,
                     child: Row(
@@ -586,7 +583,6 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Stats row
                 Row(
                   children: [
                     _buildStatChip('Sets', '${variation['sets']}', color),
@@ -599,7 +595,6 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
 
                 const SizedBox(height: 18),
 
-                // Steps
                 Text('How to perform:',
                     style: TextStyle(
                         fontSize: 13, fontWeight: FontWeight.w800, color: textPrimary)),
@@ -640,7 +635,6 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
 
                 const SizedBox(height: 14),
 
-                // Pro tip
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -720,7 +714,6 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
               borderRadius: BorderRadius.circular(16),
               child: Row(
                 children: [
-                  // Thumbnail image
                   SizedBox(
                     width: 64, height: 64,
                     child: Stack(
@@ -742,7 +735,6 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                               child: Icon(Icons.lock_rounded, color: Colors.white, size: 18),
                             ),
                           ),
-                        // Color strip
                         Positioned(
                           left: 0, top: 0, bottom: 0,
                           child: Container(width: 3, color: color),
@@ -750,7 +742,6 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                       ],
                     ),
                   ),
-                  // Info
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.all(12),
@@ -819,7 +810,6 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
         opacity: _fadeAnim,
         child: CustomScrollView(
           slivers: [
-            // ── Hero app bar with real photo ───────────────────────────────────
             SliverAppBar(
               expandedHeight: 220,
               pinned: true,
@@ -838,7 +828,6 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                 ),
               ),
               actions: [
-                // Log workout button
                 Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: GestureDetector(
@@ -946,7 +935,6 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Variations header
                     Row(
                       children: [
                         Expanded(
@@ -1005,7 +993,6 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
 
                     const SizedBox(height: 36),
 
-                    // Log Workout CTA
                     GestureDetector(
                       onTap: _isLoggingWorkout ? null : _logWorkout,
                       child: Container(
@@ -1076,191 +1063,191 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
       backgroundColor: bgColor,
       body: FadeTransition(
         opacity: _fadeAnim,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(28),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 960),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Back + Log row
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+        child: SizedBox.expand(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(28),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 960),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Back + Log row
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: textSecondary),
+                              const SizedBox(width: 6),
+                              Text('Back to Exercises',
+                                  style: TextStyle(fontSize: 13, color: textSecondary)),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: _isLoggingWorkout ? null : _logWorkout,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF00C853), Color(0xFF69F0AE)],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF00C853).withOpacity(0.35),
+                                  blurRadius: 12, offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: _isLoggingWorkout
+                                ? const SizedBox(
+                                    width: 16, height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                                  )
+                                : const Row(
+                                    children: [
+                                      Icon(Icons.fitness_center_rounded, color: Colors.black, size: 16),
+                                      SizedBox(width: 6),
+                                      Text('Log Workout',
+                                          style: TextStyle(
+                                            color: Colors.black, fontSize: 13, fontWeight: FontWeight.w800,
+                                          )),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Hero card with real photo
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: SizedBox(
+                        height: 220,
+                        width: double.infinity,
+                        child: Stack(
+                          fit: StackFit.expand,
                           children: [
-                            Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: textSecondary),
-                            const SizedBox(width: 6),
-                            Text('Back to Exercises',
-                                style: TextStyle(fontSize: 13, color: textSecondary)),
+                            Image.network(heroImageUrl, fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [muscleColor.withOpacity(0.5), muscleColor.withOpacity(0.2)],
+                                    ),
+                                  ),
+                                )),
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                  colors: [Colors.black.withOpacity(0.8), Colors.black.withOpacity(0.2)],
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              left: 28, top: 0, bottom: 0,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(exercise['emoji'] as String? ?? '💪',
+                                      style: const TextStyle(fontSize: 40)),
+                                  const SizedBox(height: 8),
+                                  Text(exercise['name'] as String? ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 30, fontWeight: FontWeight.w900,
+                                        color: Colors.white, letterSpacing: -0.5,
+                                      )),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    children: [
+                                      _buildBadge(muscle, muscleColor),
+                                      const SizedBox(width: 8),
+                                      _buildBadge(exercise['difficulty'] as String? ?? 'Beginner',
+                                          AppColors.primary),
+                                      const SizedBox(width: 8),
+                                      _buildBadge('${_variations.length} Variations', textSecondary),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: _isLoggingWorkout ? null : _logWorkout,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00C853), Color(0xFF69F0AE)],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF00C853).withOpacity(0.35),
-                                blurRadius: 12, offset: const Offset(0, 4),
-                              ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    Row(
+                      children: [
+                        Text('Exercise Variations',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: textPrimary)),
+                        const Spacer(),
+                        if (_isLoadingVariations)
+                          Row(
+                            children: [
+                              SizedBox(width: 14, height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
+                              const SizedBox(width: 6),
+                              Text('Loading…', style: TextStyle(fontSize: 11, color: textSecondary)),
                             ],
                           ),
-                          child: _isLoggingWorkout
-                              ? const SizedBox(
-                                  width: 16, height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                                )
-                              : const Row(
-                                  children: [
-                                    Icon(Icons.fitness_center_rounded, color: Colors.black, size: 16),
-                                    SizedBox(width: 6),
-                                    Text('Log Workout',
-                                        style: TextStyle(
-                                          color: Colors.black, fontSize: 13, fontWeight: FontWeight.w800,
-                                        )),
-                                  ],
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildVariationSelector(textPrimary: textPrimary, textSecondary: textSecondary),
+                    const SizedBox(height: 20),
 
-                  // Hero card with real photo
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: SizedBox(
-                      height: 220,
-                      width: double.infinity,
-                      child: Stack(
-                        fit: StackFit.expand,
+                    if (_variations.isNotEmpty)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Image.network(heroImageUrl, fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [muscleColor.withOpacity(0.5), muscleColor.withOpacity(0.2)],
-                                  ),
-                                ),
-                              )),
-                          Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                                colors: [Colors.black.withOpacity(0.8), Colors.black.withOpacity(0.2)],
-                              ),
+                          Expanded(
+                            flex: 3,
+                            child: _buildVariationDetail(
+                              variation: _variations[_selectedVariation],
+                              cardColor: cardColor,
+                              borderColor: borderColor,
+                              textPrimary: textPrimary,
+                              textSecondary: textSecondary,
+                              isDark: isDark,
+                              muscle: muscle,
                             ),
                           ),
-                          Positioned(
-                            left: 28, top: 0, bottom: 0,
+                          const SizedBox(width: 18),
+                          Expanded(
+                            flex: 2,
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(exercise['emoji'] as String? ?? '💪',
-                                    style: const TextStyle(fontSize: 40)),
-                                const SizedBox(height: 8),
-                                Text(exercise['name'] as String? ?? '',
-                                    style: const TextStyle(
-                                      fontSize: 30, fontWeight: FontWeight.w900,
-                                      color: Colors.white, letterSpacing: -0.5,
-                                    )),
-                                const SizedBox(height: 10),
-                                Row(
-                                  children: [
-                                    _buildBadge(muscle, muscleColor),
-                                    const SizedBox(width: 8),
-                                    _buildBadge(exercise['difficulty'] as String? ?? 'Beginner',
-                                        AppColors.primary),
-                                    const SizedBox(width: 8),
-                                    _buildBadge('${_variations.length} Variations', textSecondary),
-                                  ],
+                                Text('All Variations',
+                                    style: TextStyle(
+                                        fontSize: 15, fontWeight: FontWeight.w800, color: textPrimary)),
+                                const SizedBox(height: 12),
+                                _buildVariationsList(
+                                  cardColor: cardColor,
+                                  borderColor: borderColor,
+                                  textPrimary: textPrimary,
+                                  textSecondary: textSecondary,
+                                  muscle: muscle,
                                 ),
                               ],
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
 
-                  const SizedBox(height: 24),
-
-                  // Variation selector
-                  Row(
-                    children: [
-                      Text('Exercise Variations',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: textPrimary)),
-                      const Spacer(),
-                      if (_isLoadingVariations)
-                        Row(
-                          children: [
-                            SizedBox(width: 14, height: 14,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
-                            const SizedBox(width: 6),
-                            Text('Loading…', style: TextStyle(fontSize: 11, color: textSecondary)),
-                          ],
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _buildVariationSelector(textPrimary: textPrimary, textSecondary: textSecondary),
-                  const SizedBox(height: 20),
-
-                  // Side-by-side web layout
-                  if (_variations.isNotEmpty)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: _buildVariationDetail(
-                            variation: _variations[_selectedVariation],
-                            cardColor: cardColor,
-                            borderColor: borderColor,
-                            textPrimary: textPrimary,
-                            textSecondary: textSecondary,
-                            isDark: isDark,
-                            muscle: muscle,
-                          ),
-                        ),
-                        const SizedBox(width: 18),
-                        Expanded(
-                          flex: 2,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('All Variations',
-                                  style: TextStyle(
-                                      fontSize: 15, fontWeight: FontWeight.w800, color: textPrimary)),
-                              const SizedBox(height: 12),
-                              _buildVariationsList(
-                                cardColor: cardColor,
-                                borderColor: borderColor,
-                                textPrimary: textPrimary,
-                                textSecondary: textSecondary,
-                                muscle: muscle,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                  const SizedBox(height: 40),
-                ],
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
           ),

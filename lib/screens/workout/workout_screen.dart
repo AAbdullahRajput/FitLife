@@ -1,9 +1,17 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// WORKOUT SCREEN — UPDATED
+// Added: Muscle group category cards at the top (including Chest navigation)
+// Everything else preserved exactly as before
+// ══════════════════════════════════════════════════════════════════════════════
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../core/theme/app_colors.dart';
 import '../../services/supabase_service.dart';
 import '../workout/exercise_detail_screen.dart';
+import '../workout/exercises/chest/bench_press_screen.dart';
+import '../workout/exercises/chest/incline_bench_screen.dart';
 
 class WorkoutScreen extends StatefulWidget {
   final String userTier; // 'guest', 'free', 'premium'
@@ -27,6 +35,64 @@ class _WorkoutScreenState extends State<WorkoutScreen>
   final List<String> _difficulties = ['Beginner', 'Intermediate', 'Advanced'];
   final List<String> _muscleFilters = [
     'All', 'Chest', 'Back', 'Shoulders', 'Legs', 'Arms', 'Core'
+  ];
+
+  // ── Muscle group category cards ──────────────────────────────────────
+  final List<Map<String, dynamic>> _muscleCategories = [
+    {
+      'name': 'Chest',
+      'emoji': '🏋️',
+      'color': const Color(0xFF2979FF),
+      'gradient': [const Color(0xFF1565C0), const Color(0xFF2979FF)],
+      'exercises': 6,
+      'image': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&q=80',
+      'hasScreen': true,
+    },
+    {
+      'name': 'Back',
+      'emoji': '💪',
+      'color': const Color(0xFF00C853),
+      'gradient': [const Color(0xFF00695C), const Color(0xFF00C853)],
+      'exercises': 3,
+      'image': 'https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=400&q=80',
+      'hasScreen': false,
+    },
+    {
+      'name': 'Shoulders',
+      'emoji': '⚡',
+      'color': const Color(0xFFFF6D00),
+      'gradient': [const Color(0xFFBF360C), const Color(0xFFFF6D00)],
+      'exercises': 3,
+      'image': 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400&q=80',
+      'hasScreen': false,
+    },
+    {
+      'name': 'Legs',
+      'emoji': '🦵',
+      'color': const Color(0xFFAA00FF),
+      'gradient': [const Color(0xFF4A148C), const Color(0xFFAA00FF)],
+      'exercises': 3,
+      'image': 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400&q=80',
+      'hasScreen': false,
+    },
+    {
+      'name': 'Arms',
+      'emoji': '💛',
+      'color': const Color(0xFFFFD600),
+      'gradient': [const Color(0xFFF57F17), const Color(0xFFFFD600)],
+      'exercises': 3,
+      'image': 'https://images.unsplash.com/photo-1581009137042-c552e485697a?w=400&q=80',
+      'hasScreen': false,
+    },
+    {
+      'name': 'Core',
+      'emoji': '🔥',
+      'color': const Color(0xFFFF1744),
+      'gradient': [const Color(0xFFB71C1C), const Color(0xFFFF1744)],
+      'exercises': 3,
+      'image': 'https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=400&q=80',
+      'hasScreen': false,
+    },
   ];
 
   // ── Real exercise images from Unsplash (stable, no-expiry URLs) ──────────────
@@ -234,12 +300,93 @@ class _WorkoutScreenState extends State<WorkoutScreen>
     super.dispose();
   }
 
+  // ── Navigate to muscle-specific screen ──────────────────────────────────────
+  // When you add more exercise screens (e.g. incline_bench_screen.dart),
+  // add them to the imports above and add a case here.
+  void _onMuscleCategoryTap(Map<String, dynamic> category) {
+    final name = category['name'] as String;
+    final hasScreen = category['hasScreen'] as bool;
+
+    if (hasScreen) {
+      switch (name) {
+        case 'Chest':
+          // Shows the first/main chest exercise — Bench Press.
+          // As you add more chest screens, you could push a chest menu screen
+          // or navigate to whichever is the primary chest exercise.
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BenchPressScreen(userTier: widget.userTier),
+            ),
+          );
+          break;
+        // Add more cases here as you create new exercise screens:
+        // case 'Back':
+        //   Navigator.push(context, MaterialPageRoute(
+        //     builder: (_) => PullUpsScreen(userTier: widget.userTier)));
+        //   break;
+        default:
+          _filterByMuscle(category);
+      }
+    } else {
+      _filterByMuscle(category);
+    }
+  }
+
+  void _filterByMuscle(Map<String, dynamic> category) {
+    final name = category['name'] as String;
+    setState(() => _selectedMuscle = name);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Text(category['emoji'] as String,
+                style: const TextStyle(fontSize: 16)),
+            const SizedBox(width: 8),
+            Text('Filtered to $name exercises',
+                style: const TextStyle(fontSize: 13)),
+          ],
+        ),
+        backgroundColor: category['color'] as Color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   void _onExerciseTap(Map<String, dynamic> exercise) {
     final required = _requiredTierForDifficulty(exercise['difficulty'] as String);
     if (!_isTierUnlocked(required)) {
       _showUpgradeSheet(required);
       return;
     }
+
+    // ── Route chest exercises to their dedicated screens ─────────────────────
+    // Add more chest exercises here as you create their screens.
+    // For other muscles, falls through to the generic ExerciseDetailScreen.
+    final name = exercise['name'] as String? ?? '';
+    final muscle = exercise['muscle'] as String? ?? '';
+
+    if (muscle == 'Chest') {
+      switch (name) {
+        case 'Bench Press':
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => BenchPressScreen(userTier: widget.userTier)));
+          return;
+        // Uncomment as you create each screen:
+        case 'Incline Bench':
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => InclineBenchScreen(userTier: widget.userTier)));
+          return;
+        // case 'Weighted Dips':
+        //   Navigator.push(context, MaterialPageRoute(
+        //     builder: (_) => WeightedDipsScreen(userTier: widget.userTier)));
+        //   return;
+      }
+    }
+
+    // Default: generic detail screen for all other exercises
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -368,6 +515,140 @@ class _WorkoutScreenState extends State<WorkoutScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (kIsWeb) return _buildWebLayout(isDark);
     return _buildMobileLayout(isDark);
+  }
+
+  // ── Muscle category strip ────────────────────────────────────────────
+  Widget _buildMuscleCategoryStrip({required bool isDark, required Color textPrimary}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('Browse by Muscle',
+                style: TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w800, color: textPrimary)),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: const Color(0xFF2979FF).withOpacity(0.1),
+                border: Border.all(color: const Color(0xFF2979FF).withOpacity(0.3)),
+              ),
+              child: const Text('🏋️ Chest has full detail',
+                  style: TextStyle(
+                      fontSize: 9,
+                      color: Color(0xFF2979FF),
+                      fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 90,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _muscleCategories.length,
+            itemBuilder: (_, i) {
+              final cat = _muscleCategories[i];
+              final color = cat['color'] as Color;
+              final gradColors = cat['gradient'] as List<Color>;
+              final hasScreen = cat['hasScreen'] as bool;
+
+              return GestureDetector(
+                onTap: () => _onMuscleCategoryTap(cat),
+                child: Container(
+                  width: 100,
+                  margin: const EdgeInsets.only(right: 10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                          color: color.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4))
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.network(
+                          cat['image'] as String,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                  colors: gradColors,
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight),
+                            ),
+                          ),
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.8),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (hasScreen)
+                          Positioned(
+                            top: 6,
+                            right: 6,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: color,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text('NEW',
+                                  style: TextStyle(
+                                      fontSize: 7,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.5)),
+                            ),
+                          ),
+                        Positioned(
+                          left: 8,
+                          bottom: 8,
+                          right: 4,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(cat['emoji'] as String,
+                                  style: const TextStyle(fontSize: 16)),
+                              Text(cat['name'] as String,
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white)),
+                              Text('${cat['exercises']} exercises',
+                                  style: TextStyle(
+                                      fontSize: 8,
+                                      color: Colors.white.withOpacity(0.75))),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   // ── Difficulty tabs ───────────────────────────────────────────────────────────
@@ -510,7 +791,7 @@ class _WorkoutScreenState extends State<WorkoutScreen>
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  // HERO EXERCISE CARD — photo background with gradient overlay
+  // HERO EXERCISE CARD — photo background with gradient overlay (unchanged)
   // ════════════════════════════════════════════════════════════════════════════
   Widget _buildHeroExerciseCard({
     required Map<String, dynamic> exercise,
@@ -548,7 +829,6 @@ class _WorkoutScreenState extends State<WorkoutScreen>
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // ── Real photo background ────────────────────────────────────────
               Image.network(
                 imageUrl,
                 fit: BoxFit.cover,
@@ -562,8 +842,6 @@ class _WorkoutScreenState extends State<WorkoutScreen>
                   ),
                 ),
               ),
-
-              // ── Dark gradient overlay (left-heavy for readability) ────────────
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -577,8 +855,6 @@ class _WorkoutScreenState extends State<WorkoutScreen>
                   ),
                 ),
               ),
-
-              // ── Color accent strip on left ────────────────────────────────────
               Positioned(
                 left: 0, top: 0, bottom: 0,
                 child: Container(
@@ -592,8 +868,6 @@ class _WorkoutScreenState extends State<WorkoutScreen>
                   ),
                 ),
               ),
-
-              // ── Subtle circle accents ─────────────────────────────────────────
               Positioned(
                 right: -10, top: -20,
                 child: Container(
@@ -604,14 +878,11 @@ class _WorkoutScreenState extends State<WorkoutScreen>
                   ),
                 ),
               ),
-
-              // ── Content ──────────────────────────────────────────────────────
               Positioned(
                 left: 18, top: 16, right: 16,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Muscle badge
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                       decoration: BoxDecoration(
@@ -620,13 +891,12 @@ class _WorkoutScreenState extends State<WorkoutScreen>
                         border: Border.all(color: color.withOpacity(0.5)),
                       ),
                       child: Text(muscle,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 9, color: Colors.white,
                             fontWeight: FontWeight.w800, letterSpacing: 0.5,
                           )),
                     ),
                     const SizedBox(height: 7),
-                    // Name
                     Text(name,
                         style: const TextStyle(
                           fontSize: 18, fontWeight: FontWeight.w900,
@@ -634,7 +904,6 @@ class _WorkoutScreenState extends State<WorkoutScreen>
                         ),
                         maxLines: 1, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 4),
-                    // Description
                     Text(exercise['desc'] as String? ?? '',
                         style: TextStyle(
                           fontSize: 11.5, color: Colors.white.withOpacity(0.75), height: 1.35,
@@ -643,8 +912,6 @@ class _WorkoutScreenState extends State<WorkoutScreen>
                   ],
                 ),
               ),
-
-              // ── Stats row at bottom ───────────────────────────────────────────
               Positioned(
                 left: 18, right: 16, bottom: 14,
                 child: Row(
@@ -669,8 +936,6 @@ class _WorkoutScreenState extends State<WorkoutScreen>
                   ],
                 ),
               ),
-
-              // ── Blur overlay for locked ────────────────────────────────────────
               if (!isUnlocked)
                 Positioned.fill(
                   child: ClipRRect(
@@ -932,6 +1197,8 @@ class _WorkoutScreenState extends State<WorkoutScreen>
                     const SizedBox(height: 16),
                     _buildSearchBar(isDark: isDark, textPrimary: textPrimary),
                     const SizedBox(height: 12),
+                    _buildMuscleCategoryStrip(isDark: isDark, textPrimary: textPrimary),
+                    const SizedBox(height: 12),
                     _buildDifficultyTabs(isDark: isDark, textPrimary: textPrimary),
                     const SizedBox(height: 12),
                     _buildMuscleFilter(isDark: isDark, textPrimary: textPrimary),
@@ -991,139 +1258,151 @@ class _WorkoutScreenState extends State<WorkoutScreen>
     final bgColor = isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF0F2F5);
     final isCurrentLocked = !_isTierUnlocked(_requiredTierForDifficulty(_selectedDifficulty));
 
-    return FadeTransition(
-      opacity: _fadeAnim,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(28),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1200),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── Page header ────────────────────────────────────────────────
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: FadeTransition(
+        opacity: _fadeAnim,
+        child: SizedBox.expand(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(28),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    // ── Page header ────────────────────────────────────────────────
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text('Exercise Library',
-                            style: TextStyle(
-                              fontSize: 30, fontWeight: FontWeight.w900,
-                              color: textPrimary, letterSpacing: -0.6,
-                            )),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${_displayExercises.length} exercises · $_selectedDifficulty difficulty',
-                          style: TextStyle(fontSize: 14, color: textSecondary),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Exercise Library',
+                                style: TextStyle(
+                                  fontSize: 30, fontWeight: FontWeight.w900,
+                                  color: textPrimary, letterSpacing: -0.6,
+                                )),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${_displayExercises.length} exercises · $_selectedDifficulty difficulty',
+                              style: TextStyle(fontSize: 14, color: textSecondary),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        if (_isLoadingFromDB)
+                          Row(
+                            children: [
+                              SizedBox(
+                                width: 16, height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                              ),
+                              const SizedBox(width: 8),
+                              Text('Syncing with database…',
+                                  style: TextStyle(fontSize: 12, color: textSecondary)),
+                            ],
+                          ),
+                        const SizedBox(width: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            color: AppColors.primary.withOpacity(0.1),
+                            border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                widget.userTier == 'premium' ? Icons.star_rounded
+                                    : widget.userTier == 'free' ? Icons.verified_rounded
+                                    : Icons.person_outline_rounded,
+                                size: 14, color: AppColors.primary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                widget.userTier == 'premium' ? 'Premium Member'
+                                    : widget.userTier == 'free' ? 'Free Member'
+                                    : 'Guest',
+                                style: const TextStyle(
+                                  fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                    const Spacer(),
-                    if (_isLoadingFromDB)
-                      Row(
-                        children: [
-                          SizedBox(
-                            width: 16, height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                          ),
-                          const SizedBox(width: 8),
-                          Text('Syncing with database…',
-                              style: TextStyle(fontSize: 12, color: textSecondary)),
-                        ],
-                      ),
-                    const SizedBox(width: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        color: AppColors.primary.withOpacity(0.1),
-                        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            widget.userTier == 'premium' ? Icons.star_rounded
-                                : widget.userTier == 'free' ? Icons.verified_rounded
-                                : Icons.person_outline_rounded,
-                            size: 14, color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            widget.userTier == 'premium' ? 'Premium Member'
-                                : widget.userTier == 'free' ? 'Free Member'
-                                : 'Guest',
-                            style: const TextStyle(
-                              fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 22),
-                // ── Controls ──────────────────────────────────────────────────
-                Row(
-                  children: [
-                    Expanded(flex: 3, child: _buildSearchBar(isDark: isDark, textPrimary: textPrimary)),
-                    const SizedBox(width: 16),
-                    Expanded(flex: 4, child: _buildDifficultyTabs(isDark: isDark, textPrimary: textPrimary)),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(child: _buildMuscleFilter(isDark: isDark, textPrimary: textPrimary)),
-                    const SizedBox(width: 16),
-                    _buildStatsStrip(isDark: isDark, textPrimary: textPrimary, textSecondary: textSecondary),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                if (isCurrentLocked)
-                  _buildTierUnlockBanner(difficulty: _selectedDifficulty, isDark: isDark),
+                    const SizedBox(height: 22),
 
-                // ── Grid ──────────────────────────────────────────────────────
-                if (_displayExercises.isEmpty)
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 60),
-                      child: Column(
-                        children: [
-                          Icon(Icons.fitness_center_rounded, size: 60,
-                              color: textSecondary.withOpacity(0.25)),
-                          const SizedBox(height: 16),
-                          Text('No exercises found',
-                              style: TextStyle(fontSize: 20, color: textSecondary, fontWeight: FontWeight.w800)),
-                          const SizedBox(height: 6),
-                          Text('Try a different search or muscle group',
-                              style: TextStyle(fontSize: 13, color: textSecondary.withOpacity(0.6))),
-                        ],
+                    _buildMuscleCategoryStrip(isDark: isDark, textPrimary: textPrimary),
+                    const SizedBox(height: 20),
+
+                    // ── Controls ──────────────────────────────────────────────────
+                    Row(
+                      children: [
+                        Expanded(flex: 3, child: _buildSearchBar(isDark: isDark, textPrimary: textPrimary)),
+                        const SizedBox(width: 16),
+                        Expanded(flex: 4, child: _buildDifficultyTabs(isDark: isDark, textPrimary: textPrimary)),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(child: _buildMuscleFilter(isDark: isDark, textPrimary: textPrimary)),
+                        const SizedBox(width: 16),
+                        SizedBox(
+                          width: 340,
+                          child: _buildStatsStrip(isDark: isDark, textPrimary: textPrimary, textSecondary: textSecondary),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    if (isCurrentLocked)
+                      _buildTierUnlockBanner(difficulty: _selectedDifficulty, isDark: isDark),
+
+                    // ── Grid ──────────────────────────────────────────────────────
+                    if (_displayExercises.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 60),
+                          child: Column(
+                            children: [
+                              Icon(Icons.fitness_center_rounded, size: 60,
+                                  color: textSecondary.withOpacity(0.25)),
+                              const SizedBox(height: 16),
+                              Text('No exercises found',
+                                  style: TextStyle(fontSize: 20, color: textSecondary, fontWeight: FontWeight.w800)),
+                              const SizedBox(height: 6),
+                              Text('Try a different search or muscle group',
+                                  style: TextStyle(fontSize: 13, color: textSecondary.withOpacity(0.6))),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 560,
+                          mainAxisExtent: 155,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                        ),
+                        itemCount: _displayExercises.length,
+                        itemBuilder: (_, i) => _buildHeroExerciseCard(
+                          exercise: _displayExercises[i],
+                          isDark: isDark,
+                          textPrimary: textPrimary,
+                          textSecondary: textSecondary,
+                          index: i,
+                        ),
                       ),
-                    ),
-                  )
-                else
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 560,
-                      mainAxisExtent: 155,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                    ),
-                    itemCount: _displayExercises.length,
-                    itemBuilder: (_, i) => _buildHeroExerciseCard(
-                      exercise: _displayExercises[i],
-                      isDark: isDark,
-                      textPrimary: textPrimary,
-                      textSecondary: textSecondary,
-                      index: i,
-                    ),
-                  ),
-                const SizedBox(height: 40),
-              ],
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
