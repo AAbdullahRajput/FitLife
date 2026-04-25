@@ -13,6 +13,7 @@ import '../meals/meals_screen.dart';
 import '../progress/progress_screen.dart';
 import '../profile/profile_screen.dart';
 import '../settings/settings_screen.dart';
+import '../workout/exercises/chest/chest_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,12 +27,13 @@ class _HomeScreenState extends State<HomeScreen>
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   int _selectedTab = 0;
-  String _webSection = 'Dashboard';
-  bool _isLoggedIn = false;
-  bool _isLoadingData = false;
+String _webSection = 'Dashboard';
+bool _isLoggedIn = false;
+bool _isLoadingData = false;
+Widget? _activeExerciseScreen;   // ← ADD THIS LINE
 
-  // ── Sidebar collapsed/expanded ──────────────────────────────────────────────
-  bool _sidebarExpanded = false;
+// ── Sidebar collapsed/expanded ──────────────────────────────────────────────
+bool _sidebarExpanded = false;
 
   // ── Profile dropdown ─────────────────────────────────────────────────────────
   bool _showProfileDropdown = false;
@@ -524,7 +526,17 @@ class _HomeScreenState extends State<HomeScreen>
       Color cardColor, Color borderColor) {
     switch (_webSection) {
       case 'Workouts':
-        return WorkoutScreen(userTier: _userTier);
+  return WorkoutScreen(
+    userTier: _userTier,
+    onNavigateToSection: (section) => setState(() => _webSection = section),
+  );
+case 'Chest':
+  return ChestScreen(
+    userTier: _userTier,
+    onBack: () => setState(() => _webSection = 'Workouts'),
+    onNavigateTo: (screen) => setState(() => _webSection = 'ExerciseDetail'),
+  );
+  
       case 'Diet Plan':
         return MealsScreen(userTier: _userTier);
       case 'Progress':

@@ -1,11 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:provider/provider.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/theme_provider.dart';
 import '../../../../services/supabase_service.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -32,9 +30,11 @@ class _BenchPressScreenState extends State<BenchPressScreen>
   int _selectedVariation = 0;
   bool _isLoggingWorkout = false;
 
+  // ── Exercise colour ────────────────────────────────────────────────────────
   static const Color _color = Color(0xFF2979FF);
   static const List<Color> _gradient = [Color(0xFF1565C0), Color(0xFF2979FF)];
 
+  // ── Core exercise data ─────────────────────────────────────────────────────
   static const Map<String, dynamic> _exercise = {
     'name': 'Bench Press',
     'difficulty': 'Beginner',
@@ -81,6 +81,7 @@ class _BenchPressScreenState extends State<BenchPressScreen>
     'Not using a full range of motion.',
   ];
 
+  // ── Variations ─────────────────────────────────────────────────────────────
   static const List<Map<String, dynamic>> _variations = [
     {
       'name': 'Flat Bench Press',
@@ -160,11 +161,13 @@ class _BenchPressScreenState extends State<BenchPressScreen>
     },
   ];
 
+  // ── Tier helpers ───────────────────────────────────────────────────────────
   bool _isTierUnlocked(String required) {
     const order = {'guest': 0, 'free': 1, 'premium': 2};
     return (order[widget.userTier] ?? 0) >= (order[required] ?? 0);
   }
 
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
@@ -193,10 +196,13 @@ class _BenchPressScreenState extends State<BenchPressScreen>
   @override
   void dispose() {
     _animController.dispose();
-    if (!kIsWeb) _ytController?.close();
+    if (!kIsWeb) {
+      _ytController?.close();
+    }
     super.dispose();
   }
 
+  // ── Log workout ────────────────────────────────────────────────────────────
   Future<void> _logWorkout() async {
     if (!SupabaseService.isLoggedIn) {
       _showUpgradeDialog('free');
@@ -227,13 +233,15 @@ class _BenchPressScreenState extends State<BenchPressScreen>
     }
   }
 
+  // ── Upgrade dialogs ────────────────────────────────────────────────────────
   void _showUpgradeDialog(String requiredTier) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: isDark ? const Color(0xFF141414) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('🔒 Locked'),
         content: Text(
           requiredTier == 'premium'
@@ -277,7 +285,8 @@ class _BenchPressScreenState extends State<BenchPressScreen>
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 48),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF141414) : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(28)),
           border: Border.all(color: color.withOpacity(0.25)),
         ),
         child: Column(
@@ -302,8 +311,8 @@ class _BenchPressScreenState extends State<BenchPressScreen>
                 ]),
                 border: Border.all(color: color.withOpacity(0.4), width: 2),
               ),
-              child:
-                  Center(child: Icon(Icons.lock_rounded, color: color, size: 30)),
+              child: Center(
+                  child: Icon(Icons.lock_rounded, color: color, size: 30)),
             ),
             const SizedBox(height: 18),
             Text(
@@ -316,8 +325,8 @@ class _BenchPressScreenState extends State<BenchPressScreen>
             const SizedBox(height: 10),
             Text(
               isPremium
-                  ? 'This variation is exclusive to Premium members.'
-                  : 'Create a free account to unlock this variation.',
+                  ? 'This variation is exclusive to Premium members. Upgrade to unlock all advanced workouts.'
+                  : 'Create a free account to unlock this variation and track your progress.',
               textAlign: TextAlign.center,
               style: TextStyle(
                   fontSize: 14,
@@ -354,7 +363,9 @@ class _BenchPressScreenState extends State<BenchPressScreen>
                 ),
                 child: Center(
                   child: Text(
-                    isPremium ? '⭐ Upgrade to Premium' : '✨ Create Free Account',
+                    isPremium
+                        ? '⭐ Upgrade to Premium'
+                        : '✨ Create Free Account',
                     style: TextStyle(
                         color: isPremium ? Colors.white : Colors.black,
                         fontSize: 16,
@@ -379,6 +390,9 @@ class _BenchPressScreenState extends State<BenchPressScreen>
     );
   }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // BUILD
+  // ══════════════════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -386,7 +400,9 @@ class _BenchPressScreenState extends State<BenchPressScreen>
     return _buildMobileLayout(isDark);
   }
 
-  // ── Shared widgets ─────────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  // SHARED WIDGETS
+  // ══════════════════════════════════════════════════════════════════════════
 
   Widget _buildBadge(String text, Color color) {
     return Container(
@@ -477,6 +493,7 @@ class _BenchPressScreenState extends State<BenchPressScreen>
     );
   }
 
+  // ── Variation selector pills ───────────────────────────────────────────────
   Widget _buildVariationSelector(
       {required Color textPrimary, required Color textSecondary}) {
     return SizedBox(
@@ -501,7 +518,8 @@ class _BenchPressScreenState extends State<BenchPressScreen>
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               margin: const EdgeInsets.only(right: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(22),
                 color: isSelected ? color : color.withOpacity(0.1),
@@ -524,7 +542,8 @@ class _BenchPressScreenState extends State<BenchPressScreen>
                       padding: const EdgeInsets.only(right: 4),
                       child: Icon(Icons.lock_rounded,
                           size: 11,
-                          color: isSelected ? Colors.white : textSecondary),
+                          color:
+                              isSelected ? Colors.white : textSecondary),
                     ),
                   Text(v['name'] as String,
                       style: TextStyle(
@@ -542,6 +561,7 @@ class _BenchPressScreenState extends State<BenchPressScreen>
     );
   }
 
+  // ── Variation detail card ──────────────────────────────────────────────────
   Widget _buildVariationDetail({
     required Map<String, dynamic> variation,
     required Color cardColor,
@@ -569,7 +589,8 @@ class _BenchPressScreenState extends State<BenchPressScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(20)),
             child: SizedBox(
               height: 180,
               width: double.infinity,
@@ -577,7 +598,8 @@ class _BenchPressScreenState extends State<BenchPressScreen>
                 fit: StackFit.expand,
                 children: [
                   Image.network(
-                    variation['image'] as String? ?? _exercise['image'] as String,
+                    variation['image'] as String? ??
+                        _exercise['image'] as String,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
                       decoration: BoxDecoration(
@@ -630,7 +652,8 @@ class _BenchPressScreenState extends State<BenchPressScreen>
                             ],
                           ),
                         ),
-                        _buildTierBadge(variation['tier'] as String? ?? 'guest'),
+                        _buildTierBadge(
+                            variation['tier'] as String? ?? 'guest'),
                       ],
                     ),
                   ),
@@ -746,6 +769,7 @@ class _BenchPressScreenState extends State<BenchPressScreen>
     );
   }
 
+  // ── Variations list ────────────────────────────────────────────────────────
   Widget _buildVariationsList({
     required Color cardColor,
     required Color borderColor,
@@ -789,13 +813,15 @@ class _BenchPressScreenState extends State<BenchPressScreen>
                       fit: StackFit.expand,
                       children: [
                         Image.network(
-                          v['image'] as String? ?? _exercise['image'] as String,
+                          v['image'] as String? ??
+                              _exercise['image'] as String,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Container(
                             color: color.withOpacity(0.15),
                             child: Center(
                                 child: Text(v['emoji'] as String? ?? '🏋️',
-                                    style: const TextStyle(fontSize: 22))),
+                                    style:
+                                        const TextStyle(fontSize: 22))),
                           ),
                         ),
                         if (!isUnlocked)
@@ -844,7 +870,8 @@ class _BenchPressScreenState extends State<BenchPressScreen>
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              _buildTierBadge(v['tier'] as String? ?? 'guest'),
+                              _buildTierBadge(
+                                  v['tier'] as String? ?? 'guest'),
                               const SizedBox(height: 4),
                               Text('${v['sets']}×${v['reps']}',
                                   style: TextStyle(
@@ -866,49 +893,65 @@ class _BenchPressScreenState extends State<BenchPressScreen>
     );
   }
 
+  // ── Video card — platform-aware ────────────────────────────────────────────
   Widget _buildVideoCard(bool isDark) {
-    // Both web and mobile use thumbnail + YouTube link for now
-    return GestureDetector(
-      onTap: () => launchUrl(
-        Uri.parse(_exercise['videoUrl'] as String),
-        mode: LaunchMode.externalApplication,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: AspectRatio(
-          aspectRatio: 16 / 9,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image.network(
-                _exercise['videoThumbnail'] as String,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    Container(color: Colors.black),
-              ),
-              Container(color: Colors.black.withOpacity(0.35)),
-              const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.play_circle_filled_rounded,
-                        color: Colors.red, size: 64),
-                    SizedBox(height: 10),
-                    Text('Watch on YouTube',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700)),
-                  ],
+    if (kIsWeb) {
+      return GestureDetector(
+        onTap: () => launchUrl(
+          Uri.parse(_exercise['videoUrl'] as String),
+          mode: LaunchMode.externalApplication,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.network(
+                  _exercise['videoThumbnail'] as String,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: Colors.black,
+                  ),
                 ),
-              ),
-            ],
+                Container(
+                  color: Colors.black.withOpacity(0.35),
+                ),
+                const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.play_circle_filled_rounded,
+                          color: Colors.red, size: 64),
+                      SizedBox(height: 10),
+                      Text('Watch on YouTube',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
+      );
+    }
+
+    // Mobile: embedded player
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: YoutubePlayerScaffold(
+        controller: _ytController!,
+        aspectRatio: 16 / 9,
+        builder: (context, player) => player,
       ),
     );
   }
 
+  // ── Log button ─────────────────────────────────────────────────────────────
   Widget _buildLogButton() {
     return GestureDetector(
       onTap: _isLoggingWorkout ? null : _logWorkout,
@@ -950,105 +993,6 @@ class _BenchPressScreenState extends State<BenchPressScreen>
                   ],
                 ),
         ),
-      ),
-    );
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // WEB NAVBAR — always visible
-  // ══════════════════════════════════════════════════════════════════════════
-  Widget _buildWebNavBar(bool isDark) {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final bg = isDark ? const Color(0xFF0D0D0D) : Colors.white;
-    final border = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFEEEEEE);
-    final textSecondary =
-        isDark ? const Color(0xFFB0B0B0) : const Color(0xFF666666);
-
-    final navItems = [
-      {'label': 'Dashboard', 'route': '/home'},
-      {'label': 'Workouts', 'route': '/workout'},
-      {'label': 'Diet', 'route': '/diet'},
-      {'label': 'Progress', 'route': '/progress'},
-    ];
-
-    return Container(
-      height: 60,
-      decoration: BoxDecoration(
-        color: bg,
-        border: Border(bottom: BorderSide(color: border)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        children: [
-          // Logo
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary.withOpacity(0.15),
-                  border:
-                      Border.all(color: AppColors.primary.withOpacity(0.4)),
-                ),
-                child: const Center(
-                    child: Text('💪', style: TextStyle(fontSize: 14))),
-              ),
-              const SizedBox(width: 8),
-              Text('FitLife',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.primary)),
-            ],
-          ),
-          const Spacer(),
-          // Nav links
-          ...navItems.map((item) {
-            final isActive = item['label'] == 'Workouts';
-            return GestureDetector(
-              onTap: () => Navigator.pushNamed(context, item['route']!),
-              child: Container(
-                margin: const EdgeInsets.only(left: 4),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: isActive
-                      ? AppColors.primary.withOpacity(0.12)
-                      : Colors.transparent,
-                ),
-                child: Text(item['label']!,
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight:
-                            isActive ? FontWeight.w800 : FontWeight.w500,
-                        color:
-                            isActive ? AppColors.primary : textSecondary)),
-              ),
-            );
-          }),
-          const SizedBox(width: 16),
-          // Theme toggle
-          GestureDetector(
-            onTap: () => themeProvider.toggleTheme(),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isDark
-                    ? const Color(0xFF1A1A1A)
-                    : const Color(0xFFF5F5F5),
-              ),
-              child: Icon(
-                isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                size: 16,
-                color: textSecondary,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1150,7 +1094,8 @@ class _BenchPressScreenState extends State<BenchPressScreen>
                     ),
                     SafeArea(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 48, 20, 18),
+                        padding:
+                            const EdgeInsets.fromLTRB(20, 48, 20, 18),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.end,
@@ -1192,8 +1137,8 @@ class _BenchPressScreenState extends State<BenchPressScreen>
                                           _buildBadge('Beginner',
                                               AppColors.primary),
                                           const SizedBox(width: 8),
-                                          _buildBadge('4 Variations',
-                                              textSecondary),
+                                          _buildBadge(
+                                              '4 Variations', textSecondary),
                                         ],
                                       ),
                                     ],
@@ -1209,6 +1154,7 @@ class _BenchPressScreenState extends State<BenchPressScreen>
                 ),
               ),
             ),
+
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -1377,7 +1323,7 @@ class _BenchPressScreenState extends State<BenchPressScreen>
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // WEB LAYOUT — navbar always on top
+  // WEB LAYOUT
   // ══════════════════════════════════════════════════════════════════════════
   Widget _buildWebLayout(bool isDark) {
     final textPrimary = isDark ? Colors.white : const Color(0xFF0A0A0A);
@@ -1391,26 +1337,21 @@ class _BenchPressScreenState extends State<BenchPressScreen>
 
     return Scaffold(
       backgroundColor: bgColor,
-      body: Column(
-        children: [
-          // ── Always-visible navbar ──
-          _buildWebNavBar(isDark),
-
-          // ── Scrollable content ──
-          Expanded(
-            child: FadeTransition(
-              opacity: _fadeAnim,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(28),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1000),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+      body: FadeTransition(
+        opacity: _fadeAnim,
+        child: SizedBox.expand(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(28),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1000),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        // Breadcrumb back to Chest
                         GestureDetector(
-                          onTap: () => Navigator.pushNamed(context, '/chest'),
+                          onTap: () => Navigator.pop(context),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -1423,370 +1364,396 @@ class _BenchPressScreenState extends State<BenchPressScreen>
                             ],
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        // Hero banner
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: SizedBox(
-                            height: 240,
-                            width: double.infinity,
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                Image.network(
-                                  _exercise['image'] as String,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Container(
-                                    decoration: const BoxDecoration(
-                                      gradient: LinearGradient(
-                                          colors: _gradient,
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight),
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.centerLeft,
-                                      end: Alignment.centerRight,
-                                      colors: [
-                                        Colors.black.withOpacity(0.85),
-                                        Colors.black.withOpacity(0.2)
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  left: 28,
-                                  top: 0,
-                                  bottom: 0,
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text('🏋️',
-                                          style: TextStyle(fontSize: 40)),
-                                      const SizedBox(height: 8),
-                                      const Text('Bench Press',
-                                          style: TextStyle(
-                                              fontSize: 32,
-                                              fontWeight: FontWeight.w900,
-                                              color: Colors.white,
-                                              letterSpacing: -0.5)),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          _buildBadge('Chest', _color),
-                                          const SizedBox(width: 8),
-                                          _buildBadge('Beginner',
-                                              AppColors.primary),
-                                          const SizedBox(width: 8),
-                                          _buildBadge('Barbell, Bench',
-                                              const Color(0xFFFFD600)),
-                                          const SizedBox(width: 8),
-                                          _buildBadge(
-                                              '${_variations.length} Variations',
-                                              textSecondary),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: _isLoggingWorkout ? null : _logWorkout,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 10),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              gradient: const LinearGradient(colors: [
+                                Color(0xFF00C853),
+                                Color(0xFF69F0AE)
+                              ]),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: const Color(0xFF00C853)
+                                        .withOpacity(0.35),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4))
                               ],
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        // Muscles row
-                        Container(
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            color: cardColor,
-                            border:
-                                Border.all(color: _color.withOpacity(0.2)),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('💪 Primary Muscles',
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w800,
-                                            color: textPrimary)),
-                                    const SizedBox(height: 8),
-                                    Wrap(
-                                      spacing: 6,
-                                      runSpacing: 6,
-                                      children: _primaryMuscles
-                                          .map((m) => _buildMuscleBadge(
-                                              m, _color, true))
-                                          .toList(),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 20),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('🔧 Secondary Muscles',
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w800,
-                                            color: textPrimary)),
-                                    const SizedBox(height: 8),
-                                    Wrap(
-                                      spacing: 6,
-                                      runSpacing: 6,
-                                      children: _secondaryMuscles
-                                          .map((m) => _buildMuscleBadge(
-                                              m, _color, false))
-                                          .toList(),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 20),
-                              const Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Row(
+                            child: _isLoggingWorkout
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.black))
+                                : const Row(
                                     children: [
-                                      Icon(Icons.construction_rounded,
-                                          size: 13, color: _color),
+                                      Icon(Icons.fitness_center_rounded,
+                                          color: Colors.black, size: 16),
                                       SizedBox(width: 6),
-                                      Text('Barbell, Bench',
+                                      Text('Log Workout',
                                           style: TextStyle(
-                                              fontSize: 12,
-                                              color: Color(0xFF888888),
-                                              fontWeight: FontWeight.w600)),
+                                              color: Colors.black,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w800)),
                                     ],
                                   ),
-                                  SizedBox(height: 6),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: SizedBox(
+                        height: 240,
+                        width: double.infinity,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.network(
+                              _exercise['image'] as String,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                      colors: _gradient,
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                  colors: [
+                                    Colors.black.withOpacity(0.85),
+                                    Colors.black.withOpacity(0.2)
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              left: 28,
+                              top: 0,
+                              bottom: 0,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('🏋️',
+                                      style: TextStyle(fontSize: 40)),
+                                  const SizedBox(height: 8),
+                                  const Text('Bench Press',
+                                      style: TextStyle(
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.w900,
+                                          color: Colors.white,
+                                          letterSpacing: -0.5)),
+                                  const SizedBox(height: 10),
                                   Row(
                                     children: [
-                                      Icon(
-                                          Icons.local_fire_department_rounded,
-                                          size: 13,
-                                          color: Color(0xFFFFD600)),
-                                      SizedBox(width: 4),
-                                      Text('~120 kcal/session',
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              color: Color(0xFFFFD600),
-                                              fontWeight: FontWeight.w700)),
+                                      _buildBadge('Chest', _color),
+                                      const SizedBox(width: 8),
+                                      _buildBadge(
+                                          'Beginner', AppColors.primary),
+                                      const SizedBox(width: 8),
+                                      _buildBadge('Barbell, Bench',
+                                          const Color(0xFFFFD600)),
+                                      const SizedBox(width: 8),
+                                      _buildBadge(
+                                          '${_variations.length} Variations',
+                                          textSecondary),
                                     ],
                                   ),
                                 ],
                               ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: cardColor,
+                        border: Border.all(color: _color.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('💪 Primary Muscles',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w800,
+                                        color: textPrimary)),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: _primaryMuscles
+                                      .map((m) =>
+                                          _buildMuscleBadge(m, _color, true))
+                                      .toList(),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('🔧 Secondary Muscles',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w800,
+                                        color: textPrimary)),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: _secondaryMuscles
+                                      .map((m) =>
+                                          _buildMuscleBadge(m, _color, false))
+                                      .toList(),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          const Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.construction_rounded,
+                                      size: 13, color: _color),
+                                  SizedBox(width: 6),
+                                  Text('Barbell, Bench',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF888888),
+                                          fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                              SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Icon(Icons.local_fire_department_rounded,
+                                      size: 13, color: Color(0xFFFFD600)),
+                                  SizedBox(width: 4),
+                                  Text('~120 kcal/session',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFFFFD600),
+                                          fontWeight: FontWeight.w700)),
+                                ],
+                              ),
                             ],
                           ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              color: cardColor,
+                              border: Border.all(
+                                  color: _color.withOpacity(0.2)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildSectionHeader('💡 Pro Tips', _color),
+                                const SizedBox(height: 12),
+                                ..._tips.asMap().entries.map(
+                                      (entry) => Padding(
+                                        padding: const EdgeInsets.only(
+                                            bottom: 10),
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Container(
+                                              width: 22,
+                                              height: 22,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color:
+                                                    _color.withOpacity(0.15),
+                                                border: Border.all(
+                                                    color: _color
+                                                        .withOpacity(0.4)),
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                    '${entry.key + 1}',
+                                                    style: const TextStyle(
+                                                        fontSize: 10,
+                                                        fontWeight:
+                                                            FontWeight.w900,
+                                                        color: _color)),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.only(
+                                                        top: 3),
+                                                child: Text(entry.value,
+                                                    style: TextStyle(
+                                                        fontSize: 12.5,
+                                                        color: textSecondary,
+                                                        height: 1.4)),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                              ],
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 24),
-                        // Tips + mistakes + video
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Container(
+                        const SizedBox(width: 18),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              Container(
                                 padding: const EdgeInsets.all(18),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16),
                                   color: cardColor,
                                   border: Border.all(
-                                      color: _color.withOpacity(0.2)),
+                                      color: const Color(0xFFFF1744)
+                                          .withOpacity(0.2)),
                                 ),
                                 child: Column(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.start,
                                   children: [
                                     _buildSectionHeader(
-                                        '💡 Pro Tips', _color),
+                                        '⚠️ Common Mistakes',
+                                        const Color(0xFFFF1744)),
                                     const SizedBox(height: 12),
-                                    ..._tips.asMap().entries.map(
-                                          (entry) => Padding(
-                                            padding: const EdgeInsets.only(
-                                                bottom: 10),
-                                            child: Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Container(
-                                                  width: 22,
-                                                  height: 22,
-                                                  decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    color: _color
-                                                        .withOpacity(0.15),
-                                                    border: Border.all(
-                                                        color: _color
-                                                            .withOpacity(
-                                                                0.4)),
-                                                  ),
-                                                  child: Center(
-                                                    child: Text(
-                                                        '${entry.key + 1}',
-                                                        style: const TextStyle(
-                                                            fontSize: 10,
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .w900,
-                                                            color: _color)),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Expanded(
-                                                  child: Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            top: 3),
-                                                    child: Text(entry.value,
-                                                        style: TextStyle(
-                                                            fontSize: 12.5,
-                                                            color:
-                                                                textSecondary,
-                                                            height: 1.4)),
-                                                  ),
-                                                ),
-                                              ],
+                                    ..._commonMistakes.map(
+                                      (m) => Padding(
+                                        padding: const EdgeInsets.only(
+                                            bottom: 10),
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Padding(
+                                              padding:
+                                                  EdgeInsets.only(top: 3),
+                                              child: Icon(
+                                                  Icons.cancel_outlined,
+                                                  size: 14,
+                                                  color: Color(0xFFFF1744)),
                                             ),
-                                          ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(m,
+                                                  style: TextStyle(
+                                                      fontSize: 12.5,
+                                                      color: textSecondary,
+                                                      height: 1.4)),
+                                            ),
+                                          ],
                                         ),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 18),
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(18),
-                                    decoration: BoxDecoration(
-                                      borderRadius:
-                                          BorderRadius.circular(16),
-                                      color: cardColor,
-                                      border: Border.all(
-                                          color: const Color(0xFFFF1744)
-                                              .withOpacity(0.2)),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        _buildSectionHeader(
-                                            '⚠️ Common Mistakes',
-                                            const Color(0xFFFF1744)),
-                                        const SizedBox(height: 12),
-                                        ..._commonMistakes.map(
-                                          (m) => Padding(
-                                            padding: const EdgeInsets.only(
-                                                bottom: 10),
-                                            child: Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                const Padding(
-                                                  padding: EdgeInsets.only(
-                                                      top: 3),
-                                                  child: Icon(
-                                                      Icons.cancel_outlined,
-                                                      size: 14,
-                                                      color:
-                                                          Color(0xFFFF1744)),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: Text(m,
-                                                      style: TextStyle(
-                                                          fontSize: 12.5,
-                                                          color:
-                                                              textSecondary,
-                                                          height: 1.4)),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 18),
-                                  _buildSectionHeader(
-                                      '🎬 Tutorial Video', _color),
-                                  const SizedBox(height: 10),
-                                  _buildVideoCard(isDark),
-                                ],
-                              ),
-                            ),
-                          ],
+                              const SizedBox(height: 18),
+                              _buildSectionHeader(
+                                  '🎬 Tutorial Video', _color),
+                              const SizedBox(height: 10),
+                              _buildVideoCard(isDark),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 24),
-                        Text('Exercise Variations',
-                            style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                color: textPrimary)),
-                        const SizedBox(height: 12),
-                        _buildVariationSelector(
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Text('Exercise Variations',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: textPrimary)),
+                    const SizedBox(height: 12),
+                    _buildVariationSelector(
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary),
+                    const SizedBox(height: 20),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: _buildVariationDetail(
+                            variation: _variations[_selectedVariation],
+                            cardColor: cardColor,
+                            borderColor: borderColor,
                             textPrimary: textPrimary,
-                            textSecondary: textSecondary),
-                        const SizedBox(height: 20),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: _buildVariationDetail(
-                                variation: _variations[_selectedVariation],
+                            textSecondary: textSecondary,
+                            isDark: isDark,
+                          ),
+                        ),
+                        const SizedBox(width: 18),
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('All Variations',
+                                  style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      color: textPrimary)),
+                              const SizedBox(height: 12),
+                              _buildVariationsList(
                                 cardColor: cardColor,
                                 borderColor: borderColor,
                                 textPrimary: textPrimary,
                                 textSecondary: textSecondary,
-                                isDark: isDark,
                               ),
-                            ),
-                            const SizedBox(width: 18),
-                            Expanded(
-                              flex: 2,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('All Variations',
-                                      style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w800,
-                                          color: textPrimary)),
-                                  const SizedBox(height: 12),
-                                  _buildVariationsList(
-                                    cardColor: cardColor,
-                                    borderColor: borderColor,
-                                    textPrimary: textPrimary,
-                                    textSecondary: textSecondary,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 32),
-                        _buildLogButton(),
-                        const SizedBox(height: 40),
                       ],
                     ),
-                  ),
+                    const SizedBox(height: 32),
+                    _buildLogButton(),
+                    const SizedBox(height: 40),
+                  ],
                 ),
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

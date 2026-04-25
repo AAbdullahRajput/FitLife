@@ -14,8 +14,9 @@ import '../workout/exercises/chest/bench_press_screen.dart';
 import '../workout/exercises/chest/incline_bench_screen.dart';
 
 class WorkoutScreen extends StatefulWidget {
-  final String userTier; // 'guest', 'free', 'premium'
-  const WorkoutScreen({super.key, required this.userTier});
+  final String userTier;
+  final void Function(String section)? onNavigateToSection;
+  const WorkoutScreen({super.key, required this.userTier, this.onNavigateToSection});
 
   @override
   State<WorkoutScreen> createState() => _WorkoutScreenState();
@@ -310,15 +311,16 @@ class _WorkoutScreenState extends State<WorkoutScreen>
     if (hasScreen) {
       switch (name) {
         case 'Chest':
-          // Shows the first/main chest exercise — Bench Press.
-          // As you add more chest screens, you could push a chest menu screen
-          // or navigate to whichever is the primary chest exercise.
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => BenchPressScreen(userTier: widget.userTier),
-            ),
-          );
+          if (kIsWeb && widget.onNavigateToSection != null) {
+            widget.onNavigateToSection!('Chest');
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => BenchPressScreen(userTier: widget.userTier),
+              ),
+            );
+          }
           break;
         // Add more cases here as you create new exercise screens:
         // case 'Back':
