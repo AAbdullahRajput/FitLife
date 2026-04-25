@@ -1778,7 +1778,7 @@ class _BenchPressScreenState extends State<BenchPressScreen>
                         ),
                         const SizedBox(height: 32),
                         _buildLogButton(),
-                        
+                        const SizedBox(height: 40),
                       ],
                     ),
                   ),
