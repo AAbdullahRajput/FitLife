@@ -497,31 +497,34 @@ class _MobileDashboardState extends State<MobileDashboard>
                         children: [
                           // Badges
                           Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
+                            spacing: 5,
+                            runSpacing: 5,
                             children: [
                               _glowBadge(userGoal, Icons.flag_rounded, accent),
                               _glowBadge(
-                                'BMI ${bmi.toStringAsFixed(1)} · ${Helpers.getBMICategory(bmi)}',
+                                'BMI ${bmi.toStringAsFixed(1)}',
                                 Icons.monitor_heart_rounded,
                                 const Color(0xFF2979FF),
                               ),
                               _glowBadge(
-                                '$completedWorkouts/${widget.todayWorkouts.length} workouts',
+                                '$completedWorkouts/${widget.todayWorkouts.length} done',
                                 Icons.check_circle_rounded,
                                 const Color(0xFF00C853),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 14),
-                          // Action buttons
-                          Row(children: [
-                            _actionButton('Start Workout',
-                                Icons.play_arrow_rounded, accent, theme, context),
-                            const SizedBox(width: 10),
-                            _outlineButton('Diet Plan',
-                                Icons.restaurant_rounded, accent, context),
-                          ]),
+                          const SizedBox(height: 12),
+                          // Action buttons — Wrap so they stack if needed
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _actionButton('Start Workout',
+                                  Icons.play_arrow_rounded, accent, theme, context),
+                              _outlineButton('Diet Plan',
+                                  Icons.restaurant_rounded, accent, context),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -1110,27 +1113,27 @@ class _MobileDashboardState extends State<MobileDashboard>
     return GestureDetector(
       onTap: () => Navigator.pushNamed(context, '/workout'),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           gradient: LinearGradient(colors: theme.accentGradient),
           boxShadow: [
             BoxShadow(
               color: accent.withOpacity(0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: theme.onAccent),
-            const SizedBox(width: 6),
+            Icon(icon, size: 13, color: theme.onAccent),
+            const SizedBox(width: 5),
             Text(label,
                 style: TextStyle(
                     color: theme.onAccent,
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700)),
           ],
         ),
@@ -1143,21 +1146,21 @@ class _MobileDashboardState extends State<MobileDashboard>
     return GestureDetector(
       onTap: () => Navigator.pushNamed(context, '/diet'),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           color: accent.withOpacity(0.08),
           border: Border.all(color: accent.withOpacity(0.35), width: 1.5),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: accent),
-            const SizedBox(width: 6),
+            Icon(icon, size: 13, color: accent),
+            const SizedBox(width: 5),
             Text(label,
                 style: TextStyle(
                     color: accent,
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w600)),
           ],
         ),
