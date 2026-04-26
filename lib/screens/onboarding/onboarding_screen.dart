@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 
@@ -69,6 +70,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    for (final p in _pages) {
+      precacheImage(NetworkImage(p.bgImage), context);
+    }
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
     _animController.dispose();
@@ -92,6 +101,15 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     }
   }
 
+  void _prevPage() {
+    if (_currentPage > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   void _skip() => Navigator.pushReplacementNamed(context, '/user-info');
 
   @override
@@ -101,7 +119,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   // ═══════════════════════════════════════════════════════
-  // WEB LAYOUT — left = full bg image panel, right = card
+  // WEB LAYOUT
   // ═══════════════════════════════════════════════════════
   Widget _buildWebLayout() {
     final current = _pages[_currentPage];
@@ -110,21 +128,32 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       backgroundColor: const Color(0xFF030806),
       body: Row(
         children: [
-          // ── Left: full-height background image panel ──────────────
+          // ── Left: full-height background image panel ──
           Expanded(
             flex: 55,
             child: Stack(
               fit: StackFit.expand,
               children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 700),
-                  child: Image.network(
-                    current.bgImage,
-                    key: ValueKey(current.bgImage),
-                    fit: BoxFit.cover,
-                    errorBuilder: (c, e, s) =>
-                        Container(color: const Color(0xFF030806)),
-                  ),
+                // Swipeable page view for background images
+                PageView.builder(
+                  controller: _pageController,
+                  onPageChanged: _onPageChanged,
+                  itemCount: _pages.length,
+                  itemBuilder: (context, index) {
+                    return Image.network(
+                      _pages[index].bgImage,
+                      fit: BoxFit.cover,
+                      alignment: Alignment.center,
+                      frameBuilder:
+                          (ctx, child, frame, wasSynchronouslyLoaded) {
+                        if (wasSynchronouslyLoaded || frame != null)
+                          return child;
+                        return Container(color: const Color(0xFF0A1A0A));
+                      },
+                      errorBuilder: (c, e, s) =>
+                          Container(color: const Color(0xFF030806)),
+                    );
+                  },
                 ),
                 // Dark gradient blending into right panel
                 Container(
@@ -144,7 +173,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 ),
                 // Grid overlay
                 CustomPaint(painter: _GridPainter(current.accentColor)),
-                // Bottom text overlay on image
+                // Bottom text overlay
                 Positioned(
                   bottom: 48,
                   left: 40,
@@ -216,7 +245,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             ),
           ),
 
-          // ── Right: centered card ───────────────────────────────────
+          // ── Right: centered card ──
           Expanded(
             flex: 45,
             child: Container(
@@ -251,45 +280,19 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
                         const SizedBox(height: 44),
 
-                        // Emoji icon with glow
+                        // Animated illustration — actual image from bg with overlay
                         AnimatedBuilder(
                           animation: _animController,
                           builder: (_, __) => FadeTransition(
                             opacity: _fadeAnim,
                             child: Transform.translate(
                               offset: Offset(0, _slideAnim.value),
-                              child: Container(
-                                width: 110,
-                                height: 110,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: current.accentColor.withOpacity(0.10),
-                                  border: Border.all(
-                                    color:
-                                        current.accentColor.withOpacity(0.35),
-                                    width: 2,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: current.accentColor
-                                          .withOpacity(0.28),
-                                      blurRadius: 36,
-                                      spreadRadius: 4,
-                                    ),
-                                  ],
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    current.emoji,
-                                    style: const TextStyle(fontSize: 46),
-                                  ),
-                                ),
-                              ),
+                              child: _buildIllustrationCard(current),
                             ),
                           ),
                         ),
 
-                        const SizedBox(height: 30),
+                        const SizedBox(height: 28),
 
                         // Title
                         AnimatedBuilder(
@@ -320,7 +323,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           ),
                         ),
 
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
 
                         // Description
                         AnimatedBuilder(
@@ -331,7 +334,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                               current.description,
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 13,
                                 color:
                                     AppColors.textSecondary.withOpacity(0.7),
                                 height: 1.65,
@@ -340,7 +343,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           ),
                         ),
 
-                        const SizedBox(height: 36),
+                        const SizedBox(height: 32),
 
                         // Page dots
                         Row(
@@ -372,7 +375,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           ),
                         ),
 
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 24),
 
                         // Next / Get Started button
                         GestureDetector(
@@ -415,7 +418,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           ),
                         ),
 
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 12),
 
                         // Skip
                         if (_currentPage < _pages.length - 1)
@@ -424,14 +427,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             child: Text(
                               AppStrings.btnSkip,
                               style: TextStyle(
-                                color:
-                                    AppColors.textSecondary.withOpacity(0.45),
+                                color: AppColors.textSecondary
+                                    .withOpacity(0.45),
                                 fontSize: 13,
                               ),
                             ),
                           ),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
 
                         // Prev / Next arrow nav
                         Row(
@@ -439,11 +442,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           children: [
                             _currentPage > 0
                                 ? GestureDetector(
-                                    onTap: () => _pageController.previousPage(
-                                      duration:
-                                          const Duration(milliseconds: 400),
-                                      curve: Curves.easeInOut,
-                                    ),
+                                    onTap: _prevPage,
                                     child: Container(
                                       width: 42,
                                       height: 42,
@@ -506,6 +505,100 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
+  /// Beautiful image card shown in the right panel
+  Widget _buildIllustrationCard(OnboardingData data) {
+    return Container(
+      width: double.infinity,
+      height: 200,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: data.accentColor.withOpacity(0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: data.accentColor.withOpacity(0.2),
+            blurRadius: 30,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.network(
+              data.bgImage,
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              frameBuilder: (ctx, child, frame, wasSynchronouslyLoaded) {
+                if (wasSynchronouslyLoaded || frame != null) return child;
+                return Container(
+                  color: const Color(0xFF0A1A0A),
+                  child: Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: data.accentColor.withOpacity(0.5),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              errorBuilder: (c, e, s) =>
+                  Container(color: const Color(0xFF0A1A0A)),
+            ),
+            // Gradient overlay to darken & add accent
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.1),
+                    data.accentColor.withOpacity(0.4),
+                  ],
+                ),
+              ),
+            ),
+            // Emoji + label centered
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.black.withOpacity(0.4),
+                      border: Border.all(
+                        color: data.accentColor.withOpacity(0.6),
+                        width: 2,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        data.emoji,
+                        style: const TextStyle(fontSize: 28),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Custom painter dots decoration
+            CustomPaint(painter: _CardDotsPainter(data.accentColor)),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ═══════════════════════════════════════════════════════
   // MOBILE LAYOUT — original unchanged
   // ═══════════════════════════════════════════════════════
@@ -525,6 +618,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
+              alignment: Alignment.center,
               opacity: const AlwaysStoppedAnimation(0.25),
               errorBuilder: (c, e, s) =>
                   Container(color: const Color(0xFF050A05)),
@@ -749,7 +843,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 }
 
-// ── Data model ──────────────────────────────────────────────────────────────
+// ── Data model ───────────────────────────────────────────────────────────────
 class OnboardingData {
   final String emoji;
   final String title;
@@ -786,4 +880,46 @@ class _GridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _GridPainter old) => old.color != color;
+}
+
+// ── Card dots decoration painter ─────────────────────────────────────────────
+class _CardDotsPainter extends CustomPainter {
+  final Color color;
+  static final Random _rng = Random(99);
+  static late final List<_Dot> _dots;
+  static bool _initialized = false;
+
+  _CardDotsPainter(this.color) {
+    if (!_initialized) {
+      _dots = List.generate(
+        18,
+        (_) => _Dot(
+          x: _rng.nextDouble(),
+          y: _rng.nextDouble(),
+          r: _rng.nextDouble() * 2.5 + 0.5,
+        ),
+      );
+      _initialized = true;
+    }
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color.withOpacity(0.25);
+    for (final d in _dots) {
+      canvas.drawCircle(
+        Offset(d.x * size.width, d.y * size.height),
+        d.r,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CardDotsPainter old) => old.color != color;
+}
+
+class _Dot {
+  final double x, y, r;
+  _Dot({required this.x, required this.y, required this.r});
 }
