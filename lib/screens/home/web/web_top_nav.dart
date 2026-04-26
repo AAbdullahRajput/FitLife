@@ -34,6 +34,15 @@ class WebTopNav extends StatefulWidget {
 class _WebTopNavState extends State<WebTopNav> {
   String? _hoveredNavLink;
 
+  // ── Unsplash image URLs ──────────────────────────────────────────────────
+  static const _logoImageUrl =
+      'https://images.unsplash.com/photo-1517963879433-6ad2b056d712'
+      '?w=80&q=80&auto=format&fit=crop';
+
+  static const _avatarImageUrl =
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d'
+      '?w=100&q=80&auto=format&fit=crop&facepad=3';
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -44,9 +53,8 @@ class _WebTopNavState extends State<WebTopNav> {
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        // ── Glassmorphism navbar ───────────────────────────────────────
         color: isDark
-            ? Colors.white.withOpacity(0.04)
+            ? Colors.black.withOpacity(0.55)
             : Colors.white.withOpacity(0.75),
         border: Border(
           bottom: BorderSide(
@@ -100,34 +108,54 @@ class _WebTopNavState extends State<WebTopNav> {
               onTap: widget.onLogoDashboardTap,
               child: Row(
                 children: [
-                  // Glowing logo icon
+                  // Real gym image logo with glow ring
                   Container(
-                    width: 34,
-                    height: 34,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: AppColors.gradientOf(context),
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                      border: Border.all(
+                        color: accent.withOpacity(0.6),
+                        width: 2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: accent.withOpacity(0.5),
+                          color: accent.withOpacity(0.45),
                           blurRadius: 12,
                           spreadRadius: 0,
                         ),
                       ],
                     ),
-                    child: Center(
-                      child: Icon(
-                        Icons.fitness_center_rounded,
-                        size: 17,
-                        color: AppColors.onAccentOf(context),
+                    child: ClipOval(
+                      child: Image.network(
+                        _logoImageUrl,
+                        width: 36,
+                        height: 36,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: AppColors.gradientOf(context),
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.fitness_center_rounded,
+                              size: 17,
+                              color: AppColors.onAccentOf(context),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
+                  // Gradient text logo
                   Consumer<ThemeProvider>(
                     builder: (context, theme, _) => ShaderMask(
                       shaderCallback: (bounds) => LinearGradient(
@@ -215,7 +243,7 @@ class _WebTopNavState extends State<WebTopNav> {
             ),
             const SizedBox(width: 10),
 
-            // Get Started button — glowing gradient
+            // Get Started button
             MouseRegion(
               cursor: SystemMouseCursors.click,
               child: GestureDetector(
@@ -249,46 +277,62 @@ class _WebTopNavState extends State<WebTopNav> {
               ),
             ),
           ] else ...[
-            // Profile avatar with glow
+            // ── Profile avatar — real photo with glow ring ─────────────
             MouseRegion(
               cursor: SystemMouseCursors.click,
               child: GestureDetector(
                 onTap: widget.onProfileTap,
                 child: Container(
-                  width: 36,
-                  height: 36,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: widget.showProfileDropdown
-                        ? LinearGradient(
-                            colors: AppColors.gradientOf(context))
-                        : null,
-                    color: widget.showProfileDropdown
-                        ? null
-                        : accent.withOpacity(0.15),
                     border: Border.all(
                       color: widget.showProfileDropdown
                           ? accent
                           : accent.withOpacity(0.4),
-                      width: widget.showProfileDropdown ? 2 : 1.5,
+                      width: widget.showProfileDropdown ? 2.5 : 1.5,
                     ),
                     boxShadow: widget.showProfileDropdown
                         ? [
                             BoxShadow(
-                              color: accent.withOpacity(0.4),
-                              blurRadius: 12,
+                              color: accent.withOpacity(0.5),
+                              blurRadius: 14,
                               spreadRadius: 0,
                             ),
                           ]
                         : null,
                   ),
-                  child: Center(
-                    child: Icon(
-                      Icons.person_rounded,
-                      size: 18,
-                      color: widget.showProfileDropdown
-                          ? AppColors.onAccentOf(context)
-                          : accent,
+                  child: ClipOval(
+                    child: Image.network(
+                      _avatarImageUrl,
+                      width: 38,
+                      height: 38,
+                      fit: BoxFit.cover,
+                      // Fallback to icon if image fails
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: widget.showProfileDropdown
+                              ? LinearGradient(
+                                  colors: AppColors.gradientOf(context))
+                              : null,
+                          color: widget.showProfileDropdown
+                              ? null
+                              : accent.withOpacity(0.15),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.person_rounded,
+                            size: 20,
+                            color: widget.showProfileDropdown
+                                ? AppColors.onAccentOf(context)
+                                : accent,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -355,7 +399,7 @@ class _WebTopNavState extends State<WebTopNav> {
   }
 }
 
-// ── Reusable nav icon button ─────────────────────────────────────────────────
+// ── Reusable nav icon button ──────────────────────────────────────────────────
 class _NavButton extends StatefulWidget {
   final VoidCallback onTap;
   final Color accent;
