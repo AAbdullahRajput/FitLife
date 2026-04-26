@@ -31,11 +31,9 @@ class _WebHomeState extends State<WebHome>
   bool _isLoggedIn = false;
   bool _isLoadingData = false;
   bool _sidebarExpanded = false;
-  bool _showProfileDropdown = false;
   Widget? _activeExerciseScreen;
-  Offset _cursorPosition = const Offset(0.5, 0.5); // ← cursor tracker
+  Offset _cursorPosition = const Offset(0.5, 0.5);
 
-  OverlayEntry? _profileDropdownOverlay;
   OverlayEntry? _tooltipOverlay;
 
   late List<Map<String, dynamic>> _todayWorkouts;
@@ -80,16 +78,16 @@ class _WebHomeState extends State<WebHome>
       setState(() {
         if (exercises.isNotEmpty) {
           _todayWorkouts = exercises.take(4).map((ex) => {
-            'name': ex['name'] ?? '',
-            'sets': 3,
-            'reps': 10,
-            'rest': '60s',
-            'muscle': ex['muscle'] ?? '',
-            'icon': _muscleIcon(ex['muscle'] ?? ''),
-            'color': _muscleColor(ex['muscle'] ?? ''),
-            'done': false,
-            'id': ex['id'],
-          }).toList();
+                'name': ex['name'] ?? '',
+                'sets': 3,
+                'reps': 10,
+                'rest': '60s',
+                'muscle': ex['muscle'] ?? '',
+                'icon': _muscleIcon(ex['muscle'] ?? ''),
+                'color': _muscleColor(ex['muscle'] ?? ''),
+                'done': false,
+                'id': ex['id'],
+              }).toList();
         }
         if (meals.isNotEmpty) {
           _todayMeals = [];
@@ -118,6 +116,7 @@ class _WebHomeState extends State<WebHome>
     }
   }
 
+  // ── Helpers ─────────────────────────────────────────────────────────────
   String _capitalize(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
@@ -177,16 +176,7 @@ class _WebHomeState extends State<WebHome>
     return map[type] ?? const Color(0xFF00C853);
   }
 
-  void _toggleProfileDropdown() {
-    if (_showProfileDropdown) {
-      _removeProfileDropdown();
-      setState(() => _showProfileDropdown = false);
-    } else {
-      setState(() => _showProfileDropdown = true);
-      _openProfileDropdown();
-    }
-  }
-
+  // ── Profile dropdown ─────────────────────────────────────────────────────
   void _openProfileDropdown() {
     final overlay = Overlay.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -196,13 +186,11 @@ class _WebHomeState extends State<WebHome>
     final textPrimary = isDark ? Colors.white : const Color(0xFF0A0A0A);
     final accent = AppColors.of(context, listen: false);
 
-    _profileDropdownOverlay = OverlayEntry(
+    OverlayEntry? entry;
+    entry = OverlayEntry(
       builder: (ctx) => GestureDetector(
         behavior: HitTestBehavior.translucent,
-        onTap: () {
-          _removeProfileDropdown();
-          setState(() => _showProfileDropdown = false);
-        },
+        onTap: () => entry?.remove(),
         child: Stack(
           children: [
             Positioned.fill(child: Container(color: Colors.transparent)),
@@ -216,9 +204,10 @@ class _WebHomeState extends State<WebHome>
                   duration: const Duration(milliseconds: 120),
                   curve: Curves.easeOut,
                   builder: (c, v, child) => Transform.scale(
-                      scale: v,
-                      alignment: Alignment.topRight,
-                      child: child),
+                    scale: v,
+                    alignment: Alignment.topRight,
+                    child: child,
+                  ),
                   child: Container(
                     width: 210,
                     decoration: BoxDecoration(
@@ -236,6 +225,7 @@ class _WebHomeState extends State<WebHome>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // ── User header ──────────────────────────────
                         Padding(
                           padding:
                               const EdgeInsets.fromLTRB(14, 14, 14, 10),
@@ -251,8 +241,9 @@ class _WebHomeState extends State<WebHome>
                                       color: accent.withOpacity(0.4)),
                                 ),
                                 child: Center(
-                                    child: Icon(Icons.person_rounded,
-                                        size: 20, color: accent)),
+                                  child: Icon(Icons.person_rounded,
+                                      size: 20, color: accent),
+                                ),
                               ),
                               const SizedBox(width: 10),
                               Expanded(
@@ -260,12 +251,15 @@ class _WebHomeState extends State<WebHome>
                                   crossAxisAlignment:
                                       CrossAxisAlignment.start,
                                   children: [
-                                    Text(userName,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w700,
-                                            color: textPrimary)),
+                                    Text(
+                                      userName,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: textPrimary,
+                                      ),
+                                    ),
                                     Text(
                                       _isLoggedIn ? 'Member' : 'Guest',
                                       style: TextStyle(
@@ -285,11 +279,8 @@ class _WebHomeState extends State<WebHome>
                           isDestructive: false,
                           accent: accent,
                           onTap: () {
-                            _removeProfileDropdown();
-                            setState(() {
-                              _showProfileDropdown = false;
-                              _webSection = 'Profile';
-                            });
+                            entry?.remove();
+                            setState(() => _webSection = 'Profile');
                           },
                         ),
                         _DropdownItem(
@@ -299,11 +290,8 @@ class _WebHomeState extends State<WebHome>
                           isDestructive: false,
                           accent: accent,
                           onTap: () {
-                            _removeProfileDropdown();
-                            setState(() {
-                              _showProfileDropdown = false;
-                              _webSection = 'Settings';
-                            });
+                            entry?.remove();
+                            setState(() => _webSection = 'Settings');
                           },
                         ),
                         Divider(height: 1, color: borderColor),
@@ -314,8 +302,7 @@ class _WebHomeState extends State<WebHome>
                           isDestructive: true,
                           accent: accent,
                           onTap: () async {
-                            _removeProfileDropdown();
-                            setState(() => _showProfileDropdown = false);
+                            entry?.remove();
                             await Supabase.instance.client.auth.signOut();
                             if (mounted) {
                               Navigator.pushReplacementNamed(
@@ -334,16 +321,17 @@ class _WebHomeState extends State<WebHome>
         ),
       ),
     );
-    overlay.insert(_profileDropdownOverlay!);
+    overlay.insert(entry);
   }
 
-  void _removeProfileDropdown() {
-    _profileDropdownOverlay?.remove();
-    _profileDropdownOverlay = null;
-  }
-
-  void _showTooltip(BuildContext context, String title, String message,
-      IconData icon, Color color) {
+  // ── Tooltip ──────────────────────────────────────────────────────────────
+  void _showTooltip(
+    BuildContext context,
+    String title,
+    String message,
+    IconData icon,
+    Color color,
+  ) {
     _removeTooltip();
     final overlay = Overlay.of(context);
     _tooltipOverlay = OverlayEntry(
@@ -373,9 +361,10 @@ class _WebHomeState extends State<WebHome>
                       BoxShadow(
                           color: color.withOpacity(0.2), blurRadius: 20),
                       const BoxShadow(
-                          color: Colors.black54,
-                          blurRadius: 12,
-                          offset: Offset(0, 4)),
+                        color: Colors.black54,
+                        blurRadius: 12,
+                        offset: Offset(0, 4),
+                      ),
                     ],
                   ),
                   child: Column(
@@ -387,24 +376,31 @@ class _WebHomeState extends State<WebHome>
                           Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: color.withOpacity(0.15)),
+                              shape: BoxShape.circle,
+                              color: color.withOpacity(0.15),
+                            ),
                             child: Icon(icon, size: 14, color: color),
                           ),
                           const SizedBox(width: 8),
-                          Text(title,
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: color)),
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: color,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(message,
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white.withOpacity(0.8),
-                              height: 1.4)),
+                      Text(
+                        message,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withOpacity(0.8),
+                          height: 1.4,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -426,11 +422,11 @@ class _WebHomeState extends State<WebHome>
   @override
   void dispose() {
     _removeTooltip();
-    _removeProfileDropdown();
     _animController.dispose();
     super.dispose();
   }
 
+  // ── Section content ──────────────────────────────────────────────────────
   Widget _buildContent() {
     switch (_webSection) {
       case 'Workouts':
@@ -465,8 +461,9 @@ class _WebHomeState extends State<WebHome>
           todayMeals: _todayMeals,
           onNavigate: (s) => setState(() => _webSection = s),
           onWorkoutToggle: (index) => setState(
-              () => _todayWorkouts[index]['done'] =
-                  !(_todayWorkouts[index]['done'] as bool)),
+            () => _todayWorkouts[index]['done'] =
+                !(_todayWorkouts[index]['done'] as bool),
+          ),
           onShowTooltip: _showTooltip,
         );
     }
@@ -481,7 +478,6 @@ class _WebHomeState extends State<WebHome>
     return Scaffold(
       backgroundColor: bgColor,
       body: Listener(
-        // ── Capture cursor position instantly — no delay ──────────────
         onPointerHover: (e) {
           final size = MediaQuery.of(context).size;
           setState(() => _cursorPosition = Offset(
@@ -494,29 +490,35 @@ class _WebHomeState extends State<WebHome>
             opacity: _fadeAnim,
             child: Stack(
               children: [
-                // ── 3D reactive background ───────────────────────────
+                // ── Dark animated background ─────────────────────────
                 if (isDark) WebBackground(cursor: _cursorPosition),
 
                 // ── Main layout ──────────────────────────────────────
                 Column(
                   children: [
+                    // ── Top nav ──────────────────────────────────────
                     WebTopNav(
                       isLoggedIn: _isLoggedIn,
                       sidebarExpanded: _sidebarExpanded,
                       webSection: _webSection,
-                      showProfileDropdown: _showProfileDropdown,
-                      userName: userName,
-                      onHamburgerTap: () => setState(
+                      onNavigate: (s) => setState(() => _webSection = s),
+                      onToggleSidebar: () => setState(
                           () => _sidebarExpanded = !_sidebarExpanded),
-                      onLogoDashboardTap: () =>
-                          setState(() => _webSection = 'Dashboard'),
-                      onProfileTap: _toggleProfileDropdown,
-                      onNavTap: (s) => setState(() => _webSection = s),
+                      onToggleTheme: () {
+                        // Wire to your ThemeProvider toggle here
+                        // e.g. context.read<ThemeProvider>().toggleTheme();
+                      },
+                      onLogin: () =>
+                          Navigator.pushNamed(context, '/login'),
+                      onLogout: _openProfileDropdown,
                     ),
+
+                    // ── Body row ─────────────────────────────────────
                     Expanded(
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // ── Sidebar ──────────────────────────────
                           if (_sidebarExpanded)
                             WebSidebar(
                               isLoggedIn: _isLoggedIn,
@@ -524,9 +526,11 @@ class _WebHomeState extends State<WebHome>
                               userName: userName,
                               onSectionTap: (s) =>
                                   setState(() => _webSection = s),
-                              onJoinFreeTap: () =>
-                                  Navigator.pushNamed(context, '/register'),
+                              onJoinFreeTap: () => Navigator.pushNamed(
+                                  context, '/register'),
                             ),
+
+                          // ── Main content ─────────────────────────
                           Expanded(child: _buildContent()),
                         ],
                       ),
@@ -542,7 +546,9 @@ class _WebHomeState extends State<WebHome>
   }
 }
 
-// ── Dropdown item widget ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// DROPDOWN ITEM
+// ═══════════════════════════════════════════════════════════════════════════
 class _DropdownItem extends StatefulWidget {
   final IconData icon;
   final String label;
@@ -577,8 +583,7 @@ class _DropdownItemState extends State<_DropdownItem> {
         onTap: widget.onTap,
         child: Container(
           width: double.infinity,
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           color: _hovered
               ? (widget.isDestructive
                   ? const Color(0xFFFF4444).withOpacity(0.09)
@@ -588,11 +593,14 @@ class _DropdownItemState extends State<_DropdownItem> {
             children: [
               Icon(widget.icon, size: 16, color: widget.textColor),
               const SizedBox(width: 10),
-              Text(widget.label,
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: widget.textColor)),
+              Text(
+                widget.label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: widget.textColor,
+                ),
+              ),
             ],
           ),
         ),
