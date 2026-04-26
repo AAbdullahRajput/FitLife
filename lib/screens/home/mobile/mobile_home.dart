@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_colors.dart';
@@ -18,8 +19,9 @@ class MobileHome extends StatefulWidget {
 }
 
 class _MobileHomeState extends State<MobileHome>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _animController;
+  late AnimationController _bgController;
   late Animation<double> _fadeAnim;
 
   int _selectedTab = 0;
@@ -40,6 +42,7 @@ class _MobileHomeState extends State<MobileHome>
     super.initState();
     _todayWorkouts = AppData.getTodayWorkouts();
     _todayMeals = AppData.getTodayMeals();
+
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -47,6 +50,12 @@ class _MobileHomeState extends State<MobileHome>
     _fadeAnim = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeIn),
     );
+
+    _bgController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat();
+
     _animController.forward();
     _checkLoginStatus();
     _loadFromSupabase();
@@ -172,49 +181,139 @@ class _MobileHomeState extends State<MobileHome>
   @override
   void dispose() {
     _animController.dispose();
+    _bgController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor =
-        isDark ? const Color(0xFF050A05) : const Color(0xFFF5F5F5);
+    final accent = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: bgColor,
-      body: FadeTransition(
-        opacity: _fadeAnim,
-        child: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: IndexedStack(
-                  index: _selectedTab,
-                  children: [
-                    MobileDashboard(
-                      isLoggedIn: _isLoggedIn,
-                      isLoadingData: _isLoadingData,
-                      todayWorkouts: _todayWorkouts,
-                      todayMeals: _todayMeals,
-                      onToggleWorkout: _onToggleWorkout,
-                    ),
-                    WorkoutScreen(userTier: _userTier),
-                    MealsScreen(userTier: _userTier),
-                    const ProgressScreen(),
-                    const ProfileScreen(),
-                  ],
+      backgroundColor: isDark ? const Color(0xFF050A05) : const Color(0xFFF5F5F5),
+      body: Stack(
+        children: [
+          // ── Animated background (dark mode only) ──────────────────────
+          if (isDark)
+            AnimatedBuilder(
+              animation: _bgController,
+              builder: (_, __) => CustomPaint(
+                size: MediaQuery.of(context).size,
+                painter: _MobileBackgroundPainter(
+                  accent: accent,
+                  progress: _bgController.value,
                 ),
               ),
-              MobileBottomNav(
-                selectedTab: _selectedTab,
-                isLoggedIn: _isLoggedIn,
-                onTabTap: (i) => setState(() => _selectedTab = i),
+            ),
+
+          // ── Main content ───────────────────────────────────────────────
+          FadeTransition(
+            opacity: _fadeAnim,
+            child: SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: IndexedStack(
+                      index: _selectedTab,
+                      children: [
+                        MobileDashboard(
+                          isLoggedIn: _isLoggedIn,
+                          isLoadingData: _isLoadingData,
+                          todayWorkouts: _todayWorkouts,
+                          todayMeals: _todayMeals,
+                          onToggleWorkout: _onToggleWorkout,
+                        ),
+                        WorkoutScreen(userTier: _userTier),
+                        MealsScreen(userTier: _userTier),
+                        const ProgressScreen(),
+                        const ProfileScreen(),
+                      ],
+                    ),
+                  ),
+                  MobileBottomNav(
+                    selectedTab: _selectedTab,
+                    isLoggedIn: _isLoggedIn,
+                    onTabTap: (i) => setState(() => _selectedTab = i),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
+}
+
+// ── Animated mobile background painter ────────────────────────────────────────
+class _MobileBackgroundPainter extends CustomPainter {
+  final Color accent;
+  final double progress;
+
+  _MobileBackgroundPainter({required this.accent, required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Deep dark base
+    final bgPaint = Paint()
+      ..shader = RadialGradient(
+        center: Alignment.center,
+        colors: const [Color(0xFF0D1A0D), Color(0xFF050A05)],
+        radius: 1.2,
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
+
+    // Animated top-left glow
+    final glowOffset1 = Offset(
+      size.width * 0.15 + sin(progress * 2 * pi) * 20,
+      size.height * 0.1 + cos(progress * 2 * pi) * 15,
+    );
+    _drawGlow(canvas, glowOffset1, accent, 180, 0.12);
+
+    // Animated bottom-right glow
+    final glowOffset2 = Offset(
+      size.width * 0.85 + cos(progress * 2 * pi) * 25,
+      size.height * 0.8 + sin(progress * 2 * pi) * 20,
+    );
+    _drawGlow(canvas, glowOffset2, const Color(0xFFAA00FF), 200, 0.09);
+
+    // Subtle grid
+    final gridPaint = Paint()
+      ..color = accent.withOpacity(0.03)
+      ..strokeWidth = 0.6;
+    for (int i = 0; i <= 12; i++) {
+      final x = size.width * i / 12;
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+    }
+    for (int i = 0; i <= 20; i++) {
+      final y = size.height * i / 20;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    // Scan lines
+    final linePaint = Paint()
+      ..color = Colors.white.withOpacity(0.012)
+      ..strokeWidth = 1;
+    for (double y = 0; y < size.height; y += 4) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
+    }
+  }
+
+  void _drawGlow(Canvas canvas, Offset center, Color color, double radius, double opacity) {
+    final paint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          color.withOpacity(opacity),
+          color.withOpacity(opacity * 0.4),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.5, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+    canvas.drawCircle(center, radius, paint);
+  }
+
+  @override
+  bool shouldRepaint(_MobileBackgroundPainter old) =>
+      old.progress != progress || old.accent != accent;
 }

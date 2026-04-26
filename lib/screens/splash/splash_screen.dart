@@ -515,6 +515,9 @@ class ParticlePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // ADD THIS LINE ↓
+    if (size.width == 0 || size.height == 0) return;
+
     final paint = Paint()..style = PaintingStyle.fill;
 
     for (int i = 0; i < 25; i++) {

@@ -12,6 +12,7 @@ import '../../services/supabase_service.dart';
 import '../workout/exercise_detail_screen.dart';
 import '../workout/exercises/chest/bench_press_screen.dart';
 import '../workout/exercises/chest/incline_bench_screen.dart';
+import '../workout/exercises/chest/chest_screen.dart';
 
 class WorkoutScreen extends StatefulWidget {
   final String userTier;
@@ -317,7 +318,7 @@ class _WorkoutScreenState extends State<WorkoutScreen>
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => BenchPressScreen(userTier: widget.userTier),
+                builder: (_) => ChestScreen(userTier: widget.userTier),
               ),
             );
           }
