@@ -29,6 +29,36 @@ class _WebSidebarState extends State<WebSidebar>
   late AnimationController _glowController;
   late Animation<double> _glowAnim;
 
+  // ── Unsplash image URLs ──────────────────────────────────────────────────
+  static const _avatarImageUrl =
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d'
+      '?w=100&q=80&auto=format&fit=crop&facepad=3';
+
+  // Section banner images shown at top of sidebar per active section
+  static const _sectionImages = {
+    'Dashboard':
+        'https://images.unsplash.com/photo-1534438327276-14e5300c3a48'
+        '?w=300&q=70&auto=format&fit=crop',
+    'Workouts':
+        'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e'
+        '?w=300&q=70&auto=format&fit=crop',
+    'Diet Plan':
+        'https://images.unsplash.com/photo-1547592180-85f173990554'
+        '?w=300&q=70&auto=format&fit=crop',
+    'Progress':
+        'https://images.unsplash.com/photo-1549576490-b0b4831ef60a'
+        '?w=300&q=70&auto=format&fit=crop',
+    'Reminders':
+        'https://images.unsplash.com/photo-1506126613408-eca07ce68773'
+        '?w=300&q=70&auto=format&fit=crop',
+    'Profile':
+        'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b'
+        '?w=300&q=70&auto=format&fit=crop',
+    'Settings':
+        'https://images.unsplash.com/photo-1517963879433-6ad2b056d712'
+        '?w=300&q=70&auto=format&fit=crop',
+  };
+
   @override
   void initState() {
     super.initState();
@@ -57,59 +87,59 @@ class _WebSidebarState extends State<WebSidebar>
             {
               'icon': Icons.dashboard_rounded,
               'label': 'Dashboard',
-              'locked': false
+              'locked': false,
             },
             {
               'icon': Icons.fitness_center_rounded,
               'label': 'Workouts',
-              'locked': false
+              'locked': false,
             },
             {
               'icon': Icons.restaurant_rounded,
               'label': 'Diet Plan',
-              'locked': false
+              'locked': false,
             },
             {
               'icon': Icons.bar_chart_rounded,
               'label': 'Progress',
-              'locked': false
+              'locked': false,
             },
             {
               'icon': Icons.notifications_rounded,
               'label': 'Reminders',
-              'locked': false
+              'locked': false,
             },
             {
               'icon': Icons.person_rounded,
               'label': 'Profile',
-              'locked': false
+              'locked': false,
             },
             {
               'icon': Icons.settings_rounded,
               'label': 'Settings',
-              'locked': false
+              'locked': false,
             },
           ]
         : [
             {
               'icon': Icons.dashboard_rounded,
               'label': 'Dashboard',
-              'locked': false
+              'locked': false,
             },
             {
               'icon': Icons.lock_rounded,
               'label': 'Workouts',
-              'locked': true
+              'locked': true,
             },
             {
               'icon': Icons.lock_rounded,
               'label': 'Diet Plan',
-              'locked': true
+              'locked': true,
             },
             {
               'icon': Icons.lock_rounded,
               'label': 'Progress',
-              'locked': true
+              'locked': true,
             },
           ];
 
@@ -120,7 +150,7 @@ class _WebSidebarState extends State<WebSidebar>
           width: 220,
           decoration: BoxDecoration(
             color: isDark
-                ? Colors.white.withOpacity(0.03)
+                ? Colors.black.withOpacity(0.5)
                 : Colors.white.withOpacity(0.85),
             border: Border(
               right: BorderSide(
@@ -145,19 +175,27 @@ class _WebSidebarState extends State<WebSidebar>
       },
       child: Column(
         children: [
-          const SizedBox(height: 20),
+          // ── Section banner image ─────────────────────────────────────
+          _SectionBanner(
+            imageUrl: _sectionImages[widget.webSection] ??
+                _sectionImages['Dashboard']!,
+            section: widget.webSection,
+            accent: accent,
+          ),
+
+          const SizedBox(height: 12),
 
           // ── User avatar card ─────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Consumer<ThemeProvider>(
               builder: (context, theme, _) => Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   color: accent.withOpacity(0.08),
-                  border:
-                      Border.all(color: accent.withOpacity(0.2), width: 1),
+                  border: Border.all(
+                      color: accent.withOpacity(0.2), width: 1),
                   boxShadow: [
                     BoxShadow(
                       color: accent.withOpacity(0.1),
@@ -167,29 +205,46 @@ class _WebSidebarState extends State<WebSidebar>
                 ),
                 child: Row(
                   children: [
-                    // Avatar with gradient ring
+                    // Real avatar photo with gradient ring
                     Container(
-                      width: 36,
-                      height: 36,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: theme.accentGradient,
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                        border: Border.all(
+                          color: accent.withOpacity(0.6),
+                          width: 2,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: accent.withOpacity(0.4),
+                            color: accent.withOpacity(0.35),
                             blurRadius: 8,
                           ),
                         ],
                       ),
-                      child: Center(
-                        child: Icon(
-                          Icons.person_rounded,
-                          size: 18,
-                          color: theme.onAccent,
+                      child: ClipOval(
+                        child: Image.network(
+                          _avatarImageUrl,
+                          width: 38,
+                          height: 38,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: theme.accentGradient,
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.person_rounded,
+                                size: 18,
+                                color: theme.onAccent,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -254,7 +309,7 @@ class _WebSidebarState extends State<WebSidebar>
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // ── Divider with glow ────────────────────────────────────────
           Padding(
@@ -273,7 +328,7 @@ class _WebSidebarState extends State<WebSidebar>
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // ── Nav items ────────────────────────────────────────────────
           ...items.map((item) {
@@ -361,6 +416,112 @@ class _WebSidebarState extends State<WebSidebar>
   }
 }
 
+// ── Section banner image at top of sidebar ───────────────────────────────────
+class _SectionBanner extends StatelessWidget {
+  final String imageUrl;
+  final String section;
+  final Color accent;
+
+  const _SectionBanner({
+    required this.imageUrl,
+    required this.section,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 100,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Real section image
+          Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            errorBuilder: (_, __, ___) => Container(
+              color: accent.withOpacity(0.08),
+              child: Center(
+                child: Icon(
+                  Icons.fitness_center_rounded,
+                  color: accent.withOpacity(0.3),
+                  size: 32,
+                ),
+              ),
+            ),
+          ),
+          // Dark gradient overlay
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.3),
+                  Colors.black.withOpacity(0.75),
+                ],
+              ),
+            ),
+          ),
+          // Section label
+          Positioned(
+            bottom: 10,
+            left: 14,
+            right: 14,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: accent.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                    border:
+                        Border.all(color: accent.withOpacity(0.4), width: 1),
+                  ),
+                  child: Text(
+                    section.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      color: accent,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Left accent bar
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            child: Container(
+              width: 3,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    accent.withOpacity(0.1),
+                    accent,
+                    accent.withOpacity(0.1),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Individual sidebar item ───────────────────────────────────────────────────
 class _SidebarItem extends StatelessWidget {
   final IconData icon;
@@ -419,7 +580,8 @@ class _SidebarItem extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+          margin:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
           padding:
               const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
@@ -483,7 +645,6 @@ class _SidebarItem extends StatelessWidget {
                   color: Colors.white.withOpacity(0.2),
                 ),
               if (isActive && !isLocked)
-                // Active indicator dot with glow
                 Container(
                   width: 6,
                   height: 6,
