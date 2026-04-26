@@ -17,6 +17,7 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
   late Animation<double> _slideAnim;
 
   String? _selectedGoal;
+  int _hoveredIndex = -1;
 
   final List<GoalData> _goals = [
     GoalData(
@@ -24,30 +25,40 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
       description: 'Burn fat and get lean',
       emoji: '🔥',
       color: const Color(0xFFFF6D00),
+      bgImage:
+          'https://images.unsplash.com/photo-1538805060514-97d9cc17730c?w=1200&q=80',
     ),
     GoalData(
       title: 'Build Muscle',
       description: 'Gain strength and size',
       emoji: '💪',
       color: const Color(0xFF2979FF),
+      bgImage:
+          'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200&q=80',
     ),
     GoalData(
       title: 'Stay Fit',
       description: 'Maintain a healthy body',
       emoji: '⚡',
       color: const Color(0xFF00C853),
+      bgImage:
+          'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1200&q=80',
     ),
     GoalData(
       title: 'Increase Strength',
       description: 'Lift heavier, get stronger',
       emoji: '🏋️',
       color: const Color(0xFFAA00FF),
+      bgImage:
+          'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=1200&q=80',
     ),
     GoalData(
       title: 'Improve Endurance',
       description: 'Run longer, last harder',
       emoji: '🏃',
       color: const Color(0xFFFFD600),
+      bgImage:
+          'https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=1200&q=80',
     ),
   ];
 
@@ -70,11 +81,9 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    precacheImage(
-      const NetworkImage(
-          'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=1200&q=80'),
-      context,
-    );
+    for (final g in _goals) {
+      precacheImage(NetworkImage(g.bgImage), context);
+    }
   }
 
   @override
@@ -104,37 +113,52 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
       ? _goals.firstWhere((g) => g.title == _selectedGoal).color
       : AppColors.primary;
 
+  GoalData? get _activeGoal => _selectedGoal != null
+      ? _goals.firstWhere((g) => g.title == _selectedGoal)
+      : (_hoveredIndex >= 0 ? _goals[_hoveredIndex] : null);
+
   @override
   Widget build(BuildContext context) {
     final isWeb = MediaQuery.of(context).size.width > 600;
     return isWeb ? _buildWebLayout() : _buildMobileLayout();
   }
 
-  // ═══════════════════════════════════════════════════════
-  // WEB LAYOUT — left = decorative panel, right = goal list
-  // ═══════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
+  // WEB LAYOUT — left = image showcase, right = goal list
+  // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildWebLayout() {
+    final active = _activeGoal;
+
     return Scaffold(
       backgroundColor: const Color(0xFF030806),
       body: Row(
         children: [
-          // ── Left decorative panel ──────────────────────────────────
+          // ── Left: full-height IMAGE SHOWCASE panel ─────────────────────────
           Expanded(
-            flex: 45,
+            flex: 50,
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.network(
-                  'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=1200&q=80',
-                  fit: BoxFit.cover,
-                  frameBuilder: (ctx, child, frame, wasSynchronouslyLoaded) {
-                    if (wasSynchronouslyLoaded || frame != null) return child;
-                    return Container(color: const Color(0xFF0A1A0A));
-                  },
-                  errorBuilder: (c, e, s) =>
-                      Container(color: const Color(0xFF030806)),
+                // Background photo — switches on hover/select
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 500),
+                  child: Image.network(
+                    active?.bgImage ??
+                        'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=1200&q=80',
+                    key: ValueKey(active?.title ?? 'default'),
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    frameBuilder:
+                        (ctx, child, frame, wasSynchronouslyLoaded) {
+                      if (wasSynchronouslyLoaded || frame != null) return child;
+                      return Container(color: const Color(0xFF0A1A0A));
+                    },
+                    errorBuilder: (c, e, s) =>
+                        Container(color: const Color(0xFF030806)),
+                  ),
                 ),
-                // Gradient overlay
+
+                // Blend gradient into right panel
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -144,112 +168,182 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                         const Color(0xFF030806),
                         Colors.transparent,
                         Colors.transparent,
-                        const Color(0xFF030806).withOpacity(0.4),
+                        const Color(0xFF030806).withOpacity(0.35),
                       ],
-                      stops: const [0.0, 0.15, 0.7, 1.0],
+                      stops: const [0.0, 0.12, 0.72, 1.0],
                     ),
                   ),
                 ),
-                // Color tint based on selected goal
+
+                // Accent tint from bottom
                 AnimatedContainer(
-                  duration: const Duration(milliseconds: 400),
+                  duration: const Duration(milliseconds: 450),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        _accentColor.withOpacity(0.25),
-                        Colors.transparent,
+                        (active?.color ?? AppColors.primary).withOpacity(0.5),
+                        (active?.color ?? AppColors.primary).withOpacity(0.0),
                       ],
+                      stops: const [0.0, 0.65],
                     ),
                   ),
                 ),
-                // Grid painter
-                CustomPaint(painter: _WebGridPainter(_accentColor)),
-                // Bottom content on image
+
+                // Grid overlay
+                CustomPaint(
+                    painter:
+                        _WebGridPainter(active?.color ?? AppColors.primary)),
+
+                // Bottom info overlay
                 Positioned(
-                  bottom: 48,
-                  left: 40,
-                  right: 40,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 350),
+                    child: Container(
+                      key: ValueKey(active?.title ?? 'default'),
+                      padding: const EdgeInsets.fromLTRB(40, 48, 40, 48),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                            Colors.black.withOpacity(0.88),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 400),
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: _accentColor,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: _accentColor.withOpacity(0.6),
-                                  blurRadius: 8,
+                          // Step badge
+                          Row(
+                            children: [
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 400),
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: active?.color ?? AppColors.primary,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: (active?.color ??
+                                              AppColors.primary)
+                                          .withOpacity(0.7),
+                                      blurRadius: 10,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'STEP 2 OF 3  ·  YOUR GOAL',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: active?.color ?? AppColors.primary,
+                                  letterSpacing: 2.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'STEP 2 OF 3  ·  YOUR GOAL',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: _accentColor,
-                              letterSpacing: 2.5,
-                              fontWeight: FontWeight.w600,
+                          const SizedBox(height: 14),
+
+                          if (active != null) ...[
+                            Text(
+                              active.emoji,
+                              style: const TextStyle(fontSize: 40),
                             ),
-                          ),
+                            const SizedBox(height: 8),
+                            Text(
+                              active.title,
+                              style: const TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                height: 1.1,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              active.description,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Colors.white.withOpacity(0.7),
+                                height: 1.6,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                color: active.color.withOpacity(0.2),
+                                border: Border.all(
+                                    color: active.color.withOpacity(0.5)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.auto_awesome,
+                                      size: 13, color: active.color),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'AI-personalized plan',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: active.color,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else ...[
+                            const Text(
+                              'What Do You\nWant to Achieve?',
+                              style: TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Hover a goal to preview your\ntraining direction.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white.withOpacity(0.55),
+                                height: 1.65,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'What Do You\nWant to Achieve?',
-                        style: TextStyle(
-                          fontSize: 34,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          height: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Your goal shapes every workout,\nevery rep, every session.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.6),
-                          height: 1.65,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          _webChip('🎯', 'Goal-driven'),
-                          _webChip('📈', 'Progress tracked'),
-                          _webChip('🔄', 'Adapts to you'),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
 
-          // ── Right: goal selection card ─────────────────────────────
+          // ── Right: goal list ───────────────────────────────────────────────
           Expanded(
-            flex: 55,
+            flex: 50,
             child: Container(
               color: const Color(0xFF030806),
               child: Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 48, vertical: 40),
+                      horizontal: 44, vertical: 40),
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 520),
+                    constraints: const BoxConstraints(maxWidth: 500),
                     child: AnimatedBuilder(
                       animation: _animController,
                       builder: (_, child) => FadeTransition(
@@ -283,121 +377,237 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                           ),
                           const SizedBox(height: 24),
 
-                          // Goal cards — web uses a fixed list, no Expanded
+                          // Goal cards — tall with real bg images
                           ...List.generate(_goals.length, (index) {
                             final goal = _goals[index];
                             final isSelected = _selectedGoal == goal.title;
+                            final isHovered = _hoveredIndex == index;
+
                             return Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: GestureDetector(
-                                onTap: () => setState(
-                                    () => _selectedGoal = goal.title),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 250),
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(14),
-                                    color: isSelected
-                                        ? goal.color.withOpacity(0.12)
-                                        : const Color(0xFF0E1A0E),
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? goal.color
-                                          : AppColors.border,
-                                      width: isSelected ? 2 : 1,
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: MouseRegion(
+                                onEnter: (_) =>
+                                    setState(() => _hoveredIndex = index),
+                                onExit: (_) =>
+                                    setState(() => _hoveredIndex = -1),
+                                child: GestureDetector(
+                                  onTap: () => setState(
+                                      () => _selectedGoal = goal.title),
+                                  child: AnimatedContainer(
+                                    duration:
+                                        const Duration(milliseconds: 280),
+                                    height: 96,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? goal.color
+                                            : (isHovered
+                                                ? goal.color.withOpacity(0.5)
+                                                : AppColors.border),
+                                        width: isSelected ? 2.5 : 1.5,
+                                      ),
+                                      boxShadow: isSelected
+                                          ? [
+                                              BoxShadow(
+                                                color: goal.color
+                                                    .withOpacity(0.3),
+                                                blurRadius: 24,
+                                                spreadRadius: 2,
+                                              )
+                                            ]
+                                          : (isHovered
+                                              ? [
+                                                  BoxShadow(
+                                                    color: goal.color
+                                                        .withOpacity(0.12),
+                                                    blurRadius: 14,
+                                                  )
+                                                ]
+                                              : []),
                                     ),
-                                    boxShadow: isSelected
-                                        ? [
-                                            BoxShadow(
-                                              color:
-                                                  goal.color.withOpacity(0.2),
-                                              blurRadius: 16,
-                                              spreadRadius: 1,
-                                            )
-                                          ]
-                                        : [],
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      // Emoji circle
-                                      AnimatedContainer(
-                                        duration:
-                                            const Duration(milliseconds: 250),
-                                        width: 48,
-                                        height: 48,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: goal.color.withOpacity(
-                                              isSelected ? 0.2 : 0.08),
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            goal.emoji,
-                                            style: const TextStyle(
-                                                fontSize: 22),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          // Real photo background
+                                          Image.network(
+                                            goal.bgImage,
+                                            fit: BoxFit.cover,
+                                            alignment: Alignment.center,
+                                            opacity: AlwaysStoppedAnimation(
+                                                isSelected
+                                                    ? 0.5
+                                                    : (isHovered ? 0.4 : 0.25)),
+                                            frameBuilder: (ctx, child, frame,
+                                                wasSynchronouslyLoaded) {
+                                              if (wasSynchronouslyLoaded ||
+                                                  frame != null) return child;
+                                              return Container(
+                                                  color: const Color(0xFF0E1A0E));
+                                            },
+                                            errorBuilder: (c, e, s) =>
+                                                Container(
+                                                    color: const Color(
+                                                        0xFF0E1A0E)),
                                           ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 14),
-                                      // Text
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              goal.title,
-                                              style: TextStyle(
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.w700,
-                                                color: isSelected
-                                                    ? goal.color
-                                                    : AppColors.textPrimary,
+
+                                          // Dark overlay
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.centerRight,
+                                                end: Alignment.centerLeft,
+                                                colors: [
+                                                  Colors.black.withOpacity(
+                                                      isSelected ? 0.4 : 0.6),
+                                                  Colors.black
+                                                      .withOpacity(0.15),
+                                                ],
                                               ),
                                             ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              goal.description,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: AppColors.textSecondary
-                                                    .withOpacity(0.55),
+                                          ),
+
+                                          // Accent tint
+                                          AnimatedContainer(
+                                            duration: const Duration(
+                                                milliseconds: 280),
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.centerLeft,
+                                                end: Alignment.centerRight,
+                                                colors: [
+                                                  goal.color.withOpacity(
+                                                      isSelected
+                                                          ? 0.38
+                                                          : (isHovered
+                                                              ? 0.18
+                                                              : 0.08)),
+                                                  Colors.transparent,
+                                                ],
                                               ),
                                             ),
-                                          ],
-                                        ),
-                                      ),
-                                      // Check icon
-                                      AnimatedContainer(
-                                        duration:
-                                            const Duration(milliseconds: 250),
-                                        width: 22,
-                                        height: 22,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: isSelected
-                                              ? goal.color
-                                              : Colors.transparent,
-                                          border: Border.all(
-                                            color: isSelected
-                                                ? goal.color
-                                                : AppColors.borderLight,
-                                            width: 2,
                                           ),
-                                        ),
-                                        child: isSelected
-                                            ? const Icon(Icons.check,
-                                                size: 13, color: Colors.white)
-                                            : null,
+
+                                          // Content row
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 18, vertical: 14),
+                                            child: Row(
+                                              children: [
+                                                // Emoji badge
+                                                AnimatedContainer(
+                                                  duration: const Duration(
+                                                      milliseconds: 280),
+                                                  width: 48,
+                                                  height: 48,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: Colors.black
+                                                        .withOpacity(0.5),
+                                                    border: Border.all(
+                                                      color: goal.color
+                                                          .withOpacity(
+                                                              isSelected
+                                                                  ? 0.8
+                                                                  : 0.4),
+                                                      width: 1.5,
+                                                    ),
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      goal.emoji,
+                                                      style: const TextStyle(
+                                                          fontSize: 22),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 14),
+
+                                                // Text
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Text(
+                                                        goal.title,
+                                                        style: TextStyle(
+                                                          fontSize: 15,
+                                                          fontWeight:
+                                                              FontWeight.w800,
+                                                          color: Colors.white
+                                                              .withOpacity(
+                                                                  isSelected
+                                                                      ? 1.0
+                                                                      : 0.88),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 3),
+                                                      Text(
+                                                        goal.description,
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: isSelected
+                                                              ? goal.color
+                                                                  .withOpacity(
+                                                                      0.85)
+                                                              : Colors.white
+                                                                  .withOpacity(
+                                                                      0.45),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+
+                                                // Check circle
+                                                AnimatedContainer(
+                                                  duration: const Duration(
+                                                      milliseconds: 250),
+                                                  width: 26,
+                                                  height: 26,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: isSelected
+                                                        ? goal.color
+                                                        : Colors.black
+                                                            .withOpacity(0.45),
+                                                    border: Border.all(
+                                                      color: isSelected
+                                                          ? goal.color
+                                                          : Colors.white
+                                                              .withOpacity(
+                                                                  0.25),
+                                                      width: 2,
+                                                    ),
+                                                  ),
+                                                  child: isSelected
+                                                      ? const Icon(
+                                                          Icons.check,
+                                                          size: 14,
+                                                          color: Colors.white,
+                                                        )
+                                                      : null,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ],
+                                    ),
                                   ),
                                 ),
                               ),
                             );
                           }),
 
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 12),
 
                           // Continue button
                           GestureDetector(
@@ -459,44 +669,20 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
     );
   }
 
-  Widget _webChip(String emoji, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: Colors.white.withOpacity(0.08),
-        border: Border.all(color: Colors.white.withOpacity(0.15)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 13)),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════
-  // MOBILE LAYOUT — original unchanged
-  // ═══════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MOBILE LAYOUT — full-bleed image cards
+  // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildMobileLayout() {
     return Scaffold(
       backgroundColor: const Color(0xFF050A05),
       body: Stack(
         children: [
+          // Ambient glow
           Positioned(
             top: -80,
             right: -80,
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 400),
               width: 350,
               height: 350,
               decoration: BoxDecoration(
@@ -548,11 +734,12 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                       ),
                     ),
                     const SizedBox(height: 28),
+
                     Expanded(
                       child: ListView.separated(
                         itemCount: _goals.length,
                         separatorBuilder: (_, __) =>
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           final goal = _goals[index];
                           final isSelected = _selectedGoal == goal.title;
@@ -561,104 +748,190 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                 setState(() => _selectedGoal = goal.title),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 250),
-                              padding: const EdgeInsets.all(18),
+                              height: 90,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                color: isSelected
-                                    ? goal.color.withOpacity(0.12)
-                                    : AppColors.surface,
+                                borderRadius: BorderRadius.circular(18),
                                 border: Border.all(
                                   color: isSelected
                                       ? goal.color
                                       : AppColors.border,
-                                  width: isSelected ? 2 : 1,
+                                  width: isSelected ? 2.5 : 1,
                                 ),
                                 boxShadow: isSelected
                                     ? [
                                         BoxShadow(
-                                          color: goal.color.withOpacity(0.25),
-                                          blurRadius: 16,
-                                          spreadRadius: 1,
+                                          color: goal.color.withOpacity(0.3),
+                                          blurRadius: 20,
+                                          spreadRadius: 2,
                                         )
                                       ]
                                     : [],
                               ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 52,
-                                    height: 52,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: goal.color.withOpacity(
-                                          isSelected ? 0.2 : 0.08),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    // Real photo background
+                                    Image.network(
+                                      goal.bgImage,
+                                      fit: BoxFit.cover,
+                                      alignment: Alignment.center,
+                                      opacity: AlwaysStoppedAnimation(
+                                          isSelected ? 0.45 : 0.25),
+                                      frameBuilder: (ctx, child, frame,
+                                          wasSynchronouslyLoaded) {
+                                        if (wasSynchronouslyLoaded ||
+                                            frame != null) return child;
+                                        return Container(
+                                            color: AppColors.surface);
+                                      },
+                                      errorBuilder: (c, e, s) => Container(
+                                          color: AppColors.surface),
                                     ),
-                                    child: Center(
-                                      child: Text(
-                                        goal.emoji,
-                                        style:
-                                            const TextStyle(fontSize: 24),
+
+                                    // Dark overlay
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.centerRight,
+                                          end: Alignment.centerLeft,
+                                          colors: [
+                                            Colors.black.withOpacity(
+                                                isSelected ? 0.35 : 0.6),
+                                            Colors.black.withOpacity(0.1),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          goal.title,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                            color: isSelected
-                                                ? goal.color
-                                                : AppColors.textPrimary,
-                                          ),
+
+                                    // Accent tint from left
+                                    AnimatedContainer(
+                                      duration:
+                                          const Duration(milliseconds: 250),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.centerLeft,
+                                          end: Alignment.centerRight,
+                                          colors: [
+                                            goal.color.withOpacity(
+                                                isSelected ? 0.35 : 0.1),
+                                            Colors.transparent,
+                                          ],
                                         ),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          goal.description,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: AppColors.textSecondary
-                                                .withOpacity(0.6),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  AnimatedContainer(
-                                    duration:
-                                        const Duration(milliseconds: 250),
-                                    width: 24,
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: isSelected
-                                          ? goal.color
-                                          : Colors.transparent,
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? goal.color
-                                            : AppColors.borderLight,
-                                        width: 2,
                                       ),
                                     ),
-                                    child: isSelected
-                                        ? const Icon(Icons.check,
-                                            size: 14, color: Colors.white)
-                                        : null,
-                                  ),
-                                ],
+
+                                    // Content
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 12),
+                                      child: Row(
+                                        children: [
+                                          // Emoji badge
+                                          AnimatedContainer(
+                                            duration: const Duration(
+                                                milliseconds: 250),
+                                            width: 48,
+                                            height: 48,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color:
+                                                  Colors.black.withOpacity(0.5),
+                                              border: Border.all(
+                                                color: goal.color.withOpacity(
+                                                    isSelected ? 0.8 : 0.4),
+                                                width: 1.5,
+                                              ),
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                goal.emoji,
+                                                style: const TextStyle(
+                                                    fontSize: 22),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 14),
+
+                                          // Text
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Text(
+                                                  goal.title,
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: Colors.white
+                                                        .withOpacity(isSelected
+                                                            ? 1.0
+                                                            : 0.88),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 3),
+                                                Text(
+                                                  goal.description,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: isSelected
+                                                        ? goal.color
+                                                            .withOpacity(0.85)
+                                                        : Colors.white
+                                                            .withOpacity(0.45),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+
+                                          // Check circle
+                                          AnimatedContainer(
+                                            duration: const Duration(
+                                                milliseconds: 250),
+                                            width: 26,
+                                            height: 26,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: isSelected
+                                                  ? goal.color
+                                                  : Colors.black
+                                                      .withOpacity(0.45),
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? goal.color
+                                                    : Colors.white
+                                                        .withOpacity(0.25),
+                                                width: 2,
+                                              ),
+                                            ),
+                                            child: isSelected
+                                                ? const Icon(
+                                                    Icons.check,
+                                                    size: 14,
+                                                    color: Colors.white,
+                                                  )
+                                                : null,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );
                         },
                       ),
                     ),
+
                     const SizedBox(height: 16),
+
+                    // Continue button
                     GestureDetector(
                       onTap: _continue,
                       child: AnimatedContainer(
@@ -754,16 +1027,18 @@ class GoalData {
   final String description;
   final String emoji;
   final Color color;
+  final String bgImage;
 
   GoalData({
     required this.title,
     required this.description,
     required this.emoji,
     required this.color,
+    required this.bgImage,
   });
 }
 
-// ── Web grid painter ─────────────────────────────────────────────────────────
+// ── Web grid painter ──────────────────────────────────────────────────────────
 class _WebGridPainter extends CustomPainter {
   final Color color;
   _WebGridPainter(this.color);
@@ -771,7 +1046,7 @@ class _WebGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color.withOpacity(0.03)
+      ..color = color.withOpacity(0.04)
       ..strokeWidth = 0.5;
     for (double x = 0; x < size.width; x += 40) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
