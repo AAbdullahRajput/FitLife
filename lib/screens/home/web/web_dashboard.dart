@@ -147,25 +147,25 @@ class _Imgs {
       'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61'
       '?w=400&q=80&auto=format&fit=crop';
 
-  // Stat card backgrounds
+  // Stat card backgrounds — bright, clearly identifiable, well-centered images
   static const statWeight =
-      'https://images.unsplash.com/photo-1517963879433-6ad2b056d712'
-      '?w=300&q=70&auto=format&fit=crop';
+      'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5'
+      '?w=400&q=80&auto=format&fit=crop'; // dumbbells close-up, bright
   static const statHeight =
-      'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8'
-      '?w=300&q=70&auto=format&fit=crop';
+      'https://images.unsplash.com/photo-1552674605-db6ffd4facb5'
+      '?w=400&q=80&auto=format&fit=crop'; // runner legs / silhouette
   static const statAge =
-      'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b'
-      '?w=300&q=70&auto=format&fit=crop';
+      'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61'
+      '?w=400&q=80&auto=format&fit=crop'; // athlete upper body
   static const statCalories =
-      'https://images.unsplash.com/photo-1490645935967-10de6ba17061'
-      '?w=300&q=70&auto=format&fit=crop';
+      'https://images.unsplash.com/photo-1512621776951-a57141f2eefd'
+      '?w=400&q=80&auto=format&fit=crop'; // colourful healthy food bowl
   static const statBmi =
-      'https://images.unsplash.com/photo-1549576490-b0b4831ef60a'
-      '?w=300&q=70&auto=format&fit=crop';
+      'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b'
+      '?w=400&q=80&auto=format&fit=crop'; // gym floor / equipment
   static const statWorkouts =
-      'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e'
-      '?w=300&q=70&auto=format&fit=crop';
+      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48'
+      '?w=400&q=80&auto=format&fit=crop'; // gym weights rack, well-lit
 
   // Workout card banner
   static const workoutBanner =
@@ -675,6 +675,7 @@ class _StatsGrid extends StatelessWidget {
                   child: Image.network(
                     bgImage,
                     fit: BoxFit.cover,
+                    // Center crop so the subject is always visible
                     alignment: Alignment.center,
                     errorBuilder: (_, __, ___) => Container(
                       color: color.withOpacity(0.08),
@@ -682,16 +683,16 @@ class _StatsGrid extends StatelessWidget {
                   ),
                 ),
 
-                // ── Dark overlay ───────────────────────────────────
+                // ── Dark overlay — stronger so text is always readable ──
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                         colors: [
-                          Colors.black.withOpacity(0.45),
-                          Colors.black.withOpacity(0.82),
+                          Colors.black.withOpacity(0.55),
+                          Colors.black.withOpacity(0.78),
                         ],
                       ),
                     ),
@@ -724,25 +725,53 @@ class _StatsGrid extends StatelessWidget {
                           shape: BoxShape.circle,
                           color: color.withOpacity(0.15),
                           border: Border.all(
-                              color: color.withOpacity(0.35), width: 1),
+                              color: color.withOpacity(0.45), width: 1.5),
                           boxShadow: [
                             BoxShadow(
-                              color: color.withOpacity(0.35),
-                              blurRadius: 12,
+                              color: color.withOpacity(0.4),
+                              blurRadius: 14,
+                              spreadRadius: 1,
                             ),
                           ],
                         ),
                         child: ClipOval(
-                          child: Image.network(
-                            bgImage,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Center(
-                              child: Icon(
-                                icon,
-                                size: 20,
-                                color: color,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.network(
+                                bgImage,
+                                fit: BoxFit.cover,
+                                alignment: Alignment.center,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: color.withOpacity(0.2),
+                                  child: Center(
+                                    child: Icon(
+                                      icon,
+                                      size: 20,
+                                      color: color,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+                              // Tint overlay so the icon colour reads clearly
+                              Container(
+                                color: color.withOpacity(0.2),
+                              ),
+                              // The icon on top of the photo
+                              Center(
+                                child: Icon(
+                                  icon,
+                                  size: 20,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      color: color.withOpacity(0.8),
+                                      blurRadius: 6,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
