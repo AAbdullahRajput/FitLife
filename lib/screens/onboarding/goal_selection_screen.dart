@@ -62,6 +62,9 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
     ),
   ];
 
+  static const String _defaultBg =
+      'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=1200&q=80';
+
   @override
   void initState() {
     super.initState();
@@ -99,9 +102,8 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
           content: const Text('Please select a goal'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
       return;
@@ -113,9 +115,15 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
       ? _goals.firstWhere((g) => g.title == _selectedGoal).color
       : AppColors.primary;
 
-  GoalData? get _activeGoal => _selectedGoal != null
-      ? _goals.firstWhere((g) => g.title == _selectedGoal)
-      : (_hoveredIndex >= 0 ? _goals[_hoveredIndex] : null);
+  GoalData? get _activeGoal {
+    if (_hoveredIndex >= 0) return _goals[_hoveredIndex];
+    if (_selectedGoal != null) {
+      return _goals.firstWhere((g) => g.title == _selectedGoal);
+    }
+    return null;
+  }
+
+  String get _activeBgImage => _activeGoal?.bgImage ?? _defaultBg;
 
   @override
   Widget build(BuildContext context) {
@@ -124,28 +132,28 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // WEB LAYOUT — left = image showcase, right = goal list
+  // WEB LAYOUT
   // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildWebLayout() {
     final active = _activeGoal;
+    final accentColor = active?.color ?? AppColors.primary;
 
     return Scaffold(
       backgroundColor: const Color(0xFF030806),
       body: Row(
         children: [
-          // ── Left: full-height IMAGE SHOWCASE panel ─────────────────────────
+          // ── Left: image showcase ───────────────────────────────────────────
           Expanded(
             flex: 50,
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Background photo — switches on hover/select
+                // Single AnimatedSwitcher — background image only
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),
                   child: Image.network(
-                    active?.bgImage ??
-                        'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=1200&q=80',
-                    key: ValueKey(active?.title ?? 'default'),
+                    _activeBgImage,
+                    key: ValueKey(_activeBgImage),
                     fit: BoxFit.cover,
                     alignment: Alignment.center,
                     frameBuilder:
@@ -158,7 +166,7 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                   ),
                 ),
 
-                // Blend gradient into right panel
+                // Right-edge blend
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -175,7 +183,7 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                   ),
                 ),
 
-                // Accent tint from bottom
+                // Accent tint — AnimatedContainer, no key
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 450),
                   decoration: BoxDecoration(
@@ -183,149 +191,85 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        (active?.color ?? AppColors.primary).withOpacity(0.5),
-                        (active?.color ?? AppColors.primary).withOpacity(0.0),
+                        accentColor.withOpacity(0.5),
+                        accentColor.withOpacity(0.0),
                       ],
                       stops: const [0.0, 0.65],
                     ),
                   ),
                 ),
 
-                // Grid overlay
-                CustomPaint(
-                    painter:
-                        _WebGridPainter(active?.color ?? AppColors.primary)),
+                // Grid
+                CustomPaint(painter: _WebGridPainter(accentColor)),
 
-                // Bottom info overlay
+                // Bottom overlay — plain Container (no AnimatedSwitcher wrapper)
+                // Inner content uses its own AnimatedSwitcher with proper unique keys
                 Positioned(
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 350),
-                    child: Container(
-                      key: ValueKey(active?.title ?? 'default'),
-                      padding: const EdgeInsets.fromLTRB(40, 48, 40, 48),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [
-                            Colors.black.withOpacity(0.88),
-                            Colors.transparent,
-                          ],
-                        ),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(40, 48, 40, 48),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.88),
+                          Colors.transparent,
+                        ],
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Step badge
-                          Row(
-                            children: [
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 400),
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: active?.color ?? AppColors.primary,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: (active?.color ??
-                                              AppColors.primary)
-                                          .withOpacity(0.7),
-                                      blurRadius: 10,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                'STEP 2 OF 3  ·  YOUR GOAL',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: active?.color ?? AppColors.primary,
-                                  letterSpacing: 2.5,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-
-                          if (active != null) ...[
-                            Text(
-                              active.emoji,
-                              style: const TextStyle(fontSize: 40),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              active.title,
-                              style: const TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                height: 1.1,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              active.description,
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: Colors.white.withOpacity(0.7),
-                                height: 1.6,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Step badge
+                        Row(
+                          children: [
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 400),
+                              width: 8,
+                              height: 8,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                color: active.color.withOpacity(0.2),
-                                border: Border.all(
-                                    color: active.color.withOpacity(0.5)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.auto_awesome,
-                                      size: 13, color: active.color),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'AI-personalized plan',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: active.color,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                shape: BoxShape.circle,
+                                color: accentColor,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: accentColor.withOpacity(0.7),
+                                    blurRadius: 10,
                                   ),
                                 ],
                               ),
                             ),
-                          ] else ...[
-                            const Text(
-                              'What Do You\nWant to Achieve?',
-                              style: TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                height: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
+                            const SizedBox(width: 10),
                             Text(
-                              'Hover a goal to preview your\ntraining direction.',
+                              'STEP 2 OF 3  ·  YOUR GOAL',
                               style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white.withOpacity(0.55),
-                                height: 1.65,
+                                fontSize: 11,
+                                color: accentColor,
+                                letterSpacing: 2.5,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Inner AnimatedSwitcher — switches between goal info & default
+                        // Keys are guaranteed unique: goal title vs '__default__'
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: active != null
+                              ? _GoalOverlayContent(
+                                  key: ValueKey(active.title),
+                                  goal: active,
+                                )
+                              : const _DefaultOverlayContent(
+                                  key: ValueKey('__default__'),
+                                ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -377,7 +321,6 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                           ),
                           const SizedBox(height: 24),
 
-                          // Goal cards — tall with real bg images
                           ...List.generate(_goals.length, (index) {
                             final goal = _goals[index];
                             final isSelected = _selectedGoal == goal.title;
@@ -431,7 +374,6 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                       child: Stack(
                                         fit: StackFit.expand,
                                         children: [
-                                          // Real photo background
                                           Image.network(
                                             goal.bgImage,
                                             fit: BoxFit.cover,
@@ -439,21 +381,22 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                             opacity: AlwaysStoppedAnimation(
                                                 isSelected
                                                     ? 0.5
-                                                    : (isHovered ? 0.4 : 0.25)),
+                                                    : (isHovered
+                                                        ? 0.4
+                                                        : 0.25)),
                                             frameBuilder: (ctx, child, frame,
                                                 wasSynchronouslyLoaded) {
                                               if (wasSynchronouslyLoaded ||
                                                   frame != null) return child;
                                               return Container(
-                                                  color: const Color(0xFF0E1A0E));
+                                                  color: const Color(
+                                                      0xFF0E1A0E));
                                             },
                                             errorBuilder: (c, e, s) =>
                                                 Container(
                                                     color: const Color(
                                                         0xFF0E1A0E)),
                                           ),
-
-                                          // Dark overlay
                                           Container(
                                             decoration: BoxDecoration(
                                               gradient: LinearGradient(
@@ -468,8 +411,6 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                               ),
                                             ),
                                           ),
-
-                                          // Accent tint
                                           AnimatedContainer(
                                             duration: const Duration(
                                                 milliseconds: 280),
@@ -489,14 +430,11 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                               ),
                                             ),
                                           ),
-
-                                          // Content row
                                           Padding(
                                             padding: const EdgeInsets.symmetric(
                                                 horizontal: 18, vertical: 14),
                                             child: Row(
                                               children: [
-                                                // Emoji badge
                                                 AnimatedContainer(
                                                   duration: const Duration(
                                                       milliseconds: 280),
@@ -516,16 +454,12 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                                     ),
                                                   ),
                                                   child: Center(
-                                                    child: Text(
-                                                      goal.emoji,
-                                                      style: const TextStyle(
-                                                          fontSize: 22),
-                                                    ),
+                                                    child: Text(goal.emoji,
+                                                        style: const TextStyle(
+                                                            fontSize: 22)),
                                                   ),
                                                 ),
                                                 const SizedBox(width: 14),
-
-                                                // Text
                                                 Expanded(
                                                   child: Column(
                                                     crossAxisAlignment:
@@ -565,8 +499,6 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                                     ],
                                                   ),
                                                 ),
-
-                                                // Check circle
                                                 AnimatedContainer(
                                                   duration: const Duration(
                                                       milliseconds: 250),
@@ -588,11 +520,9 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                                     ),
                                                   ),
                                                   child: isSelected
-                                                      ? const Icon(
-                                                          Icons.check,
+                                                      ? const Icon(Icons.check,
                                                           size: 14,
-                                                          color: Colors.white,
-                                                        )
+                                                          color: Colors.white)
                                                       : null,
                                                 ),
                                               ],
@@ -609,7 +539,6 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
 
                           const SizedBox(height: 12),
 
-                          // Continue button
                           GestureDetector(
                             onTap: _continue,
                             child: AnimatedContainer(
@@ -632,7 +561,8 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                 boxShadow: _selectedGoal != null
                                     ? [
                                         BoxShadow(
-                                          color: _accentColor.withOpacity(0.35),
+                                          color:
+                                              _accentColor.withOpacity(0.35),
                                           blurRadius: 20,
                                           spreadRadius: 1,
                                           offset: const Offset(0, 6),
@@ -670,14 +600,13 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // MOBILE LAYOUT — full-bleed image cards
+  // MOBILE LAYOUT
   // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildMobileLayout() {
     return Scaffold(
       backgroundColor: const Color(0xFF050A05),
       body: Stack(
         children: [
-          // Ambient glow
           Positioned(
             top: -80,
             right: -80,
@@ -699,15 +628,13 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
           SafeArea(
             child: AnimatedBuilder(
               animation: _animController,
-              builder: (context, child) {
-                return FadeTransition(
-                  opacity: _fadeAnim,
-                  child: Transform.translate(
-                    offset: Offset(0, _slideAnim.value),
-                    child: child,
-                  ),
-                );
-              },
+              builder: (context, child) => FadeTransition(
+                opacity: _fadeAnim,
+                child: Transform.translate(
+                  offset: Offset(0, _slideAnim.value),
+                  child: child,
+                ),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(AppConstants.paddingLG),
                 child: Column(
@@ -734,7 +661,6 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                       ),
                     ),
                     const SizedBox(height: 28),
-
                     Expanded(
                       child: ListView.separated(
                         itemCount: _goals.length,
@@ -744,8 +670,8 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                           final goal = _goals[index];
                           final isSelected = _selectedGoal == goal.title;
                           return GestureDetector(
-                            onTap: () =>
-                                setState(() => _selectedGoal = goal.title),
+                            onTap: () => setState(
+                                () => _selectedGoal = goal.title),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 250),
                               height: 90,
@@ -772,7 +698,6 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                 child: Stack(
                                   fit: StackFit.expand,
                                   children: [
-                                    // Real photo background
                                     Image.network(
                                       goal.bgImage,
                                       fit: BoxFit.cover,
@@ -789,8 +714,6 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                       errorBuilder: (c, e, s) => Container(
                                           color: AppColors.surface),
                                     ),
-
-                                    // Dark overlay
                                     Container(
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
@@ -804,8 +727,6 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                         ),
                                       ),
                                     ),
-
-                                    // Accent tint from left
                                     AnimatedContainer(
                                       duration:
                                           const Duration(milliseconds: 250),
@@ -821,14 +742,11 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                         ),
                                       ),
                                     ),
-
-                                    // Content
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 16, vertical: 12),
                                       child: Row(
                                         children: [
-                                          // Emoji badge
                                           AnimatedContainer(
                                             duration: const Duration(
                                                 milliseconds: 250),
@@ -836,8 +754,8 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                             height: 48,
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
-                                              color:
-                                                  Colors.black.withOpacity(0.5),
+                                              color: Colors.black
+                                                  .withOpacity(0.5),
                                               border: Border.all(
                                                 color: goal.color.withOpacity(
                                                     isSelected ? 0.8 : 0.4),
@@ -845,16 +763,12 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                               ),
                                             ),
                                             child: Center(
-                                              child: Text(
-                                                goal.emoji,
-                                                style: const TextStyle(
-                                                    fontSize: 22),
-                                              ),
+                                              child: Text(goal.emoji,
+                                                  style: const TextStyle(
+                                                      fontSize: 22)),
                                             ),
                                           ),
                                           const SizedBox(width: 14),
-
-                                          // Text
                                           Expanded(
                                             child: Column(
                                               crossAxisAlignment:
@@ -868,9 +782,10 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.w800,
                                                     color: Colors.white
-                                                        .withOpacity(isSelected
-                                                            ? 1.0
-                                                            : 0.88),
+                                                        .withOpacity(
+                                                            isSelected
+                                                                ? 1.0
+                                                                : 0.88),
                                                   ),
                                                 ),
                                                 const SizedBox(height: 3),
@@ -888,8 +803,6 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                               ],
                                             ),
                                           ),
-
-                                          // Check circle
                                           AnimatedContainer(
                                             duration: const Duration(
                                                 milliseconds: 250),
@@ -910,11 +823,9 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                                               ),
                                             ),
                                             child: isSelected
-                                                ? const Icon(
-                                                    Icons.check,
+                                                ? const Icon(Icons.check,
                                                     size: 14,
-                                                    color: Colors.white,
-                                                  )
+                                                    color: Colors.white)
                                                 : null,
                                           ),
                                         ],
@@ -928,10 +839,7 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                         },
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
-                    // Continue button
                     GestureDetector(
                       onTap: _continue,
                       child: AnimatedContainer(
@@ -984,7 +892,6 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
     );
   }
 
-  // ── Shared widgets ──────────────────────────────────────────────────────────
   Widget _buildProgressBar(int current, int total) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1022,6 +929,101 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
   }
 }
 
+// ── Separate stateless widgets for AnimatedSwitcher children ──────────────────
+// Using separate classes guarantees Flutter treats them as different widget types
+// and never produces duplicate keys within the same AnimatedSwitcher.
+
+class _GoalOverlayContent extends StatelessWidget {
+  final GoalData goal;
+  const _GoalOverlayContent({required super.key, required this.goal});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(goal.emoji, style: const TextStyle(fontSize: 40)),
+        const SizedBox(height: 8),
+        Text(
+          goal.title,
+          style: const TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+            height: 1.1,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          goal.description,
+          style: TextStyle(
+            fontSize: 15,
+            color: Colors.white.withOpacity(0.7),
+            height: 1.6,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: goal.color.withOpacity(0.2),
+            border: Border.all(color: goal.color.withOpacity(0.5)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.auto_awesome, size: 13, color: goal.color),
+              const SizedBox(width: 6),
+              Text(
+                'AI-personalized plan',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: goal.color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DefaultOverlayContent extends StatelessWidget {
+  const _DefaultOverlayContent({required super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text(
+          'What Do You\nWant to Achieve?',
+          style: TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Hover a goal to preview your\ntraining direction.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.white.withOpacity(0.55),
+            height: 1.65,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class GoalData {
   final String title;
   final String description;
@@ -1038,7 +1040,6 @@ class GoalData {
   });
 }
 
-// ── Web grid painter ──────────────────────────────────────────────────────────
 class _WebGridPainter extends CustomPainter {
   final Color color;
   _WebGridPainter(this.color);

@@ -208,7 +208,7 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 350),
                     child: Container(
-                      key: ValueKey(active?.title ?? 'default'),
+                      key: ValueKey('overlay_${active?.title ?? 'default'}'),
                       padding: const EdgeInsets.fromLTRB(40, 40, 40, 48),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(

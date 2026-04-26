@@ -23,25 +23,52 @@ class _LoginScreenState extends State<LoginScreen>
   bool _isLoading = false;
   String? _errorMessage;
 
-  // ── Supabase client shorthand ──
   final _supabase = Supabase.instance.client;
+
+  // ── Hero images for left panel & mobile background ──
+  static const String _heroBg =
+      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1400&q=80';
+  static const String _mobileBg =
+      'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=900&q=80';
+
+  // Small feature photos shown in the left panel
+  static const List<_FeaturePhoto> _featurePhotos = [
+    _FeaturePhoto(
+      image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=300&q=70',
+      label: '200+ Exercises',
+    ),
+    _FeaturePhoto(
+      image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=300&q=70',
+      label: 'Personalised Meals',
+    ),
+    _FeaturePhoto(
+      image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=300&q=70',
+      label: 'Real-time Tracking',
+    ),
+    _FeaturePhoto(
+      image: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=300&q=70',
+      label: 'Cloud Sync',
+    ),
+  ];
+
+  // Avatar photos for social proof (no negative margin – use Stack instead)
+  static const List<String> _avatarPhotos = [
+    'https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=120&q=60',
+    'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=120&q=60',
+    'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=120&q=60',
+  ];
 
   @override
   void initState() {
     super.initState();
-
-    // Animations
     _animController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 700));
     _fadeAnim = Tween<double>(begin: 0, end: 1).animate(
         CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _slideAnim =
         Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero).animate(
-            CurvedAnimation(
-                parent: _animController, curve: Curves.easeOut));
+            CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
-
-    // If already logged in, go straight to home
     _redirectIfLoggedIn();
   }
 
@@ -51,6 +78,16 @@ class _LoginScreenState extends State<LoginScreen>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.pushReplacementNamed(context, '/home');
       });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    precacheImage(const NetworkImage(_heroBg), context);
+    precacheImage(const NetworkImage(_mobileBg), context);
+    for (final f in _featurePhotos) {
+      precacheImage(NetworkImage(f.image), context);
     }
   }
 
@@ -74,7 +111,6 @@ class _LoginScreenState extends State<LoginScreen>
       setState(() => _errorMessage = 'Please fill in all fields.');
       return;
     }
-
     if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
       setState(() => _errorMessage = 'Please enter a valid email address.');
       return;
@@ -90,16 +126,13 @@ class _LoginScreenState extends State<LoginScreen>
         email: email,
         password: password,
       );
-
       if (!mounted) return;
-
       if (response.user != null) {
-        // Check if email is confirmed
         if (response.user!.emailConfirmedAt == null) {
           setState(() {
             _isLoading = false;
             _errorMessage =
-                '📧 Please verify your email first. Check your inbox and click the confirmation link.';
+                'Please verify your email first. Check your inbox and click the confirmation link.';
           });
           return;
         }
@@ -117,22 +150,13 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _handleForgotPassword() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
-      setState(
-          () => _errorMessage = 'Enter your email above, then tap Forgot password.');
+      setState(() => _errorMessage = 'Enter your email above, then tap Forgot password.');
       return;
     }
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
+    setState(() { _isLoading = true; _errorMessage = null; });
     try {
       await _supabase.auth.resetPasswordForEmail(email);
-      if (mounted) {
-        setState(() => _errorMessage =
-            '📧 Password reset email sent! Check your inbox.');
-      }
+      if (mounted) setState(() => _errorMessage = 'Password reset email sent! Check your inbox.');
     } on AuthException catch (e) {
       setState(() => _errorMessage = _mapAuthError(e.message));
     } catch (_) {
@@ -142,25 +166,18 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  /// Maps raw Supabase error strings to user-friendly messages.
   String _mapAuthError(String message) {
     final msg = message.toLowerCase();
-    if (msg.contains('invalid login credentials') ||
-        msg.contains('invalid credentials')) {
+    if (msg.contains('invalid login credentials') || msg.contains('invalid credentials'))
       return 'Incorrect email or password. Please try again.';
-    }
-    if (msg.contains('email not confirmed')) {
-      return '📧 Please verify your email. Check your inbox for the confirmation link.';
-    }
-    if (msg.contains('too many requests')) {
+    if (msg.contains('email not confirmed'))
+      return 'Please verify your email. Check your inbox for the confirmation link.';
+    if (msg.contains('too many requests'))
       return 'Too many attempts. Please wait a moment and try again.';
-    }
-    if (msg.contains('user not found')) {
+    if (msg.contains('user not found'))
       return 'No account found with this email. Sign up first!';
-    }
-    if (msg.contains('network')) {
+    if (msg.contains('network'))
       return 'Network error. Check your internet connection.';
-    }
     return message;
   }
 
@@ -170,9 +187,8 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (kIsWeb) return _buildWebLayout(isDark);
-    return _buildMobileLayout(isDark);
+    if (kIsWeb) return _buildWebLayout();
+    return _buildMobileLayout();
   }
 
   // ─────────────────────────────────────────
@@ -189,27 +205,28 @@ class _LoginScreenState extends State<LoginScreen>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: AppColors.primary.withOpacity(0.15),
-            border: Border.all(
-                color: AppColors.primary.withOpacity(0.5), width: 2),
+            border: Border.all(color: AppColors.primary.withOpacity(0.5), width: 2),
           ),
-          child: Center(
-              child:
-                  Text('🏋️', style: TextStyle(fontSize: size * 0.5))),
+          child: ClipOval(
+            child: Image.network(
+              'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=100&q=60',
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  Icon(Icons.fitness_center, size: size * 0.5, color: AppColors.primary),
+            ),
+          ),
         ),
         const SizedBox(width: 10),
         ShaderMask(
-          shaderCallback: (bounds) => const LinearGradient(
-            colors: [Color(0xFF5EFC82), Color(0xFF00C853)],
-          ).createShader(bounds),
-          child: Text(
-            'FitLife',
-            style: TextStyle(
-              fontSize: fontSize,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              letterSpacing: 1,
-            ),
-          ),
+          shaderCallback: (bounds) =>
+              const LinearGradient(colors: [Color(0xFF5EFC82), Color(0xFF00C853)])
+                  .createShader(bounds),
+          child: Text('FitLife',
+              style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 1)),
         ),
       ],
     );
@@ -234,10 +251,7 @@ class _LoginScreenState extends State<LoginScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: textPrimary)),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textPrimary)),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
@@ -254,15 +268,11 @@ class _LoginScreenState extends State<LoginScreen>
             style: TextStyle(fontSize: 14, color: textPrimary),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(
-                  fontSize: 14,
-                  color: textSecondary.withOpacity(0.5)),
-              prefixIcon:
-                  Icon(icon, size: 18, color: textSecondary),
+              hintStyle: TextStyle(fontSize: 14, color: textSecondary.withOpacity(0.5)),
+              prefixIcon: Icon(icon, size: 18, color: textSecondary),
               suffixIcon: suffix,
               border: InputBorder.none,
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
+              contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
             ),
           ),
         ),
@@ -271,33 +281,24 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildMessageBox(String message, {bool isError = true}) {
-    final color =
-        isError ? const Color(0xFFFF1744) : AppColors.primary;
-    final bgColor = color.withOpacity(0.08);
-    final borderColor = color.withOpacity(0.3);
-    final icon = isError
-        ? Icons.error_outline_rounded
-        : Icons.check_circle_outline_rounded;
-
+    final color = isError ? const Color(0xFFFF1744) : AppColors.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: bgColor,
-        border: Border.all(color: borderColor),
+        color: color.withOpacity(0.08),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: color),
+          Icon(isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+              size: 16, color: color),
           const SizedBox(width: 8),
           Expanded(
             child: Text(message,
                 style: TextStyle(
-                    fontSize: 12,
-                    color: color,
-                    fontWeight: FontWeight.w500,
-                    height: 1.4)),
+                    fontSize: 12, color: color, fontWeight: FontWeight.w500, height: 1.4)),
           ),
         ],
       ),
@@ -316,32 +317,19 @@ class _LoginScreenState extends State<LoginScreen>
           gradient: _isLoading
               ? LinearGradient(colors: [
                   AppColors.primary.withOpacity(0.5),
-                  AppColors.primary.withOpacity(0.5),
+                  AppColors.primary.withOpacity(0.5)
                 ])
-              : const LinearGradient(
-                  colors: [Color(0xFF5EFC82), Color(0xFF00C853)]),
+              : const LinearGradient(colors: [Color(0xFF5EFC82), Color(0xFF00C853)]),
           boxShadow: _isLoading
               ? []
-              : [
-                  BoxShadow(
-                      color: AppColors.primary.withOpacity(0.35),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6))
-                ],
+              : [BoxShadow(color: AppColors.primary.withOpacity(0.35), blurRadius: 18, offset: const Offset(0, 6))],
         ),
         child: Center(
           child: _isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                      color: Colors.black, strokeWidth: 2))
+              ? const SizedBox(width: 20, height: 20,
+                  child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
               : const Text('Sign In',
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.3)),
+                  style: TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.w800)),
         ),
       ),
     );
@@ -350,33 +338,19 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildDivider(Color textSecondary) {
     return Row(
       children: [
-        Expanded(
-            child: Divider(
-                color: textSecondary.withOpacity(0.2), height: 1)),
+        Expanded(child: Divider(color: textSecondary.withOpacity(0.2), height: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Text('or',
-              style: TextStyle(
-                  fontSize: 12,
-                  color: textSecondary.withOpacity(0.5))),
+          child: Text('or', style: TextStyle(fontSize: 12, color: textSecondary.withOpacity(0.5))),
         ),
-        Expanded(
-            child: Divider(
-                color: textSecondary.withOpacity(0.2), height: 1)),
+        Expanded(child: Divider(color: textSecondary.withOpacity(0.2), height: 1)),
       ],
     );
   }
 
-  Widget _buildGoogleButton({
-    required Color cardColor,
-    required Color borderColor,
-    required Color textPrimary,
-  }) {
+  Widget _buildGoogleButton({required Color cardColor, required Color borderColor, required Color textPrimary}) {
     return GestureDetector(
-      onTap: _isLoading ? null : () {
-        // TODO: implement Google OAuth via Supabase
-        // _supabase.auth.signInWithOAuth(OAuthProvider.google);
-      },
+      onTap: _isLoading ? null : () {},
       child: Container(
         height: 52,
         decoration: BoxDecoration(
@@ -387,68 +361,25 @@ class _LoginScreenState extends State<LoginScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('G',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF4285F4))),
+            const Text('G', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF4285F4))),
             const SizedBox(width: 10),
             Text('Continue with Google',
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: textPrimary)),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRegisterLink(Color textSecondary) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text("Don't have an account? ",
-            style: TextStyle(fontSize: 13, color: textSecondary)),
-        GestureDetector(
-          onTap: () =>
-              Navigator.pushReplacementNamed(context, '/register'),
-          child: const Text('Sign Up Free',
-              style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildForgotPassword(Color textSecondary) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: GestureDetector(
-        onTap: _isLoading ? null : _handleForgotPassword,
-        child: const Text('Forgot password?',
-            style: TextStyle(
-                fontSize: 12,
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600)),
-      ),
-    );
-  }
-
   Widget _buildFormContent({
-    required bool isDark,
     required Color textPrimary,
     required Color textSecondary,
     required Color cardColor,
     required Color borderColor,
   }) {
-    // Determine message type: success messages start with 📧 (for reset/verify)
     final isSuccessMsg = _errorMessage != null &&
-        (_errorMessage!.startsWith('📧') &&
-            _errorMessage!.contains('sent'));
-
+        _errorMessage!.contains('sent') &&
+        !_errorMessage!.contains('not');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -462,7 +393,6 @@ class _LoginScreenState extends State<LoginScreen>
           textPrimary: textPrimary,
           textSecondary: textSecondary,
           keyboardType: TextInputType.emailAddress,
-          textInputAction: TextInputAction.next,
         ),
         const SizedBox(height: 16),
         _buildInputField(
@@ -478,34 +408,42 @@ class _LoginScreenState extends State<LoginScreen>
           textInputAction: TextInputAction.done,
           onSubmitted: _handleLogin,
           suffix: GestureDetector(
-            onTap: () =>
-                setState(() => _obscurePassword = !_obscurePassword),
-            child: Icon(
-                _obscurePassword
-                    ? Icons.visibility_outlined
-                    : Icons.visibility_off_outlined,
-                size: 18,
-                color: textSecondary),
+            onTap: () => setState(() => _obscurePassword = !_obscurePassword),
+            child: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                size: 18, color: textSecondary),
           ),
         ),
         const SizedBox(height: 10),
-        _buildForgotPassword(textSecondary),
+        Align(
+          alignment: Alignment.centerRight,
+          child: GestureDetector(
+            onTap: _isLoading ? null : _handleForgotPassword,
+            child: const Text('Forgot password?',
+                style: TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600)),
+          ),
+        ),
         const SizedBox(height: 20),
         if (_errorMessage != null) ...[
-          _buildMessageBox(_errorMessage!,
-              isError: !isSuccessMsg),
+          _buildMessageBox(_errorMessage!, isError: !isSuccessMsg),
           const SizedBox(height: 16),
         ],
         _buildLoginButton(),
         const SizedBox(height: 20),
         _buildDivider(textSecondary),
         const SizedBox(height: 20),
-        _buildGoogleButton(
-            cardColor: cardColor,
-            borderColor: borderColor,
-            textPrimary: textPrimary),
+        _buildGoogleButton(cardColor: cardColor, borderColor: borderColor, textPrimary: textPrimary),
         const SizedBox(height: 24),
-        _buildRegisterLink(textSecondary),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("Don't have an account? ", style: TextStyle(fontSize: 13, color: textSecondary)),
+            GestureDetector(
+              onTap: () => Navigator.pushReplacementNamed(context, '/register'),
+              child: const Text('Sign Up Free',
+                  style: TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -513,408 +451,442 @@ class _LoginScreenState extends State<LoginScreen>
   // ─────────────────────────────────────────
   // MOBILE LAYOUT
   // ─────────────────────────────────────────
-  Widget _buildMobileLayout(bool isDark) {
-    final textPrimary =
-        isDark ? Colors.white : const Color(0xFF0A0A0A);
-    final textSecondary =
-        isDark ? const Color(0xFFB0B0B0) : const Color(0xFF555555);
-    final bgColor =
-        isDark ? const Color(0xFF050A05) : const Color(0xFFF5F5F5);
-    final cardColor =
-        isDark ? const Color(0xFF141414) : Colors.white;
-    final borderColor =
-        isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
+  Widget _buildMobileLayout() {
+    const textPrimary = Colors.white;
+    const textSecondary = Color(0xFFB0B0B0);
+    final cardColor = Colors.black.withOpacity(0.55);
+    final borderColor = Colors.white.withOpacity(0.15);
+    final inputCardColor = Colors.white.withOpacity(0.08);
 
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: const Color(0xFF050A05),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Full-bleed background photo
+          Image.network(
+            _mobileBg,
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+            frameBuilder: (ctx, child, frame, wasSynchronouslyLoaded) {
+              if (wasSynchronouslyLoaded || frame != null) return child;
+              return Container(color: const Color(0xFF050A05));
+            },
+            errorBuilder: (_, __, ___) => Container(color: const Color(0xFF050A05)),
+          ),
+
+          // Dark gradient overlay
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xCC000000),
+                  Color(0x44000000),
+                  Color(0x44000000),
+                  Color(0xEE050A05),
+                ],
+                stops: [0.0, 0.25, 0.45, 1.0],
+              ),
+            ),
+          ),
+
+          // Accent green tint from bottom
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  AppColors.primary.withOpacity(0.18),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.5],
+              ),
+            ),
+          ),
+
+          // Content
+          FadeTransition(
+            opacity: _fadeAnim,
+            child: SlideTransition(
+              position: _slideAnim,
+              child: SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.black.withOpacity(0.4),
+                            border: Border.all(color: Colors.white.withOpacity(0.2)),
+                          ),
+                          child: const Icon(Icons.arrow_back_ios_new_rounded,
+                              size: 15, color: Colors.white),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      _buildLogo(size: 48, fontSize: 22),
+                      const SizedBox(height: 24),
+                      const Text('Welcome back',
+                          style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              height: 1.1)),
+                      const SizedBox(height: 6),
+                      Text('Sign in to continue your fitness journey.',
+                          style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.6))),
+                      const SizedBox(height: 32),
+
+                      // Frosted glass form card
+                      Container(
+                        padding: const EdgeInsets.all(22),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+                          color: cardColor,
+                          border: Border.all(color: borderColor),
+                        ),
+                        child: _buildFormContent(
+                          textPrimary: textPrimary,
+                          textSecondary: textSecondary,
+                          cardColor: inputCardColor,
+                          borderColor: Colors.white.withOpacity(0.12),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildMobilePhotoRow(),
+                      const SizedBox(height: 24),
+                      Center(
+                        child: GestureDetector(
+                          onTap: () => Navigator.pushReplacementNamed(context, '/home'),
+                          child: Text('Continue as Guest →',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white.withOpacity(0.45),
+                                  fontWeight: FontWeight.w500)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobilePhotoRow() {
+    return Row(
+      children: [
+        // Overlapping avatars — Stack+Positioned (no negative margins)
+        SizedBox(
+          width: 76,
+          height: 36,
+          child: Stack(
+            children: List.generate(_avatarPhotos.length, (i) => Positioned(
+              left: i * 22.0,
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF050A05), width: 2),
+                ),
+                child: ClipOval(
+                  child: Image.network(
+                    _avatarPhotos[i],
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        Container(color: AppColors.primary.withOpacity(0.3)),
+                  ),
+                ),
+              ),
+            )),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: List.generate(5, (_) =>
+                  const Icon(Icons.star_rounded, size: 12, color: Color(0xFFFFD600))),
+            ),
+            const SizedBox(height: 3),
+            Text('10,000+ athletes trust FitLife',
+                style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.45))),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ─────────────────────────────────────────
+  // WEB LAYOUT
+  // ─────────────────────────────────────────
+  Widget _buildWebLayout() {
+    const textPrimary = Colors.white;
+    const textSecondary = Color(0xFFB0B0B0);
+    final cardColor = Colors.white.withOpacity(0.06);
+    final borderColor = Colors.white.withOpacity(0.1);
+    final inputCardColor = Colors.white.withOpacity(0.07);
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF030806),
       body: FadeTransition(
         opacity: _fadeAnim,
-        child: SlideTransition(
-          position: _slideAnim,
-          child: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
+          children: [
+            // ── Left: full-height photo showcase ──────────────────────────
+            Expanded(
+              flex: 52,
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: cardColor,
-                        border: Border.all(color: borderColor),
+                  // Hero background photo — fills the entire left panel
+                  Image.network(
+                    _heroBg,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    frameBuilder: (ctx, child, frame, wasSynchronouslyLoaded) {
+                      if (wasSynchronouslyLoaded || frame != null) return child;
+                      return Container(color: const Color(0xFF0A1A0A));
+                    },
+                    errorBuilder: (_, __, ___) => Container(color: const Color(0xFF030806)),
+                  ),
+
+                  // Right-edge blend into the dark right panel
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerRight,
+                        end: Alignment.centerLeft,
+                        colors: [
+                          const Color(0xFF030806),
+                          Colors.transparent,
+                          Colors.transparent,
+                          const Color(0xFF030806).withOpacity(0.3),
+                        ],
+                        stops: const [0.0, 0.1, 0.7, 1.0],
                       ),
-                      child: Icon(Icons.arrow_back_ios_new_rounded,
-                          size: 15, color: textPrimary),
                     ),
                   ),
-                  const SizedBox(height: 36),
-                  _buildLogo(size: 48, fontSize: 22),
-                  const SizedBox(height: 28),
-                  Text('Welcome back 👋',
-                      style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          color: textPrimary,
-                          height: 1.2)),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Sign in to continue your fitness journey.',
-                    style:
-                        TextStyle(fontSize: 14, color: textSecondary),
-                  ),
-                  const SizedBox(height: 36),
-                  // Stats strip
+
+                  // Green accent tint from bottom
                   Container(
-                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      color: isDark
-                          ? const Color(0xFF0D1F0D)
-                          : const Color(0xFFE8F5E9),
-                      border: Border.all(
-                          color: AppColors.primary.withOpacity(0.25)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildStatPill('💪', '200+', 'Exercises'),
-                        _buildStatDivider(),
-                        _buildStatPill('🥗', '50+', 'Meal Plans'),
-                        _buildStatDivider(),
-                        _buildStatPill('📊', 'Live', 'Tracking'),
-                      ],
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          AppColors.primary.withOpacity(0.45),
+                          AppColors.primary.withOpacity(0.0),
+                        ],
+                        stops: const [0.0, 0.6],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+
+                  // Dark top gradient for logo readability
                   Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      color: cardColor,
-                      border: Border.all(color: borderColor),
-                      boxShadow: isDark
-                          ? []
-                          : [
-                              BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 4))
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0xBB000000), Colors.transparent],
+                        stops: [0.0, 0.3],
+                      ),
+                    ),
+                  ),
+
+                  // Subtle grid
+                  CustomPaint(painter: _WebGridPainter(AppColors.primary)),
+
+                  // Top-left logo
+                  Positioned(
+                    top: 40,
+                    left: 44,
+                    child: _buildLogo(size: 44, fontSize: 20),
+                  ),
+
+                  // Bottom content overlay
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(44, 48, 44, 48),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [Colors.black.withOpacity(0.9), Colors.transparent],
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Badge
+                          Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.primary,
+                                  boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.7), blurRadius: 10)],
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text('SIGN IN  ·  FITLIFE',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.primary,
+                                      letterSpacing: 2.5,
+                                      fontWeight: FontWeight.w600)),
                             ],
-                    ),
-                    child: _buildFormContent(
-                      isDark: isDark,
-                      textPrimary: textPrimary,
-                      textSecondary: textSecondary,
-                      cardColor: isDark
-                          ? const Color(0xFF1E1E1E)
-                          : const Color(0xFFF8F8F8),
-                      borderColor: borderColor,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Center(
-                    child: GestureDetector(
-                      onTap: () =>
-                          Navigator.pushReplacementNamed(context, '/home'),
-                      child: Text(
-                        'Continue as Guest →',
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: textSecondary,
-                            fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 18),
+                          const Text('Train Smarter.\nLive Stronger.',
+                              style: TextStyle(
+                                  fontSize: 38,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  height: 1.15)),
+                          const SizedBox(height: 12),
+                          Text('Join thousands of athletes tracking\ntheir fitness journey with FitLife.',
+                              style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.6), height: 1.6)),
+                          const SizedBox(height: 24),
+
+                          // Feature photo strip
+                          _buildWebPhotoStrip(),
+
+                          const SizedBox(height: 20),
+
+                          // Social proof — Stack+Positioned overlapping avatars (NO negative margins)
+                          Row(
+                            children: [
+                              SizedBox(
+                                width: 76,
+                                height: 32,
+                                child: Stack(
+                                  children: List.generate(_avatarPhotos.length, (i) => Positioned(
+                                    left: i * 18.0,
+                                    child: Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: const Color(0xFF030806), width: 2),
+                                      ),
+                                      child: ClipOval(
+                                        child: Image.network(
+                                          _avatarPhotos[i],
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              Container(color: AppColors.primary.withOpacity(0.3)),
+                                        ),
+                                      ),
+                                    ),
+                                  )),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(children: List.generate(5, (_) =>
+                                      const Icon(Icons.star_rounded, size: 12, color: Color(0xFFFFD600)))),
+                                  const SizedBox(height: 3),
+                                  Text('10,000+ athletes trust FitLife',
+                                      style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.5))),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildStatPill(String emoji, String value, String label) {
-    return Column(
-      children: [
-        Text(emoji, style: const TextStyle(fontSize: 18)),
-        const SizedBox(height: 4),
-        Text(value,
-            style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primary)),
-        Text(label,
-            style: const TextStyle(
-                fontSize: 10, color: AppColors.primary)),
-      ],
-    );
-  }
-
-  Widget _buildStatDivider() {
-    return Container(
-        width: 1,
-        height: 36,
-        color: AppColors.primary.withOpacity(0.2));
-  }
-
-  // ─────────────────────────────────────────
-  // WEB LAYOUT
-  // ─────────────────────────────────────────
-  Widget _buildWebLayout(bool isDark) {
-    final textPrimary =
-        isDark ? Colors.white : const Color(0xFF0A0A0A);
-    final textSecondary =
-        isDark ? const Color(0xFFB0B0B0) : const Color(0xFF555555);
-    final bgColor =
-        isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF0F2F5);
-    final cardColor =
-        isDark ? const Color(0xFF141414) : Colors.white;
-    final borderColor =
-        isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
-    final sidebarColor =
-        isDark ? const Color(0xFF0D0D0D) : const Color(0xFF1A1A2E);
-
-    return Scaffold(
-      backgroundColor: bgColor,
-      body: FadeTransition(
-        opacity: _fadeAnim,
-        child: Row(
-          children: [
-            // ── Left panel ──
+            // ── Right: form panel ──────────────────────────────────────────
             Expanded(
-              flex: 1,
+              flex: 48,
               child: Container(
-                color: sidebarColor,
+                color: const Color(0xFF030806),
                 child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 440),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 48, vertical: 48),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildLogo(size: 44, fontSize: 22),
-                          const SizedBox(height: 56),
-                          ShaderMask(
-                            shaderCallback: (bounds) =>
-                                const LinearGradient(
-                              colors: [
-                                Color(0xFF5EFC82),
-                                Color(0xFF00C853)
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ).createShader(bounds),
-                            child: const Text(
-                              'Train smarter.\nEat better.\nLive stronger.',
-                              style: TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                height: 1.25,
-                                letterSpacing: -0.5,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 48),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: SlideTransition(
+                        position: _slideAnim,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.arrow_back_ios_new_rounded, size: 13, color: textSecondary),
+                                  const SizedBox(width: 6),
+                                  Text('Back', style: TextStyle(fontSize: 13, color: textSecondary)),
+                                ],
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Join thousands of athletes tracking\ntheir fitness journey with FitLife.',
-                            style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white.withOpacity(0.5),
-                                height: 1.6),
-                          ),
-                          const SizedBox(height: 40),
-                          ...[
-                            ('💪', '200+ exercises with variations'),
-                            ('🥗', 'Personalised daily meal plans'),
-                            ('📊', 'Real-time progress tracking'),
-                            ('☁️', 'Cloud sync across all devices'),
-                          ].map((item) => Padding(
-                                padding:
-                                    const EdgeInsets.only(bottom: 14),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 36,
-                                      height: 36,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: AppColors.primary
-                                            .withOpacity(0.1),
-                                        border: Border.all(
-                                            color: AppColors.primary
-                                                .withOpacity(0.2)),
-                                      ),
-                                      child: Center(
-                                          child: Text(item.$1,
-                                              style: const TextStyle(
-                                                  fontSize: 16))),
-                                    ),
-                                    const SizedBox(width: 14),
-                                    Text(item.$2,
-                                        style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.white
-                                                .withOpacity(0.7),
-                                            fontWeight:
-                                                FontWeight.w500)),
-                                  ],
-                                ),
-                              )),
-                          const Spacer(),
-                          // Social proof
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(14),
-                              color: Colors.white.withOpacity(0.04),
-                              border: Border.all(
-                                  color:
-                                      Colors.white.withOpacity(0.08)),
+                            const SizedBox(height: 36),
+                            const Text('Welcome back',
+                                style: TextStyle(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    height: 1.1)),
+                            const SizedBox(height: 6),
+                            Text('Sign in to your FitLife account.',
+                                style: TextStyle(fontSize: 14, color: textSecondary)),
+                            const SizedBox(height: 32),
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                color: cardColor,
+                                border: Border.all(color: borderColor),
+                              ),
+                              child: _buildFormContent(
+                                textPrimary: textPrimary,
+                                textSecondary: textSecondary,
+                                cardColor: inputCardColor,
+                                borderColor: Colors.white.withOpacity(0.12),
+                              ),
                             ),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 74,
-                                  height: 32,
-                                  child: Stack(
-                                    children: [
-                                      _buildAvatarCircle('🏋️', 0),
-                                      _buildAvatarCircle('🧘', 24),
-                                      _buildAvatarCircle('🚴', 48),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: List.generate(
-                                            5,
-                                            (_) => const Icon(
-                                                Icons.star_rounded,
-                                                size: 12,
-                                                color:
-                                                    Color(0xFFFFD600))),
-                                      ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        '10,000+ athletes trust FitLife',
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            color: Colors.white
-                                                .withOpacity(0.5)),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // ── Right panel ──
-            Expanded(
-              flex: 1,
-              child: Container(
-                color: bgColor,
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 440),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 40, vertical: 48),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                    Icons.arrow_back_ios_new_rounded,
-                                    size: 13,
-                                    color: textSecondary),
-                                const SizedBox(width: 6),
-                                Text('Back',
+                            const SizedBox(height: 24),
+                            Center(
+                              child: GestureDetector(
+                                onTap: () => Navigator.pushReplacementNamed(context, '/home'),
+                                child: Text('Continue as Guest →',
                                     style: TextStyle(
                                         fontSize: 13,
-                                        color: textSecondary)),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 40),
-                          Text('Welcome back 👋',
-                              style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w800,
-                                  color: textPrimary,
-                                  height: 1.2)),
-                          const SizedBox(height: 8),
-                          Text('Sign in to your FitLife account.',
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  color: textSecondary)),
-                          const SizedBox(height: 32),
-                          Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              color: cardColor,
-                              border: Border.all(color: borderColor),
-                              boxShadow: isDark
-                                  ? []
-                                  : [
-                                      BoxShadow(
-                                          color: Colors.black
-                                              .withOpacity(0.05),
-                                          blurRadius: 24,
-                                          offset: const Offset(0, 4))
-                                    ],
-                            ),
-                            child: _buildFormContent(
-                              isDark: isDark,
-                              textPrimary: textPrimary,
-                              textSecondary: textSecondary,
-                              cardColor: isDark
-                                  ? const Color(0xFF1E1E1E)
-                                  : const Color(0xFFF8F8F8),
-                              borderColor: borderColor,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Center(
-                            child: GestureDetector(
-                              onTap: () =>
-                                  Navigator.pushReplacementNamed(
-                                      context, '/home'),
-                              child: Text(
-                                'Continue as Guest →',
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    color: textSecondary,
-                                    fontWeight: FontWeight.w500),
+                                        color: textSecondary,
+                                        fontWeight: FontWeight.w500)),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -927,22 +899,73 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildAvatarCircle(String emoji, double left) {
-    return Positioned(
-      left: left,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.primary.withOpacity(0.15),
-          border:
-              Border.all(color: const Color(0xFF1A1A2E), width: 2),
+  Widget _buildWebPhotoStrip() {
+    return Row(
+      children: _featurePhotos.map((fp) => Padding(
+        padding: const EdgeInsets.only(right: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: SizedBox(
+                width: 90,
+                height: 64,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(fp.image, fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            Container(color: AppColors.primary.withOpacity(0.2))),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [Colors.black.withOpacity(0.5), Colors.transparent],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(fp.label,
+                style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.white.withOpacity(0.55),
+                    fontWeight: FontWeight.w600)),
+          ],
         ),
-        child: Center(
-            child:
-                Text(emoji, style: const TextStyle(fontSize: 14))),
-      ),
+      )).toList(),
     );
   }
+}
+
+// ── Data model ─────────────────────────────────────────────────────────────────
+class _FeaturePhoto {
+  final String image;
+  final String label;
+  const _FeaturePhoto({required this.image, required this.label});
+}
+
+// ── Grid painter ──────────────────────────────────────────────────────────────
+class _WebGridPainter extends CustomPainter {
+  final Color color;
+  _WebGridPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color.withOpacity(0.04)..strokeWidth = 0.5;
+    for (double x = 0; x < size.width; x += 40) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (double y = 0; y < size.height; y += 40) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _WebGridPainter old) => old.color != color;
 }

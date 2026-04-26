@@ -30,14 +30,35 @@ class _RegisterScreenState extends State<RegisterScreen>
   String? _successMessage;
 
   String _selectedGoal = 'Build Muscle';
-  final List<String> _goals = [
-    'Build Muscle',
-    'Lose Weight',
-    'Stay Fit',
-    'Improve Endurance',
-  ];
 
   final _supabase = Supabase.instance.client;
+
+  // ── Photos ──────────────────────────────────────────────────────────────
+  static const String _mobileBg =
+      'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=900&q=80';
+
+  static const List<_GoalPhoto> _goalPhotos = [
+    _GoalPhoto(
+      goal: 'Build Muscle',
+      image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1400&q=80',
+      color: Color(0xFF2979FF),
+    ),
+    _GoalPhoto(
+      goal: 'Lose Weight',
+      image: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=1400&q=80',
+      color: Color(0xFFFF6D00),
+    ),
+    _GoalPhoto(
+      goal: 'Stay Fit',
+      image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1400&q=80',
+      color: Color(0xFF00C853),
+    ),
+    _GoalPhoto(
+      goal: 'Improve Endurance',
+      image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=1400&q=80',
+      color: Color(0xFFFFD600),
+    ),
+  ];
 
   @override
   void initState() {
@@ -47,11 +68,19 @@ class _RegisterScreenState extends State<RegisterScreen>
     _fadeAnim = Tween<double>(begin: 0, end: 1).animate(
         CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _slideAnim =
-        Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero)
-            .animate(CurvedAnimation(
-                parent: _animController, curve: Curves.easeOut));
+        Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero).animate(
+            CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
     _redirectIfLoggedIn();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    precacheImage(const NetworkImage(_mobileBg), context);
+    for (final g in _goalPhotos) {
+      precacheImage(NetworkImage(g.image), context);
+    }
   }
 
   void _redirectIfLoggedIn() {
@@ -79,12 +108,10 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   Future<void> _handleRegister() async {
     final name = _nameController.text.trim();
-    // Normalize email: lowercase + trim any accidental spaces
     final email = _emailController.text.trim().toLowerCase();
     final password = _passwordController.text;
     final confirm = _confirmPasswordController.text;
 
-    // ── Client-side validation (before hitting Supabase) ──
     if (name.isEmpty || email.isEmpty || password.isEmpty || confirm.isEmpty) {
       setState(() => _errorMessage = 'Please fill in all fields.');
       return;
@@ -93,14 +120,12 @@ class _RegisterScreenState extends State<RegisterScreen>
       setState(() => _errorMessage = 'Name must be at least 2 characters.');
       return;
     }
-    // Simple, permissive email check — Supabase will do the strict check
     if (!email.contains('@') || !email.contains('.')) {
       setState(() => _errorMessage = 'Please enter a valid email address.');
       return;
     }
     if (password.length < 6) {
-      setState(
-          () => _errorMessage = 'Password must be at least 6 characters.');
+      setState(() => _errorMessage = 'Password must be at least 6 characters.');
       return;
     }
     if (password != confirm) {
@@ -108,8 +133,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       return;
     }
     if (!_agreedToTerms) {
-      setState(
-          () => _errorMessage = 'Please agree to the Terms & Privacy Policy.');
+      setState(() => _errorMessage = 'Please agree to the Terms & Privacy Policy.');
       return;
     }
 
@@ -120,24 +144,17 @@ class _RegisterScreenState extends State<RegisterScreen>
     });
 
     try {
-      // ── Step 1: Sign up ──
       final response = await _supabase.auth.signUp(
         email: email,
         password: password,
         data: {'full_name': name, 'goal': _selectedGoal},
       );
-
       if (!mounted) return;
-
       if (response.user == null) {
-        setState(
-            () => _errorMessage = 'Registration failed. Please try again.');
+        setState(() => _errorMessage = 'Registration failed. Please try again.');
         return;
       }
-
       final user = response.user!;
-
-      // ── Step 2: Detect already-registered (identities is empty) ──
       if (user.identities != null && user.identities!.isEmpty) {
         setState(() {
           _isLoading = false;
@@ -146,8 +163,6 @@ class _RegisterScreenState extends State<RegisterScreen>
         });
         return;
       }
-
-      // ── Step 3: Upsert profile (non-fatal) ──
       try {
         await _supabase.from('profiles').upsert({
           'id': user.id,
@@ -160,25 +175,22 @@ class _RegisterScreenState extends State<RegisterScreen>
       } catch (profileError) {
         debugPrint('Profile upsert error (non-fatal): $profileError');
       }
-
-      // ── Step 4: Success ──
       if (mounted) {
-  _nameController.clear();
-  _emailController.clear();
-  _passwordController.clear();
-  _confirmPasswordController.clear();
-  setState(() => _agreedToTerms = false);
-  setState(() {
-    _successMessage = '🎉 Account created! You can now sign in.';
-  });
-  await Future.delayed(const Duration(seconds: 2));
-  if (mounted) Navigator.pushReplacementNamed(context, '/login');
-}
+        _nameController.clear();
+        _emailController.clear();
+        _passwordController.clear();
+        _confirmPasswordController.clear();
+        setState(() => _agreedToTerms = false);
+        setState(() {
+          _successMessage = 'Account created! You can now sign in.';
+        });
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) Navigator.pushReplacementNamed(context, '/login');
+      }
     } on AuthException catch (e) {
       setState(() => _errorMessage = _mapAuthError(e.message));
     } catch (e) {
-      setState(
-          () => _errorMessage = 'Something went wrong. Please try again.');
+      setState(() => _errorMessage = 'Something went wrong. Please try again.');
       debugPrint('Register error: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -189,23 +201,16 @@ class _RegisterScreenState extends State<RegisterScreen>
     final msg = message.toLowerCase();
     if (msg.contains('user already registered') ||
         msg.contains('already registered') ||
-        msg.contains('already exists')) {
+        msg.contains('already exists'))
       return 'An account with this email already exists. Try signing in.';
-    }
-    if (msg.contains('invalid email') || msg.contains('email is invalid')) {
+    if (msg.contains('invalid email') || msg.contains('email is invalid'))
       return 'Please enter a valid email address (e.g. you@gmail.com).';
-    }
-    if (msg.contains('password should be at least')) {
+    if (msg.contains('password should be at least'))
       return 'Password must be at least 6 characters.';
-    }
-    if (msg.contains('too many requests') ||
-        msg.contains('email rate limit')) {
+    if (msg.contains('too many requests') || msg.contains('email rate limit'))
       return 'Too many attempts. Please wait a moment and try again.';
-    }
-    if (msg.contains('network') || msg.contains('connection')) {
+    if (msg.contains('network') || msg.contains('connection'))
       return 'Network error. Check your internet connection.';
-    }
-    // Return raw message as fallback so we can debug
     return message;
   }
 
@@ -215,9 +220,8 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (kIsWeb) return _buildWebLayout(isDark);
-    return _buildMobileLayout(isDark);
+    if (kIsWeb) return _buildWebLayout();
+    return _buildMobileLayout();
   }
 
   // ─────────────────────────────────────────
@@ -233,26 +237,31 @@ class _RegisterScreenState extends State<RegisterScreen>
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColors.primary.withOpacity(0.15),
             border: Border.all(
                 color: AppColors.primary.withOpacity(0.5), width: 2),
           ),
-          child: Center(
-              child: Text('🏋️',
-                  style: TextStyle(fontSize: size * 0.5))),
+          child: ClipOval(
+            child: Image.network(
+              'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=100&q=60',
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                  color: AppColors.primary.withOpacity(0.2),
+                  child: Icon(Icons.fitness_center,
+                      color: AppColors.primary, size: size * 0.45)),
+            ),
+          ),
         ),
         const SizedBox(width: 10),
         ShaderMask(
           shaderCallback: (bounds) => const LinearGradient(
-            colors: [Color(0xFF5EFC82), Color(0xFF00C853)],
-          ).createShader(bounds),
+                  colors: [Color(0xFF5EFC82), Color(0xFF00C853)])
+              .createShader(bounds),
           child: Text('FitLife',
               style: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: 1,
-              )),
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 1)),
         ),
       ],
     );
@@ -301,11 +310,12 @@ class _RegisterScreenState extends State<RegisterScreen>
               hintStyle: TextStyle(
                   fontSize: 14,
                   color: textSecondary.withOpacity(0.5)),
-              prefixIcon: Icon(icon, size: 18, color: textSecondary),
+              prefixIcon:
+                  Icon(icon, size: 18, color: textSecondary),
               suffixIcon: suffix,
               border: InputBorder.none,
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+              contentPadding: const EdgeInsets.symmetric(
+                  vertical: 14, horizontal: 4),
             ),
           ),
         ),
@@ -313,18 +323,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     );
   }
 
-  Widget _buildGoalSelector({
-    required Color cardColor,
-    required Color borderColor,
-    required Color textPrimary,
-    required Color textSecondary,
-  }) {
-    const goalEmojis = {
-      'Build Muscle': '💪',
-      'Lose Weight': '🔥',
-      'Stay Fit': '⚡',
-      'Improve Endurance': '🏃',
-    };
+  Widget _buildGoalSelector({required Color textPrimary}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -333,58 +332,112 @@ class _RegisterScreenState extends State<RegisterScreen>
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: textPrimary)),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _goals.map((goal) {
-            final isSelected = _selectedGoal == goal;
-            return GestureDetector(
-              onTap: () => setState(() => _selectedGoal = goal),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 7),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: isSelected
-                      ? AppColors.primary.withOpacity(0.15)
-                      : cardColor,
-                  border: Border.all(
-                      color:
-                          isSelected ? AppColors.primary : borderColor),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(goalEmojis[goal] ?? '🎯',
-                        style: const TextStyle(fontSize: 14)),
-                    const SizedBox(width: 6),
-                    Text(goal,
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isSelected
-                                ? AppColors.primary
-                                : textSecondary)),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
+        const SizedBox(height: 10),
+        Column(
+          children: [
+            Row(
+              children: [
+                Expanded(child: _buildGoalChip(_goalPhotos[0])),
+                const SizedBox(width: 8),
+                Expanded(child: _buildGoalChip(_goalPhotos[1])),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(child: _buildGoalChip(_goalPhotos[2])),
+                const SizedBox(width: 8),
+                Expanded(child: _buildGoalChip(_goalPhotos[3])),
+              ],
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildTermsRow(
-      {required Color textPrimary, required Color textSecondary}) {
+  Widget _buildGoalChip(_GoalPhoto gp) {
+    final isSel = _selectedGoal == gp.goal;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedGoal = gp.goal),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        height: 62,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSel ? gp.color : Colors.white.withOpacity(0.15),
+            width: isSel ? 2.5 : 1,
+          ),
+          boxShadow: isSel
+              ? [BoxShadow(color: gp.color.withOpacity(0.4), blurRadius: 16, offset: const Offset(0, 4))]
+              : [],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.network(
+                gp.image,
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+                errorBuilder: (_, __, ___) => Container(color: gp.color.withOpacity(0.3)),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.25),
+                      isSel ? gp.color.withOpacity(0.65) : Colors.black.withOpacity(0.55),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 9,
+                left: 6,
+                right: 6,
+                child: Center(
+                  child: Text(
+                    gp.goal,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: isSel ? gp.color : Colors.white,
+                      letterSpacing: 0.2,
+                      shadows: const [Shadow(blurRadius: 6, color: Colors.black)],
+                    ),
+                  ),
+                ),
+              ),
+              if (isSel)
+                Positioned(
+                  top: 7,
+                  right: 7,
+                  child: Container(
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: gp.color),
+                    child: const Icon(Icons.check_rounded, size: 12, color: Colors.black),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTermsRow({required Color textPrimary, required Color textSecondary}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GestureDetector(
-          onTap: () =>
-              setState(() => _agreedToTerms = !_agreedToTerms),
+          onTap: () => setState(() => _agreedToTerms = !_agreedToTerms),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             width: 20,
@@ -392,18 +445,14 @@ class _RegisterScreenState extends State<RegisterScreen>
             margin: const EdgeInsets.only(top: 1),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(6),
-              color:
-                  _agreedToTerms ? AppColors.primary : Colors.transparent,
+              color: _agreedToTerms ? AppColors.primary : Colors.transparent,
               border: Border.all(
-                color: _agreedToTerms
-                    ? AppColors.primary
-                    : textSecondary.withOpacity(0.4),
+                color: _agreedToTerms ? AppColors.primary : textSecondary.withOpacity(0.4),
                 width: 2,
               ),
             ),
             child: _agreedToTerms
-                ? const Icon(Icons.check_rounded,
-                    size: 13, color: Colors.black)
+                ? const Icon(Icons.check_rounded, size: 13, color: Colors.black)
                 : null,
           ),
         ),
@@ -411,21 +460,16 @@ class _RegisterScreenState extends State<RegisterScreen>
         Expanded(
           child: RichText(
             text: TextSpan(
-              style: TextStyle(
-                  fontSize: 12, color: textSecondary, height: 1.5),
+              style: TextStyle(fontSize: 12, color: textSecondary, height: 1.5),
               children: const [
                 TextSpan(text: 'I agree to the '),
                 TextSpan(
                     text: 'Terms of Service',
-                    style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600)),
+                    style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
                 TextSpan(text: ' and '),
                 TextSpan(
                     text: 'Privacy Policy',
-                    style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600)),
+                    style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -435,8 +479,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   }
 
   Widget _buildMessageBox(String message, {bool isError = true}) {
-    final color =
-        isError ? const Color(0xFFFF1744) : AppColors.primary;
+    final color = isError ? const Color(0xFFFF1744) : AppColors.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -447,21 +490,13 @@ class _RegisterScreenState extends State<RegisterScreen>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-              isError
-                  ? Icons.error_outline_rounded
-                  : Icons.check_circle_outline_rounded,
-              size: 16,
-              color: color),
+          Icon(isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+              size: 16, color: color),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(message,
-                style: TextStyle(
-                    fontSize: 12,
-                    color: color,
-                    fontWeight: FontWeight.w500,
-                    height: 1.4)),
-          ),
+              child: Text(message,
+                  style: TextStyle(
+                      fontSize: 12, color: color, fontWeight: FontWeight.w500, height: 1.4))),
         ],
       ),
     );
@@ -479,32 +514,20 @@ class _RegisterScreenState extends State<RegisterScreen>
           gradient: _isLoading
               ? LinearGradient(colors: [
                   AppColors.primary.withOpacity(0.5),
-                  AppColors.primary.withOpacity(0.5),
+                  AppColors.primary.withOpacity(0.5)
                 ])
-              : const LinearGradient(
-                  colors: [Color(0xFF5EFC82), Color(0xFF00C853)]),
+              : const LinearGradient(colors: [Color(0xFF5EFC82), Color(0xFF00C853)]),
           boxShadow: _isLoading
               ? []
-              : [
-                  BoxShadow(
-                      color: AppColors.primary.withOpacity(0.35),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6))
-                ],
+              : [BoxShadow(color: AppColors.primary.withOpacity(0.35), blurRadius: 18, offset: const Offset(0, 6))],
         ),
         child: Center(
           child: _isLoading
               ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                      color: Colors.black, strokeWidth: 2))
+                  width: 20, height: 20,
+                  child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
               : const Text('Create Free Account',
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.3)),
+                  style: TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.w800)),
         ),
       ),
     );
@@ -513,19 +536,12 @@ class _RegisterScreenState extends State<RegisterScreen>
   Widget _buildDivider(Color textSecondary) {
     return Row(
       children: [
-        Expanded(
-            child: Divider(
-                color: textSecondary.withOpacity(0.2), height: 1)),
+        Expanded(child: Divider(color: textSecondary.withOpacity(0.2), height: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Text('or',
-              style: TextStyle(
-                  fontSize: 12,
-                  color: textSecondary.withOpacity(0.5))),
+          child: Text('or', style: TextStyle(fontSize: 12, color: textSecondary.withOpacity(0.5))),
         ),
-        Expanded(
-            child: Divider(
-                color: textSecondary.withOpacity(0.2), height: 1)),
+        Expanded(child: Divider(color: textSecondary.withOpacity(0.2), height: 1)),
       ],
     );
   }
@@ -536,11 +552,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     required Color textPrimary,
   }) {
     return GestureDetector(
-      onTap: _isLoading
-          ? null
-          : () {
-              // TODO: _supabase.auth.signInWithOAuth(OAuthProvider.google)
-            },
+      onTap: _isLoading ? null : () {},
       child: Container(
         height: 50,
         decoration: BoxDecoration(
@@ -552,43 +564,17 @@ class _RegisterScreenState extends State<RegisterScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text('G',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF4285F4))),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF4285F4))),
             const SizedBox(width: 10),
             Text('Continue with Google',
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: textPrimary)),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLoginLink(Color textSecondary) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text('Already have an account? ',
-            style: TextStyle(fontSize: 13, color: textSecondary)),
-        GestureDetector(
-          onTap: () =>
-              Navigator.pushReplacementNamed(context, '/login'),
-          child: const Text('Sign In',
-              style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700)),
-        ),
-      ],
-    );
-  }
-
   Widget _buildFormContent({
-    required bool isDark,
     required Color textPrimary,
     required Color textSecondary,
     required Color cardColor,
@@ -597,7 +583,6 @@ class _RegisterScreenState extends State<RegisterScreen>
   }) {
     final gap = compact ? 10.0 : 14.0;
     final sg = compact ? 12.0 : 16.0;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -633,14 +618,10 @@ class _RegisterScreenState extends State<RegisterScreen>
           textSecondary: textSecondary,
           obscure: _obscurePassword,
           suffix: GestureDetector(
-            onTap: () =>
-                setState(() => _obscurePassword = !_obscurePassword),
+            onTap: () => setState(() => _obscurePassword = !_obscurePassword),
             child: Icon(
-                _obscurePassword
-                    ? Icons.visibility_outlined
-                    : Icons.visibility_off_outlined,
-                size: 18,
-                color: textSecondary),
+                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                size: 18, color: textSecondary),
           ),
         ),
         SizedBox(height: gap),
@@ -657,44 +638,43 @@ class _RegisterScreenState extends State<RegisterScreen>
           textInputAction: TextInputAction.done,
           onSubmitted: _handleRegister,
           suffix: GestureDetector(
-            onTap: () =>
-                setState(() => _obscureConfirm = !_obscureConfirm),
+            onTap: () => setState(() => _obscureConfirm = !_obscureConfirm),
             child: Icon(
-                _obscureConfirm
-                    ? Icons.visibility_outlined
-                    : Icons.visibility_off_outlined,
-                size: 18,
-                color: textSecondary),
+                _obscureConfirm ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                size: 18, color: textSecondary),
           ),
         ),
         SizedBox(height: sg),
-        _buildGoalSelector(
-            cardColor: cardColor,
-            borderColor: borderColor,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary),
+        _buildGoalSelector(textPrimary: textPrimary),
         SizedBox(height: sg),
-        _buildTermsRow(
-            textPrimary: textPrimary, textSecondary: textSecondary),
+        _buildTermsRow(textPrimary: textPrimary, textSecondary: textSecondary),
         SizedBox(height: sg),
         if (_errorMessage != null) ...[
           _buildMessageBox(_errorMessage!, isError: true),
-          SizedBox(height: gap),
+          SizedBox(height: gap)
         ],
         if (_successMessage != null) ...[
           _buildMessageBox(_successMessage!, isError: false),
-          SizedBox(height: gap),
+          SizedBox(height: gap)
         ],
         _buildRegisterButton(),
         SizedBox(height: sg),
         _buildDivider(textSecondary),
         SizedBox(height: sg),
-        _buildGoogleButton(
-            cardColor: cardColor,
-            borderColor: borderColor,
-            textPrimary: textPrimary),
+        _buildGoogleButton(cardColor: cardColor, borderColor: borderColor, textPrimary: textPrimary),
         SizedBox(height: compact ? 16 : 24),
-        _buildLoginLink(textSecondary),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Already have an account? ',
+                style: TextStyle(fontSize: 13, color: textSecondary)),
+            GestureDetector(
+              onTap: () => Navigator.pushReplacementNamed(context, '/login'),
+              child: const Text('Sign In',
+                  style: TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -702,430 +682,509 @@ class _RegisterScreenState extends State<RegisterScreen>
   // ─────────────────────────────────────────
   // MOBILE LAYOUT
   // ─────────────────────────────────────────
-  Widget _buildMobileLayout(bool isDark) {
-    final textPrimary =
-        isDark ? Colors.white : const Color(0xFF0A0A0A);
-    final textSecondary =
-        isDark ? const Color(0xFFB0B0B0) : const Color(0xFF555555);
-    final bgColor =
-        isDark ? const Color(0xFF050A05) : const Color(0xFFF5F5F5);
-    final cardColor =
-        isDark ? const Color(0xFF141414) : Colors.white;
-    final borderColor =
-        isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
+  Widget _buildMobileLayout() {
+    const textPrimary = Colors.white;
+    const textSecondary = Color(0xFFB0B0B0);
+    final cardColor = Colors.black.withOpacity(0.55);
+    final inputCardColor = Colors.white.withOpacity(0.08);
+    final borderColor = Colors.white.withOpacity(0.15);
 
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: const Color(0xFF050A05),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.network(_mobileBg,
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+              frameBuilder: (ctx, child, frame, wasSynchronouslyLoaded) {
+                if (wasSynchronouslyLoaded || frame != null) return child;
+                return Container(color: const Color(0xFF050A05));
+              },
+              errorBuilder: (_, __, ___) => Container(color: const Color(0xFF050A05))),
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xDD000000),
+                  Color(0x33000000),
+                  Color(0x55000000),
+                  Color(0xEE050A05),
+                ],
+                stops: [0.0, 0.2, 0.5, 1.0],
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [AppColors.primary.withOpacity(0.15), Colors.transparent],
+                stops: const [0.0, 0.55],
+              ),
+            ),
+          ),
+          FadeTransition(
+            opacity: _fadeAnim,
+            child: SlideTransition(
+              position: _slideAnim,
+              child: SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 38, height: 38,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.black.withOpacity(0.4),
+                            border: Border.all(color: Colors.white.withOpacity(0.2)),
+                          ),
+                          child: const Icon(Icons.arrow_back_ios_new_rounded,
+                              size: 15, color: Colors.white),
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      _buildLogo(size: 44, fontSize: 20),
+                      const SizedBox(height: 20),
+                      const Text('Create your account',
+                          style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              height: 1.1)),
+                      const SizedBox(height: 6),
+                      Text('Join FitLife free and start your journey today.',
+                          style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.6))),
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+                          color: cardColor,
+                          border: Border.all(color: borderColor),
+                        ),
+                        child: _buildFormContent(
+                          textPrimary: textPrimary,
+                          textSecondary: textSecondary,
+                          cardColor: inputCardColor,
+                          borderColor: Colors.white.withOpacity(0.12),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Center(
+                        child: GestureDetector(
+                          onTap: () => Navigator.pushReplacementNamed(context, '/home'),
+                          child: Text('Continue as Guest →',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white.withOpacity(0.4),
+                                  fontWeight: FontWeight.w500)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────
+  // WEB LAYOUT — KEY FIX: Positioned.fill on AnimatedSwitcher
+  // ─────────────────────────────────────────
+  Widget _buildWebLayout() {
+    const textPrimary = Colors.white;
+    const textSecondary = Color(0xFFB0B0B0);
+    final cardColor = Colors.white.withOpacity(0.07);
+    final borderColor = Colors.white.withOpacity(0.12);
+    final inputCardColor = Colors.white.withOpacity(0.08);
+
+    final activeGoal = _goalPhotos.firstWhere((g) => g.goal == _selectedGoal);
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF030806),
       body: FadeTransition(
         opacity: _fadeAnim,
-        child: SlideTransition(
-          position: _slideAnim,
-          child: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
+          children: [
+            // ── Left: animated goal photo showcase — FULL HEIGHT ───────────
+            Expanded(
+              flex: 52,
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: cardColor,
-                        border: Border.all(color: borderColor),
+                  // KEY FIX: Positioned.fill + SizedBox.expand so the
+                  // AnimatedSwitcher and its children fill the entire panel
+                  Positioned.fill(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 600),
+                      child: SizedBox.expand(
+                        key: ValueKey(activeGoal.goal),
+                        child: Image.network(
+                          activeGoal.image,
+                          fit: BoxFit.cover,
+                          alignment: Alignment.center,
+                          frameBuilder: (ctx, child, frame, wasSynchronouslyLoaded) {
+                            if (wasSynchronouslyLoaded || frame != null) return child;
+                            return AnimatedContainer(
+                              duration: const Duration(milliseconds: 400),
+                              color: activeGoal.color.withOpacity(0.1),
+                            );
+                          },
+                          errorBuilder: (_, __, ___) =>
+                              Container(color: const Color(0xFF030806)),
+                        ),
                       ),
-                      child: Icon(Icons.arrow_back_ios_new_rounded,
-                          size: 15, color: textPrimary),
                     ),
                   ),
-                  const SizedBox(height: 28),
-                  _buildLogo(size: 44, fontSize: 20),
-                  const SizedBox(height: 24),
-                  Text('Create your account 🚀',
-                      style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          color: textPrimary,
-                          height: 1.2)),
-                  const SizedBox(height: 8),
-                  Text('Join FitLife free and start your journey today.',
-                      style:
-                          TextStyle(fontSize: 14, color: textSecondary)),
-                  const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      color: isDark
-                          ? const Color(0xFF0D1F0D)
-                          : const Color(0xFFE8F5E9),
-                      border: Border.all(
-                          color: AppColors.primary.withOpacity(0.25)),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text('FREE',
-                              style: TextStyle(
-                                  fontSize: 10,
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 1)),
+
+                  // Right-edge blend into the dark right panel
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerRight,
+                          end: Alignment.centerLeft,
+                          colors: [
+                            const Color(0xFF030806),
+                            Colors.transparent,
+                            Colors.transparent,
+                            const Color(0xFF030806).withOpacity(0.3),
+                          ],
+                          stops: const [0.0, 0.1, 0.7, 1.0],
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            '50+ exercises · Meal plans · Progress tracking',
-                            style: TextStyle(
-                                fontSize: 11, color: textSecondary),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      color: cardColor,
-                      border: Border.all(color: borderColor),
-                      boxShadow: isDark
-                          ? []
-                          : [
-                              BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 4))
+
+                  // Animated accent tint from bottom
+                  Positioned.fill(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 450),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                            activeGoal.color.withOpacity(0.55),
+                            activeGoal.color.withOpacity(0.0),
+                          ],
+                          stops: const [0.0, 0.65],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Top dark gradient for logo readability
+                  Positioned.fill(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Color(0xBB000000), Colors.transparent],
+                          stops: [0.0, 0.3],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Subtle grid overlay
+                  Positioned.fill(
+                    child: CustomPaint(
+                        painter: _WebGridPainter(activeGoal.color)),
+                  ),
+
+                  // Logo — top left
+                  Positioned(
+                    top: 40,
+                    left: 44,
+                    child: _buildLogo(size: 44, fontSize: 20),
+                  ),
+
+                  // Bottom content overlay
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(44, 48, 44, 48),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                            Colors.black.withOpacity(0.92),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 400),
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: activeGoal.color,
+                                  boxShadow: [
+                                    BoxShadow(
+                                        color: activeGoal.color.withOpacity(0.7),
+                                        blurRadius: 10)
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'CREATE ACCOUNT  ·  FITLIFE',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: activeGoal.color,
+                                    letterSpacing: 2.5,
+                                    fontWeight: FontWeight.w600),
+                              ),
                             ],
-                    ),
-                    child: _buildFormContent(
-                      isDark: isDark,
-                      textPrimary: textPrimary,
-                      textSecondary: textSecondary,
-                      cardColor: isDark
-                          ? const Color(0xFF1E1E1E)
-                          : const Color(0xFFF8F8F8),
-                      borderColor: borderColor,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Center(
-                    child: GestureDetector(
-                      onTap: () => Navigator.pushReplacementNamed(
-                          context, '/home'),
-                      child: Text('Continue as Guest →',
-                          style: TextStyle(
-                              fontSize: 13,
-                              color: textSecondary,
-                              fontWeight: FontWeight.w500)),
+                          ),
+                          const SizedBox(height: 18),
+                          const Text(
+                            'Your fitness\njourney starts here.',
+                            style: TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                height: 1.15),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Create your free account and get access to\nworkouts, meal plans and progress tracking.',
+                            style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white.withOpacity(0.6),
+                                height: 1.6),
+                          ),
+                          const SizedBox(height: 24),
+                          // Goal thumbnail strip
+                          Row(
+                            children: _goalPhotos.map((gp) {
+                              final isSel = _selectedGoal == gp.goal;
+                              return GestureDetector(
+                                onTap: () =>
+                                    setState(() => _selectedGoal = gp.goal),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 250),
+                                  margin: const EdgeInsets.only(right: 10),
+                                  width: isSel ? 110 : 80,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                        color: isSel
+                                            ? gp.color
+                                            : Colors.white.withOpacity(0.2),
+                                        width: isSel ? 2.5 : 1),
+                                    boxShadow: isSel
+                                        ? [BoxShadow(color: gp.color.withOpacity(0.4), blurRadius: 12)]
+                                        : [],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        Image.network(gp.image,
+                                            fit: BoxFit.cover,
+                                            opacity: AlwaysStoppedAnimation(isSel ? 0.8 : 0.5),
+                                            errorBuilder: (_, __, ___) =>
+                                                Container(color: gp.color.withOpacity(0.2))),
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.bottomCenter,
+                                              end: Alignment.topCenter,
+                                              colors: [
+                                                gp.color.withOpacity(isSel ? 0.55 : 0.25),
+                                                Colors.transparent,
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        if (isSel)
+                                          Positioned(
+                                            bottom: 6,
+                                            left: 0,
+                                            right: 0,
+                                            child: Center(
+                                              child: Text(gp.goal,
+                                                  style: TextStyle(
+                                                      fontSize: 9,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: gp.color)),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
 
-  // ─────────────────────────────────────────
-  // WEB LAYOUT — true 50/50 via LayoutBuilder
-  // ─────────────────────────────────────────
-  Widget _buildWebLayout(bool isDark) {
-    final textPrimary =
-        isDark ? Colors.white : const Color(0xFF0A0A0A);
-    final textSecondary =
-        isDark ? const Color(0xFFB0B0B0) : const Color(0xFF555555);
-    final bgColor =
-        isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF0F2F5);
-    final cardColor =
-        isDark ? const Color(0xFF141414) : Colors.white;
-    final borderColor =
-        isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
-    final sidebarColor =
-        isDark ? const Color(0xFF0D0D0D) : const Color(0xFF1A1A2E);
-
-    return Scaffold(
-      backgroundColor: bgColor,
-      body: FadeTransition(
-        opacity: _fadeAnim,
-        // LayoutBuilder gives us exact screen width so we can split 50/50
-        child: LayoutBuilder(builder: (context, constraints) {
-          final halfW = constraints.maxWidth / 2;
-          return Row(
-            children: [
-              // ── Left panel — exactly 50% ──
-              SizedBox(
-                width: halfW,
-                child: Container(
-                  color: sidebarColor,
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 460),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 48, vertical: 48),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildLogo(size: 44, fontSize: 22),
-                            const SizedBox(height: 48),
-                            ShaderMask(
-                              shaderCallback: (bounds) =>
-                                  const LinearGradient(
-                                colors: [
-                                  Color(0xFF5EFC82),
-                                  Color(0xFF00C853)
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ).createShader(bounds),
-                              child: const Text(
-                                'Your fitness\njourney starts\nhere.',
-                                style: TextStyle(
-                                  fontSize: 38,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                  height: 1.2,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Create your free account and get access to\nworkouts, meal plans and progress tracking.',
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white.withOpacity(0.5),
-                                  height: 1.6),
-                            ),
-                            const SizedBox(height: 36),
-                            Text("What's included for free:",
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.white.withOpacity(0.4),
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5)),
-                            const SizedBox(height: 14),
-                            ...[
-                              ('💪', '50+ exercises & variations'),
-                              ('🥗', '10 meal plans with recipes'),
-                              ('📊', 'Progress tracking & stats'),
-                              ('🎯', 'Goal-based workout plans'),
-                              ('☁️', 'Sync across all your devices'),
-                            ].map((item) => Padding(
-                                  padding:
-                                      const EdgeInsets.only(bottom: 12),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 34,
-                                        height: 34,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: AppColors.primary
-                                              .withOpacity(0.1),
-                                          border: Border.all(
-                                              color: AppColors.primary
-                                                  .withOpacity(0.2)),
-                                        ),
-                                        child: Center(
-                                            child: Text(item.$1,
-                                                style: const TextStyle(
-                                                    fontSize: 15))),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(item.$2,
-                                          style: TextStyle(
-                                              fontSize: 13,
-                                              color: Colors.white
-                                                  .withOpacity(0.7),
-                                              fontWeight:
-                                                  FontWeight.w500)),
-                                    ],
-                                  ),
-                                )),
-                            const Spacer(),
-                            // Already a member card
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
-                                color: Colors.white.withOpacity(0.04),
-                                border: Border.all(
-                                    color:
-                                        Colors.white.withOpacity(0.08)),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Text('👋',
-                                      style: TextStyle(fontSize: 22)),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text('Already a member?',
-                                            style: TextStyle(
-                                                fontSize: 13,
-                                                fontWeight:
-                                                    FontWeight.w700,
-                                                color: Colors.white
-                                                    .withOpacity(0.8))),
-                                        const SizedBox(height: 2),
-                                        GestureDetector(
-                                          onTap: () =>
-                                              Navigator
-                                                  .pushReplacementNamed(
-                                                      context, '/login'),
-                                          child: const Text('Sign in →',
-                                              style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: AppColors.primary,
-                                                  fontWeight:
-                                                      FontWeight.w600)),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+            // ── Right: form panel ───────────────────────────────────────────
+            Expanded(
+              flex: 48,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Solid dark background
+                  Container(color: const Color(0xFF030806)),
+                  // Subtle green tint from bottom
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          AppColors.primary.withOpacity(0.07),
+                          Colors.transparent,
+                        ],
                       ),
                     ),
                   ),
-                ),
-              ),
-
-              // ── Right panel — exactly 50%, no scrollbar visible ──
-              SizedBox(
-                width: halfW,
-                child: Container(
-                  color: bgColor,
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 480),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 40, vertical: 28),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Back button
-                            GestureDetector(
-                              onTap: () => Navigator.pop(context),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                      Icons.arrow_back_ios_new_rounded,
-                                      size: 13,
-                                      color: textSecondary),
-                                  const SizedBox(width: 6),
-                                  Text('Back',
+                  // Form content
+                  LayoutBuilder(builder: (context, constraints) {
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 460),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 28),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              GestureDetector(
+                                onTap: () => Navigator.pop(context),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.arrow_back_ios_new_rounded,
+                                        size: 13, color: textSecondary),
+                                    const SizedBox(width: 6),
+                                    Text('Back',
+                                        style: TextStyle(fontSize: 13, color: textSecondary)),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              const Text('Create your account',
+                                  style: TextStyle(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                      height: 1.1)),
+                              const SizedBox(height: 6),
+                              Text('Join FitLife free and start your journey today.',
+                                  style: TextStyle(fontSize: 13, color: textSecondary)),
+                              const SizedBox(height: 16),
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    color: cardColor,
+                                    border: Border.all(color: borderColor),
+                                  ),
+                                  child: ScrollConfiguration(
+                                    behavior: _NoScrollbarBehavior(),
+                                    child: SingleChildScrollView(
+                                      child: _buildFormContent(
+                                        textPrimary: textPrimary,
+                                        textSecondary: textSecondary,
+                                        cardColor: inputCardColor,
+                                        borderColor: Colors.white.withOpacity(0.12),
+                                        compact: true,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Center(
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      Navigator.pushReplacementNamed(context, '/home'),
+                                  child: Text('Continue as Guest →',
                                       style: TextStyle(
                                           fontSize: 13,
-                                          color: textSecondary)),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Text('Create your account 🚀',
-                                style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w800,
-                                    color: textPrimary,
-                                    height: 1.2)),
-                            const SizedBox(height: 6),
-                            Text(
-                                'Join FitLife free and start your journey today.',
-                                style: TextStyle(
-                                    fontSize: 13, color: textSecondary)),
-                            const SizedBox(height: 16),
-
-                            // ── Form card fills remaining height ──
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  borderRadius:
-                                      BorderRadius.circular(20),
-                                  color: cardColor,
-                                  border: Border.all(color: borderColor),
-                                  boxShadow: isDark
-                                      ? []
-                                      : [
-                                          BoxShadow(
-                                              color: Colors.black
-                                                  .withOpacity(0.05),
-                                              blurRadius: 24,
-                                              offset: const Offset(0, 4))
-                                        ],
-                                ),
-                                child: ScrollConfiguration(
-                                  behavior: _NoScrollbarBehavior(),
-                                  child: SingleChildScrollView(
-                                    child: _buildFormContent(
-                                      isDark: isDark,
-                                      textPrimary: textPrimary,
-                                      textSecondary: textSecondary,
-                                      cardColor: isDark
-                                          ? const Color(0xFF1E1E1E)
-                                          : const Color(0xFFF8F8F8),
-                                      borderColor: borderColor,
-                                      compact: true,
-                                    ),
-                                  ),
+                                          color: textSecondary,
+                                          fontWeight: FontWeight.w500)),
                                 ),
                               ),
-                            ),
-
-                            const SizedBox(height: 16),
-                            Center(
-                              child: GestureDetector(
-                                onTap: () =>
-                                    Navigator.pushReplacementNamed(
-                                        context, '/home'),
-                                child: Text('Continue as Guest →',
-                                    style: TextStyle(
-                                        fontSize: 13,
-                                        color: textSecondary,
-                                        fontWeight: FontWeight.w500)),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ),
+                    );
+                  }),
+                ],
               ),
-            ],
-          );
-        }),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// Suppresses the scrollbar track/thumb while keeping scroll physics intact.
+// ── Data model ──────────────────────────────────────────────────────────────
+class _GoalPhoto {
+  final String goal;
+  final String image;
+  final Color color;
+  const _GoalPhoto({required this.goal, required this.image, required this.color});
+}
+
+// ── Suppress scrollbar ───────────────────────────────────────────────────────
 class _NoScrollbarBehavior extends ScrollBehavior {
   @override
-  Widget buildScrollbar(
-      BuildContext context, Widget child, ScrollableDetails details) {
-    return child;
+  Widget buildScrollbar(BuildContext context, Widget child, ScrollableDetails details) => child;
+}
+
+// ── Grid painter ─────────────────────────────────────────────────────────────
+class _WebGridPainter extends CustomPainter {
+  final Color color;
+  _WebGridPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color.withOpacity(0.04)
+      ..strokeWidth = 0.5;
+    for (double x = 0; x < size.width; x += 40)
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    for (double y = 0; y < size.height; y += 40)
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
   }
+
+  @override
+  bool shouldRepaint(covariant _WebGridPainter old) => old.color != color;
 }
