@@ -136,6 +136,133 @@ class WebDashboard extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// IMAGE URLS
+// ═══════════════════════════════════════════════════════════════════════════
+class _Imgs {
+  // Welcome banner
+  static const welcomeBg =
+      'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b'
+      '?w=1200&q=80&auto=format&fit=crop';
+  static const welcomeAthlete =
+      'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61'
+      '?w=400&q=80&auto=format&fit=crop';
+
+  // Stat card backgrounds
+  static const statWeight =
+      'https://images.unsplash.com/photo-1517963879433-6ad2b056d712'
+      '?w=300&q=70&auto=format&fit=crop';
+  static const statHeight =
+      'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8'
+      '?w=300&q=70&auto=format&fit=crop';
+  static const statAge =
+      'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b'
+      '?w=300&q=70&auto=format&fit=crop';
+  static const statCalories =
+      'https://images.unsplash.com/photo-1490645935967-10de6ba17061'
+      '?w=300&q=70&auto=format&fit=crop';
+  static const statBmi =
+      'https://images.unsplash.com/photo-1549576490-b0b4831ef60a'
+      '?w=300&q=70&auto=format&fit=crop';
+  static const statWorkouts =
+      'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e'
+      '?w=300&q=70&auto=format&fit=crop';
+
+  // Workout card banner
+  static const workoutBanner =
+      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48'
+      '?w=800&q=80&auto=format&fit=crop';
+
+  // Exercise thumbnails (muscle group based)
+  static const exerciseChest =
+      'https://images.unsplash.com/photo-1534367610401-9f5ed68180aa'
+      '?w=120&q=80&auto=format&fit=crop';
+  static const exerciseBack =
+      'https://images.unsplash.com/photo-1603287681836-b174ce5074c2'
+      '?w=120&q=80&auto=format&fit=crop';
+  static const exerciseLegs =
+      'https://images.unsplash.com/photo-1566241142559-40e1dab266c6'
+      '?w=120&q=80&auto=format&fit=crop';
+  static const exerciseShoulders =
+      'https://images.unsplash.com/photo-1598971639058-fab3c3109a00'
+      '?w=120&q=80&auto=format&fit=crop';
+  static const exerciseArms =
+      'https://images.unsplash.com/photo-1581009137042-c552e485697a'
+      '?w=120&q=80&auto=format&fit=crop';
+  static const exerciseCore =
+      'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b'
+      '?w=120&q=80&auto=format&fit=crop';
+  static const exerciseDefault =
+      'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e'
+      '?w=120&q=80&auto=format&fit=crop';
+
+  // Meal card banner
+  static const mealBanner =
+      'https://images.unsplash.com/photo-1547592180-85f173990554'
+      '?w=800&q=80&auto=format&fit=crop';
+
+  // Food thumbnails per meal type
+  static const foodBreakfast =
+      'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666'
+      '?w=120&q=80&auto=format&fit=crop';
+  static const foodLunch =
+      'https://images.unsplash.com/photo-1512621776951-a57141f2eefd'
+      '?w=120&q=80&auto=format&fit=crop';
+  static const foodSnack =
+      'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb'
+      '?w=120&q=80&auto=format&fit=crop';
+  static const foodDinner =
+      'https://images.unsplash.com/photo-1467003909585-2f8a72700288'
+      '?w=120&q=80&auto=format&fit=crop';
+  static const foodDefault =
+      'https://images.unsplash.com/photo-1490645935967-10de6ba17061'
+      '?w=120&q=80&auto=format&fit=crop';
+
+  // Locked feature images
+  static const featureExercise =
+      'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e'
+      '?w=300&q=70&auto=format&fit=crop';
+  static const featureDiet =
+      'https://images.unsplash.com/photo-1490645935967-10de6ba17061'
+      '?w=300&q=70&auto=format&fit=crop';
+  static const featureAnalytics =
+      'https://images.unsplash.com/photo-1549576490-b0b4831ef60a'
+      '?w=300&q=70&auto=format&fit=crop';
+  static const featureCloud =
+      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48'
+      '?w=300&q=70&auto=format&fit=crop';
+
+  // Helper: get exercise image by muscle group
+  static String exerciseByMuscle(String muscle) {
+    switch (muscle.toLowerCase()) {
+      case 'chest':
+        return exerciseChest;
+      case 'back':
+        return exerciseBack;
+      case 'legs':
+        return exerciseLegs;
+      case 'shoulders':
+        return exerciseShoulders;
+      case 'arms':
+        return exerciseArms;
+      case 'core':
+        return exerciseCore;
+      default:
+        return exerciseDefault;
+    }
+  }
+
+  // Helper: get food image by meal type
+  static String foodByMealType(String mealName) {
+    final lower = mealName.toLowerCase();
+    if (lower.contains('breakfast')) return foodBreakfast;
+    if (lower.contains('lunch')) return foodLunch;
+    if (lower.contains('snack')) return foodSnack;
+    if (lower.contains('dinner')) return foodDinner;
+    return foodDefault;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // GLASS CARD BASE
 // ═══════════════════════════════════════════════════════════════════════════
 class _GlassCard extends StatelessWidget {
@@ -162,7 +289,7 @@ class _GlassCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         color: isDark
-            ? Colors.white.withOpacity(0.04)
+            ? Colors.black.withOpacity(0.55)
             : Colors.white.withOpacity(0.85),
         border: Border.all(
           color: accent.withOpacity(borderOpacity ?? 0.15),
@@ -176,7 +303,7 @@ class _GlassCard extends StatelessWidget {
           ),
           if (isDark)
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withOpacity(0.4),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),
@@ -221,153 +348,230 @@ class _WelcomeBanner extends StatelessWidget {
     final bmi = Helpers.calculateBMI(userWeight, userHeight);
     return Consumer<ThemeProvider>(
       builder: (context, theme, _) => TiltCard(
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            gradient: LinearGradient(
-              colors: isDark
-                  ? [
-                      accent.withOpacity(0.2),
-                      accent.withOpacity(0.05),
-                      const Color(0xFF0A0A0F).withOpacity(0.8),
-                    ]
-                  : [
-                      accent.withOpacity(0.15),
-                      accent.withOpacity(0.05),
-                      Colors.white.withOpacity(0.9),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: SizedBox(
+            width: double.infinity,
+            child: Stack(
+              children: [
+                // ── Real gym photo background ──────────────────────
+                Positioned.fill(
+                  child: Image.network(
+                    _Imgs.welcomeBg,
+                    fit: BoxFit.cover,
+                    alignment: const Alignment(0, -0.3),
+                    errorBuilder: (_, __, ___) => Container(
+                      color: accent.withOpacity(0.08),
+                    ),
+                  ),
+                ),
+
+                // ── Dark gradient overlay ──────────────────────────
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.black.withOpacity(0.88),
+                          Colors.black.withOpacity(0.65),
+                          Colors.black.withOpacity(0.25),
+                        ],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // ── Accent border ──────────────────────────────────
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: accent.withOpacity(0.3),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // ── Content ────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.all(28),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              Helpers.getGreeting().toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: accent.withOpacity(0.9),
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 2,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            ShaderMask(
+                              shaderCallback: (bounds) => LinearGradient(
+                                colors: theme.accentGradient,
+                              ).createShader(bounds),
+                              child: Text(
+                                userName,
+                                style: const TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                _GlowBadge(
+                                  label: userGoal,
+                                  icon: Icons.flag_rounded,
+                                  color: accent,
+                                ),
+                                _GlowBadge(
+                                  label:
+                                      'BMI ${bmi.toStringAsFixed(1)} · ${Helpers.getBMICategory(bmi)}',
+                                  icon: Icons.monitor_heart_rounded,
+                                  color: const Color(0xFF2979FF),
+                                ),
+                                _GlowBadge(
+                                  label:
+                                      '$completedWorkouts/$totalWorkouts workouts',
+                                  icon: Icons.check_circle_rounded,
+                                  color: const Color(0xFF00C853),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              children: [
+                                _ActionButton(
+                                  label: 'Start Workout',
+                                  icon: Icons.play_arrow_rounded,
+                                  accent: accent,
+                                  theme: theme,
+                                  onTap: () => onNavigate('Workouts'),
+                                ),
+                                const SizedBox(width: 12),
+                                _OutlineButton(
+                                  label: 'Diet Plan',
+                                  icon: Icons.restaurant_rounded,
+                                  accent: accent,
+                                  onTap: () => onNavigate('Diet Plan'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+
+                      // ── Athlete photo + streak chip ────────────────
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.network(
+                              _Imgs.welcomeAthlete,
+                              width: 120,
+                              height: 140,
+                              fit: BoxFit.cover,
+                              alignment: Alignment.topCenter,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 120,
+                                height: 140,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  gradient: LinearGradient(
+                                    colors: theme.accentGradient,
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.fitness_center_rounded,
+                                    size: 44,
+                                    color: theme.onAccent,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Glow border around athlete photo
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: accent.withOpacity(0.4),
+                                  width: 1.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Streak chip
+                          Positioned(
+                            bottom: -10,
+                            right: -10,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.85),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: accent.withOpacity(0.4), width: 1),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: accent.withOpacity(0.3),
+                                    blurRadius: 10,
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '47',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w900,
+                                      color: accent,
+                                      height: 1,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Day Streak',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      color: Colors.white.withOpacity(0.5),
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            border: Border.all(
-              color: accent.withOpacity(0.3),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: accent.withOpacity(0.15),
-                blurRadius: 32,
-                offset: const Offset(0, 8),
-              ),
-              if (isDark)
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.4),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Greeting
-                    Text(
-                      Helpers.getGreeting(),
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: accent.withOpacity(0.8),
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    // Name with gradient
-                    ShaderMask(
-                      shaderCallback: (bounds) => LinearGradient(
-                        colors: theme.accentGradient,
-                      ).createShader(bounds),
-                      child: Text(
-                        userName,
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Badges row
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _GlowBadge(
-                          label: userGoal,
-                          icon: Icons.flag_rounded,
-                          color: accent,
-                        ),
-                        _GlowBadge(
-                          label:
-                              'BMI ${bmi.toStringAsFixed(1)} · ${Helpers.getBMICategory(bmi)}',
-                          icon: Icons.monitor_heart_rounded,
-                          color: const Color(0xFF2979FF),
-                        ),
-                        _GlowBadge(
-                          label:
-                              '$completedWorkouts/$totalWorkouts workouts',
-                          icon: Icons.check_circle_rounded,
-                          color: const Color(0xFF00C853),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    // Action buttons
-                    Row(
-                      children: [
-                        _ActionButton(
-                          label: 'Start Workout',
-                          icon: Icons.play_arrow_rounded,
-                          accent: accent,
-                          theme: theme,
-                          onTap: () => onNavigate('Workouts'),
-                        ),
-                        const SizedBox(width: 12),
-                        _OutlineButton(
-                          label: 'Diet Plan',
-                          icon: Icons.restaurant_rounded,
-                          accent: accent,
-                          onTap: () => onNavigate('Diet Plan'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 24),
-              // Glowing fitness icon
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: theme.accentGradient,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: accent.withOpacity(0.5),
-                      blurRadius: 30,
-                      spreadRadius: 4,
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.fitness_center_rounded,
-                    size: 44,
-                    color: theme.onAccent,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -402,42 +606,49 @@ class _StatsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bmi = Helpers.calculateBMI(userWeight, userHeight);
+
     final stats = [
       {
         'label': 'Weight',
         'value': '${userWeight}kg',
-        'icon': Icons.monitor_weight_rounded,
         'color': const Color(0xFF2979FF),
+        'bgImage': _Imgs.statWeight,
+        'icon': Icons.monitor_weight_rounded,
       },
       {
         'label': 'Height',
         'value': '${userHeight}cm',
-        'icon': Icons.height_rounded,
         'color': const Color(0xFFFF6D00),
+        'bgImage': _Imgs.statHeight,
+        'icon': Icons.height_rounded,
       },
       {
         'label': 'Age',
         'value': '$userAge yrs',
-        'icon': Icons.cake_rounded,
         'color': const Color(0xFFAA00FF),
+        'bgImage': _Imgs.statAge,
+        'icon': Icons.cake_rounded,
       },
       {
         'label': 'Calories',
         'value': '$totalCalories kcal',
-        'icon': Icons.local_fire_department_rounded,
         'color': const Color(0xFFFFD600),
+        'bgImage': _Imgs.statCalories,
+        'icon': Icons.local_fire_department_rounded,
       },
       {
         'label': 'BMI',
         'value': bmi.toStringAsFixed(1),
-        'icon': Icons.analytics_rounded,
         'color': accent,
+        'bgImage': _Imgs.statBmi,
+        'icon': Icons.analytics_rounded,
       },
       {
         'label': 'Workouts',
         'value': '$completedWorkouts/$totalWorkouts',
-        'icon': Icons.fitness_center_rounded,
         'color': const Color(0xFF00C853),
+        'bgImage': _Imgs.statWorkouts,
+        'icon': Icons.fitness_center_rounded,
       },
     ];
 
@@ -450,69 +661,119 @@ class _StatsGrid extends StatelessWidget {
       childAspectRatio: 2.4,
       children: stats.map((stat) {
         final color = stat['color'] as Color;
+        final bgImage = stat['bgImage'] as String;
         final icon = stat['icon'] as IconData;
+
         return TiltCard(
           maxTilt: 5,
-          child: _GlassCard(
-            accent: color,
-            isDark: isDark,
-            padding: const EdgeInsets.all(16),
-            borderOpacity: 0.2,
-            extraShadows: [
-              BoxShadow(
-                color: color.withOpacity(0.1),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
-            child: Row(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Stack(
               children: [
-                // Icon with neon glow
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: color.withOpacity(0.12),
-                    border:
-                        Border.all(color: color.withOpacity(0.3), width: 1),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withOpacity(0.3),
-                        blurRadius: 12,
-                      ),
-                    ],
+                // ── Real photo background ──────────────────────────
+                Positioned.fill(
+                  child: Image.network(
+                    bgImage,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: color.withOpacity(0.08),
+                    ),
                   ),
-                  child: Center(
-                      child: Icon(icon, size: 22, color: color)),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
+
+                // ── Dark overlay ───────────────────────────────────
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.45),
+                          Colors.black.withOpacity(0.82),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // ── Accent border ──────────────────────────────────
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: color.withOpacity(0.25),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // ── Card content ───────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
                     children: [
-                      ShaderMask(
-                        shaderCallback: (bounds) => LinearGradient(
-                          colors: [color, color.withOpacity(0.7)],
-                        ).createShader(bounds),
-                        child: Text(
-                          stat['value'] as String,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
+                      // Frosted icon circle with glow
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: color.withOpacity(0.15),
+                          border: Border.all(
+                              color: color.withOpacity(0.35), width: 1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: color.withOpacity(0.35),
+                              blurRadius: 12,
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: Image.network(
+                            bgImage,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Icon(
+                                icon,
+                                size: 20,
+                                color: color,
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                      Text(
-                        stat['label'] as String,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isDark
-                              ? Colors.white.withOpacity(0.45)
-                              : Colors.black.withOpacity(0.45),
-                          fontWeight: FontWeight.w500,
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ShaderMask(
+                              shaderCallback: (bounds) => LinearGradient(
+                                colors: [color, color.withOpacity(0.7)],
+                              ).createShader(bounds),
+                              child: Text(
+                                stat['value'] as String,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              stat['label'] as String,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.white.withOpacity(0.5),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -550,112 +811,153 @@ class _WorkoutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _GlassCard(
-      accent: accent,
-      isDark: isDark,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.black.withOpacity(0.55)
+              : Colors.white.withOpacity(0.85),
+          border: Border.all(color: accent.withOpacity(0.15), width: 1),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Banner image ─────────────────────────────────────────
+            SizedBox(
+              height: 90,
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
+                  Image.network(
+                    _Imgs.workoutBanner,
+                    fit: BoxFit.cover,
+                    alignment: const Alignment(0, -0.2),
+                    errorBuilder: (_, __, ___) => Container(
+                      color: accent.withOpacity(0.08),
+                    ),
+                  ),
+                  // Gradient overlay
                   Container(
-                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: accent.withOpacity(0.12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: accent.withOpacity(0.3),
-                          blurRadius: 8,
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.black.withOpacity(0.8),
+                          Colors.black.withOpacity(0.4),
+                          Colors.black.withOpacity(0.1),
+                        ],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                    ),
+                  ),
+                  // Banner content
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: accent.withOpacity(0.2),
+                                border: Border.all(
+                                    color: accent.withOpacity(0.4), width: 1),
+                              ),
+                              child: Icon(Icons.fitness_center_rounded,
+                                  size: 16, color: accent),
+                            ),
+                            const SizedBox(width: 10),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Today's Workout",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                Text(
+                                  Helpers.formatDate(DateTime.now()),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.white.withOpacity(0.5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 5),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            color: accent.withOpacity(0.15),
+                            border: Border.all(
+                                color: accent.withOpacity(0.4), width: 1),
+                          ),
+                          child: Text(
+                            '$completedWorkouts/${todayWorkouts.length} done',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: accent,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
                       ],
-                    ),
-                    child:
-                        Icon(Icons.fitness_center_rounded,
-                            size: 16, color: accent),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    "Today's Workout",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : const Color(0xFF0A0A0A),
                     ),
                   ),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: accent.withOpacity(0.12),
-                  border:
-                      Border.all(color: accent.withOpacity(0.3), width: 1),
-                  boxShadow: [
-                    BoxShadow(
-                      color: accent.withOpacity(0.2),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-                child: Text(
-                  '$completedWorkouts/${todayWorkouts.length} done',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: accent,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            Helpers.formatDate(DateTime.now()),
-            style: TextStyle(
-              fontSize: 12,
-              color: isDark
-                  ? Colors.white.withOpacity(0.4)
-                  : Colors.black.withOpacity(0.4),
             ),
-          ),
-          const SizedBox(height: 16),
 
-          // Workout items
-          ...todayWorkouts.asMap().entries.map((entry) {
-            final index = entry.key;
-            final workout = entry.value;
-            final color = workout['color'] as Color;
-            final isDone = workout['done'] as bool;
-            final icon = workout['icon'] as IconData? ??
-                Icons.fitness_center_rounded;
-            return _WorkoutItem(
-              workout: workout,
-              index: index,
-              color: color,
-              isDone: isDone,
-              icon: icon,
-              isDark: isDark,
-              accent: accent,
-              onToggle: () => onToggle(index),
-              onShowTooltip: (title, msg) => onShowTooltip(
-                context,
-                title,
-                msg,
-                isDone
-                    ? Icons.remove_circle_outline_rounded
-                    : Icons.check_circle_rounded,
-                color,
+            // ── Workout items ────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: todayWorkouts.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final workout = entry.value;
+                  final color = workout['color'] as Color;
+                  final isDone = workout['done'] as bool;
+                  final muscle = workout['muscle'] as String? ?? '';
+                  final icon = workout['icon'] as IconData? ??
+                      Icons.fitness_center_rounded;
+                  return _WorkoutItem(
+                    workout: workout,
+                    index: index,
+                    color: color,
+                    isDone: isDone,
+                    icon: icon,
+                    muscle: muscle,
+                    isDark: isDark,
+                    accent: accent,
+                    onToggle: () => onToggle(index),
+                    onShowTooltip: (title, msg) => onShowTooltip(
+                      context,
+                      title,
+                      msg,
+                      isDone
+                          ? Icons.remove_circle_outline_rounded
+                          : Icons.check_circle_rounded,
+                      color,
+                    ),
+                  );
+                }).toList(),
               ),
-            );
-          }),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -667,6 +969,7 @@ class _WorkoutItem extends StatefulWidget {
   final Color color;
   final bool isDone;
   final IconData icon;
+  final String muscle;
   final bool isDark;
   final Color accent;
   final VoidCallback onToggle;
@@ -678,6 +981,7 @@ class _WorkoutItem extends StatefulWidget {
     required this.color,
     required this.isDone,
     required this.icon,
+    required this.muscle,
     required this.isDark,
     required this.accent,
     required this.onToggle,
@@ -693,6 +997,8 @@ class _WorkoutItemState extends State<_WorkoutItem> {
 
   @override
   Widget build(BuildContext context) {
+    final exerciseImage = _Imgs.exerciseByMuscle(widget.muscle);
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
@@ -704,9 +1010,7 @@ class _WorkoutItemState extends State<_WorkoutItem> {
         onLongPress: () {
           widget.onToggle();
           widget.onShowTooltip(
-            widget.isDone
-                ? 'Marked Incomplete'
-                : 'Workout Complete! 🎉',
+            widget.isDone ? 'Marked Incomplete' : 'Workout Complete! 🎉',
             widget.isDone
                 ? '${widget.workout['name']} unchecked.'
                 : '${widget.workout['name']} marked done!',
@@ -715,7 +1019,7 @@ class _WorkoutItemState extends State<_WorkoutItem> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             color: widget.isDone
@@ -746,25 +1050,41 @@ class _WorkoutItemState extends State<_WorkoutItem> {
           ),
           child: Row(
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: widget.color
-                      .withOpacity(widget.isDone ? 0.2 : 0.1),
-                  boxShadow: widget.isDone
-                      ? [
-                          BoxShadow(
-                            color: widget.color.withOpacity(0.3),
-                            blurRadius: 8,
+              // ── Real exercise photo thumbnail ──────────────────────
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Stack(
+                  children: [
+                    Image.network(
+                      exerciseImage,
+                      width: 44,
+                      height: 44,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          color: widget.color.withOpacity(0.15),
+                        ),
+                        child: Center(
+                          child: Icon(widget.icon,
+                              size: 20, color: widget.color),
+                        ),
+                      ),
+                    ),
+                    if (widget.isDone)
+                      Positioned.fill(
+                        child: Container(
+                          color: widget.color.withOpacity(0.35),
+                          child: const Center(
+                            child: Icon(Icons.check_rounded,
+                                size: 20, color: Colors.white),
                           ),
-                        ]
-                      : null,
+                        ),
+                      ),
+                  ],
                 ),
-                child: Center(
-                    child:
-                        Icon(widget.icon, size: 18, color: widget.color)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -799,8 +1119,8 @@ class _WorkoutItemState extends State<_WorkoutItem> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(6),
                   color: widget.color.withOpacity(0.1),
@@ -808,7 +1128,7 @@ class _WorkoutItemState extends State<_WorkoutItem> {
                       color: widget.color.withOpacity(0.3), width: 1),
                 ),
                 child: Text(
-                  widget.workout['muscle'] as String,
+                  widget.muscle,
                   style: TextStyle(
                     fontSize: 10,
                     color: widget.color,
@@ -876,141 +1196,190 @@ class _MealsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _GlassCard(
-      accent: accent,
-      isDark: isDark,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.black.withOpacity(0.55)
+              : Colors.white.withOpacity(0.85),
+          border: Border.all(color: accent.withOpacity(0.15), width: 1),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Banner image ─────────────────────────────────────────
+            SizedBox(
+              height: 90,
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
+                  Image.network(
+                    _Imgs.mealBanner,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: accent.withOpacity(0.08),
+                    ),
+                  ),
                   Container(
-                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: accent.withOpacity(0.12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: accent.withOpacity(0.3),
-                          blurRadius: 8,
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.black.withOpacity(0.8),
+                          Colors.black.withOpacity(0.35),
+                          Colors.black.withOpacity(0.1),
+                        ],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: accent.withOpacity(0.2),
+                                border: Border.all(
+                                    color: accent.withOpacity(0.4), width: 1),
+                              ),
+                              child: Icon(Icons.restaurant_rounded,
+                                  size: 16, color: accent),
+                            ),
+                            const SizedBox(width: 10),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Today's Meals",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                Text(
+                                  'Daily nutrition plan',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.white.withOpacity(0.5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Text(
+                          '$totalCalories kcal',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: accent,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ],
-                    ),
-                    child: Icon(Icons.restaurant_rounded,
-                        size: 16, color: accent),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    "Today's Meals",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color:
-                          isDark ? Colors.white : const Color(0xFF0A0A0A),
                     ),
                   ),
                 ],
               ),
-              Text(
-                '$totalCalories kcal',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: accent,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Daily nutrition plan',
-            style: TextStyle(
-              fontSize: 12,
-              color: isDark
-                  ? Colors.white.withOpacity(0.4)
-                  : Colors.black.withOpacity(0.4),
             ),
-          ),
-          const SizedBox(height: 16),
 
-          // Progress bar
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Calories consumed',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isDark
-                      ? Colors.white.withOpacity(0.4)
-                      : Colors.black.withOpacity(0.4),
-                ),
-              ),
-              Text(
-                '$totalCalories / 2000 kcal',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: accent,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Stack(
-            children: [
-              Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(3),
-                  color: accent.withOpacity(0.1),
-                ),
-              ),
-              FractionallySizedBox(
-                widthFactor: (totalCalories / 2000).clamp(0.0, 1.0),
-                child: Container(
-                  height: 6,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(3),
-                    gradient: LinearGradient(
-                      colors: AppColors.gradientOf(context),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: accent.withOpacity(0.5),
-                        blurRadius: 6,
+            // ── Meal body ────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // Progress bar
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Calories consumed',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark
+                              ? Colors.white.withOpacity(0.4)
+                              : Colors.black.withOpacity(0.4),
+                        ),
+                      ),
+                      Text(
+                        '$totalCalories / 2000 kcal',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: accent,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+                  const SizedBox(height: 8),
+                  Stack(
+                    children: [
+                      Container(
+                        height: 6,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(3),
+                          color: accent.withOpacity(0.1),
+                        ),
+                      ),
+                      FractionallySizedBox(
+                        widthFactor:
+                            (totalCalories / 2000).clamp(0.0, 1.0),
+                        child: Container(
+                          height: 6,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(3),
+                            gradient: LinearGradient(
+                              colors: AppColors.gradientOf(context),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: accent.withOpacity(0.5),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
 
-          // Meal items
-          ...todayMeals.map((meal) {
-            final color = meal['color'] as Color;
-            final icon =
-                meal['icon'] as IconData? ?? Icons.restaurant_rounded;
-            return _MealItem(
-              meal: meal,
-              color: color,
-              icon: icon,
-              isDark: isDark,
-              onShowTooltip: () => onShowTooltip(
-                context,
-                meal['meal'] as String,
-                '${meal['items']} · ${meal['calories']} kcal',
-                icon,
-                color,
+                  // Meal items
+                  ...todayMeals.map((meal) {
+                    final color = meal['color'] as Color;
+                    final icon = meal['icon'] as IconData? ??
+                        Icons.restaurant_rounded;
+                    final mealName = meal['meal'] as String;
+                    return _MealItem(
+                      meal: meal,
+                      color: color,
+                      icon: icon,
+                      mealName: mealName,
+                      isDark: isDark,
+                      onShowTooltip: () => onShowTooltip(
+                        context,
+                        mealName,
+                        '${meal['items']} · ${meal['calories']} kcal',
+                        icon,
+                        color,
+                      ),
+                    );
+                  }),
+                ],
               ),
-            );
-          }),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1020,6 +1389,7 @@ class _MealItem extends StatefulWidget {
   final Map<String, dynamic> meal;
   final Color color;
   final IconData icon;
+  final String mealName;
   final bool isDark;
   final VoidCallback onShowTooltip;
 
@@ -1027,6 +1397,7 @@ class _MealItem extends StatefulWidget {
     required this.meal,
     required this.color,
     required this.icon,
+    required this.mealName,
     required this.isDark,
     required this.onShowTooltip,
   });
@@ -1040,6 +1411,8 @@ class _MealItemState extends State<_MealItem> {
 
   @override
   Widget build(BuildContext context) {
+    final foodImage = _Imgs.foodByMealType(widget.mealName);
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
@@ -1051,7 +1424,7 @@ class _MealItemState extends State<_MealItem> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             color: _hovered
@@ -1078,26 +1451,29 @@ class _MealItemState extends State<_MealItem> {
           ),
           child: Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: widget.color.withOpacity(0.12),
-                  border: Border.all(
-                      color: widget.color.withOpacity(0.3), width: 1),
-                  boxShadow: _hovered
-                      ? [
-                          BoxShadow(
-                            color: widget.color.withOpacity(0.3),
-                            blurRadius: 8,
-                          ),
-                        ]
-                      : null,
+              // ── Real food photo thumbnail ──────────────────────────
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(
+                  foodImage,
+                  width: 44,
+                  height: 44,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: widget.color.withOpacity(0.12),
+                      border: Border.all(
+                          color: widget.color.withOpacity(0.3), width: 1),
+                    ),
+                    child: Center(
+                      child: Icon(widget.icon,
+                          size: 18, color: widget.color),
+                    ),
+                  ),
                 ),
-                child: Center(
-                    child:
-                        Icon(widget.icon, size: 16, color: widget.color)),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -1105,7 +1481,7 @@ class _MealItemState extends State<_MealItem> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.meal['meal'] as String,
+                      widget.mealName,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -1200,12 +1576,13 @@ class _GuestBanner extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      "Unlock the full FitLife experience",
+                      'Unlock the full FitLife experience',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color:
-                            isDark ? Colors.white : const Color(0xFF0A0A0A),
+                        color: isDark
+                            ? Colors.white
+                            : const Color(0xFF0A0A0A),
                       ),
                     ),
                   ],
@@ -1261,8 +1638,8 @@ class _GuestBanner extends StatelessWidget {
                           horizontal: 18, vertical: 10),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
-                        gradient: LinearGradient(
-                            colors: theme.accentGradient),
+                        gradient:
+                            LinearGradient(colors: theme.accentGradient),
                         boxShadow: [
                           BoxShadow(
                             color: accent.withOpacity(0.4),
@@ -1315,24 +1692,28 @@ class _LockedSection extends StatelessWidget {
         'title': 'Full Exercise Library',
         'desc': '200+ exercises with video demos',
         'color': const Color(0xFF2979FF),
+        'image': _Imgs.featureExercise,
       },
       {
         'icon': Icons.restaurant_menu_rounded,
         'title': 'Advanced Diet Plans',
         'desc': 'AI-generated meal plans',
         'color': const Color(0xFF00C853),
+        'image': _Imgs.featureDiet,
       },
       {
         'icon': Icons.insights_rounded,
         'title': 'Progress Analytics',
         'desc': 'Charts and insights over time',
         'color': const Color(0xFFFF6D00),
+        'image': _Imgs.featureAnalytics,
       },
       {
         'icon': Icons.cloud_sync_rounded,
         'title': 'Cloud Backup',
         'desc': 'Never lose your data',
         'color': const Color(0xFFAA00FF),
+        'image': _Imgs.featureCloud,
       },
     ];
 
@@ -1364,52 +1745,89 @@ class _LockedSection extends StatelessWidget {
           children: features.map((f) {
             final color = f['color'] as Color;
             final icon = f['icon'] as IconData;
+            final image = f['image'] as String;
+
             return TiltCard(
-              child: _GlassCard(
-                accent: color,
-                isDark: isDark,
-                padding: const EdgeInsets.all(16),
-                borderOpacity: 0.2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
                   children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        color: color.withOpacity(0.12),
-                        border: Border.all(
-                            color: color.withOpacity(0.3), width: 1),
-                        boxShadow: [
-                          BoxShadow(
-                            color: color.withOpacity(0.25),
-                            blurRadius: 8,
+                    // Real photo background
+                    Positioned.fill(
+                      child: Image.network(
+                        image,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            Container(color: color.withOpacity(0.08)),
+                      ),
+                    ),
+                    // Dark overlay
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withOpacity(0.5),
+                              Colors.black.withOpacity(0.85),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Border
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: color.withOpacity(0.2), width: 1),
+                        ),
+                      ),
+                    ),
+                    // Content
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: color.withOpacity(0.2),
+                              border: Border.all(
+                                  color: color.withOpacity(0.4), width: 1),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: color.withOpacity(0.3),
+                                  blurRadius: 8,
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                                child: Icon(icon, size: 18, color: color)),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            f['title'] as String,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            f['desc'] as String,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.white.withOpacity(0.5),
+                            ),
                           ),
                         ],
-                      ),
-                      child: Center(
-                          child: Icon(icon, size: 18, color: color)),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      f['title'] as String,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? Colors.white
-                            : const Color(0xFF0A0A0A),
-                      ),
-                    ),
-                    Text(
-                      f['desc'] as String,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: isDark
-                            ? Colors.white.withOpacity(0.4)
-                            : Colors.black.withOpacity(0.4),
                       ),
                     ),
                   ],
@@ -1561,8 +1979,7 @@ class _ActionButtonState extends State<_ActionButton> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(widget.icon,
-                  size: 16, color: widget.theme.onAccent),
+              Icon(widget.icon, size: 16, color: widget.theme.onAccent),
               const SizedBox(width: 8),
               Text(
                 widget.label,

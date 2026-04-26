@@ -7,24 +7,22 @@ class WebTopNav extends StatefulWidget {
   final bool isLoggedIn;
   final bool sidebarExpanded;
   final String webSection;
-  final bool showProfileDropdown;
-  final String userName;
-  final VoidCallback onHamburgerTap;
-  final VoidCallback onLogoDashboardTap;
-  final VoidCallback onProfileTap;
-  final void Function(String section) onNavTap;
+  final void Function(String) onNavigate;
+  final VoidCallback onToggleSidebar;
+  final VoidCallback onToggleTheme;
+  final VoidCallback onLogin;
+  final VoidCallback onLogout;
 
   const WebTopNav({
     super.key,
     required this.isLoggedIn,
     required this.sidebarExpanded,
     required this.webSection,
-    required this.showProfileDropdown,
-    required this.userName,
-    required this.onHamburgerTap,
-    required this.onLogoDashboardTap,
-    required this.onProfileTap,
-    required this.onNavTap,
+    required this.onNavigate,
+    required this.onToggleSidebar,
+    required this.onToggleTheme,
+    required this.onLogin,
+    required this.onLogout,
   });
 
   @override
@@ -32,366 +30,410 @@ class WebTopNav extends StatefulWidget {
 }
 
 class _WebTopNavState extends State<WebTopNav> {
-  String? _hoveredNavLink;
+  String? _hoveredItem;
 
-  // ── Unsplash image URLs ──────────────────────────────────────────────────
-  static const _logoImageUrl =
-      'https://images.unsplash.com/photo-1517963879433-6ad2b056d712'
-      '?w=80&q=80&auto=format&fit=crop';
+  // ── A bright, clearly visible dumbbell / gym logo image ──────────────
+  // White dumbbell on dark background — instantly recognisable
+  static const _logoImg =
+      'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5'
+      '?w=120&q=90&auto=format&fit=crop'; // close-up dumbbells, bright + sharp
 
-  static const _avatarImageUrl =
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d'
-      '?w=100&q=80&auto=format&fit=crop&facepad=3';
+  // Profile avatar fallback image
+  static const _avatarImg =
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb'
+      '?w=120&q=80&auto=format&fit=crop';
+
+  static const _navItems = ['Dashboard', 'Workouts', 'Diet', 'Progress'];
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = AppColors.of(context);
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0A0A0A);
 
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.black.withOpacity(0.55)
-            : Colors.white.withOpacity(0.75),
-        border: Border(
-          bottom: BorderSide(
+    return Consumer<ThemeProvider>(
+      builder: (context, theme, _) {
+        return Container(
+          height: 60,
+          decoration: BoxDecoration(
             color: isDark
-                ? accent.withOpacity(0.15)
-                : const Color(0xFFE0E0E0),
-            width: 1,
-          ),
-        ),
-        boxShadow: isDark
-            ? [
-                BoxShadow(
-                  color: accent.withOpacity(0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-      ),
-      child: Row(
-        children: [
-          // ── Hamburger ────────────────────────────────────────────────
-          _NavButton(
-            onTap: widget.onHamburgerTap,
-            accent: accent,
-            isDark: isDark,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: Icon(
-                widget.sidebarExpanded
-                    ? Icons.close_rounded
-                    : Icons.menu_rounded,
-                key: ValueKey(widget.sidebarExpanded),
-                size: 20,
-                color: accent,
+                ? Colors.black.withOpacity(0.75)
+                : Colors.white.withOpacity(0.92),
+            border: Border(
+              bottom: BorderSide(
+                color: accent.withOpacity(0.15),
+                width: 1,
               ),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          const SizedBox(width: 14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                // ── Hamburger ────────────────────────────────────────
+                _NavIconButton(
+                  icon: widget.sidebarExpanded
+                      ? Icons.menu_open_rounded
+                      : Icons.menu_rounded,
+                  accent: accent,
+                  isDark: isDark,
+                  onTap: widget.onToggleSidebar,
+                ),
+                const SizedBox(width: 12),
 
-          // ── Logo ─────────────────────────────────────────────────────
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: widget.onLogoDashboardTap,
-              child: Row(
-                children: [
-                  // Real gym image logo with glow ring
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: accent.withOpacity(0.6),
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: accent.withOpacity(0.45),
-                          blurRadius: 12,
-                          spreadRadius: 0,
-                        ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: Image.network(
-                        _logoImageUrl,
-                        width: 36,
-                        height: 36,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: AppColors.gradientOf(context),
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              Icons.fitness_center_rounded,
-                              size: 17,
-                              color: AppColors.onAccentOf(context),
-                            ),
-                          ),
-                        ),
-                      ),
+                // ── Logo ─────────────────────────────────────────────
+                _LogoWidget(
+                  logoImg: _logoImg,
+                  accent: accent,
+                  theme: theme,
+                ),
+                const SizedBox(width: 8),
+                ShaderMask(
+                  shaderCallback: (bounds) => LinearGradient(
+                    colors: theme.accentGradient,
+                  ).createShader(bounds),
+                  child: const Text(
+                    'FitLife',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  // Gradient text logo
-                  Consumer<ThemeProvider>(
-                    builder: (context, theme, _) => ShaderMask(
-                      shaderCallback: (bounds) => LinearGradient(
-                        colors: theme.accentGradient,
-                      ).createShader(bounds),
-                      child: const Text(
-                        'FitLife',
-                        style: TextStyle(
-                          fontSize: 21,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: 1.2,
+                ),
+
+                const Spacer(),
+
+                // ── Nav items ────────────────────────────────────────
+                Row(
+                  children: _navItems.map((item) {
+                    final isActive = widget.webSection == item;
+                    final isHovered = _hoveredItem == item;
+                    return MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      onEnter: (_) => setState(() => _hoveredItem = item),
+                      onExit: (_) => setState(() => _hoveredItem = null),
+                      child: GestureDetector(
+                        onTap: () => widget.onNavigate(item),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 7),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: isActive
+                                ? accent.withOpacity(0.15)
+                                : isHovered
+                                    ? accent.withOpacity(0.07)
+                                    : Colors.transparent,
+                            border: isActive
+                                ? Border.all(
+                                    color: accent.withOpacity(0.4), width: 1)
+                                : null,
+                          ),
+                          child: Text(
+                            item,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: isActive
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isActive
+                                  ? accent
+                                  : isDark
+                                      ? Colors.white.withOpacity(0.65)
+                                      : Colors.black.withOpacity(0.6),
+                            ),
+                          ),
                         ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+                const SizedBox(width: 16),
+
+                // ── Theme toggle ─────────────────────────────────────
+                _NavIconButton(
+                  icon: isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                  accent: accent,
+                  isDark: isDark,
+                  onTap: widget.onToggleTheme,
+                ),
+                const SizedBox(width: 8),
+
+                // ── Online indicator dot ─────────────────────────────
+                Container(
+                  width: 10,
+                  height: 10,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF00C853),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00C853).withOpacity(0.6),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                // ── Profile avatar ───────────────────────────────────
+                _ProfileAvatar(
+                  avatarImg: _avatarImg,
+                  isLoggedIn: widget.isLoggedIn,
+                  accent: accent,
+                  theme: theme,
+                  onLogin: widget.onLogin,
+                  onLogout: widget.onLogout,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LOGO WIDGET
+// ═══════════════════════════════════════════════════════════════════════════
+class _LogoWidget extends StatefulWidget {
+  final String logoImg;
+  final Color accent;
+  final ThemeProvider theme;
+
+  const _LogoWidget({
+    required this.logoImg,
+    required this.accent,
+    required this.theme,
+  });
+
+  @override
+  State<_LogoWidget> createState() => _LogoWidgetState();
+}
+
+class _LogoWidgetState extends State<_LogoWidget> {
+  bool _imgLoaded = false;
+  bool _imgError = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: _imgError || !_imgLoaded
+            ? LinearGradient(
+                colors: widget.theme.accentGradient,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : null,
+        border: Border.all(
+          color: widget.accent.withOpacity(0.5),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: widget.accent.withOpacity(0.4),
+            blurRadius: 10,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: _imgError
+            // ── Fallback: gradient circle with dumbbell icon ──────────
+            ? Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: widget.theme.accentGradient,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.fitness_center_rounded,
+                    size: 18,
+                    color: widget.theme.onAccent,
+                  ),
+                ),
+              )
+            // ── Real image ────────────────────────────────────────────
+            : Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    widget.logoImg,
+                    fit: BoxFit.cover,
+                    // Show center of the dumbbell image
+                    alignment: Alignment.center,
+                    loadingBuilder: (ctx, child, progress) {
+                      if (progress == null) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) setState(() => _imgLoaded = true);
+                        });
+                        return child;
+                      }
+                      // While loading — show gradient placeholder
+                      return Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: widget.theme.accentGradient,
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.fitness_center_rounded,
+                            size: 16,
+                            color: widget.theme.onAccent,
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (_, __, ___) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) setState(() => _imgError = true);
+                      });
+                      return Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: widget.theme.accentGradient,
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.fitness_center_rounded,
+                            size: 16,
+                            color: widget.theme.onAccent,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  // Subtle green tint overlay to brand it
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          widget.accent.withOpacity(0.25),
+                          Colors.transparent,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-          ),
-
-          const Spacer(),
-
-          // ── Nav links ────────────────────────────────────────────────
-          if (widget.isLoggedIn) ...[
-            _buildNavLink('Dashboard',
-                widget.webSection == 'Dashboard', textPrimary, accent),
-            const SizedBox(width: 2),
-            _buildNavLink('Workouts',
-                widget.webSection == 'Workouts', textPrimary, accent),
-            const SizedBox(width: 2),
-            _buildNavLink('Diet',
-                widget.webSection == 'Diet Plan', textPrimary, accent),
-            const SizedBox(width: 2),
-            _buildNavLink('Progress',
-                widget.webSection == 'Progress', textPrimary, accent),
-            const SizedBox(width: 16),
-          ],
-
-          // ── Theme toggle ─────────────────────────────────────────────
-          Consumer<ThemeProvider>(
-            builder: (context, theme, _) => _NavButton(
-              onTap: () =>
-                  Provider.of<ThemeProvider>(context, listen: false)
-                      .toggleTheme(),
-              accent: accent,
-              isDark: isDark,
-              child: Icon(
-                theme.isDark
-                    ? Icons.wb_sunny_rounded
-                    : Icons.dark_mode_rounded,
-                size: 17,
-                color: accent,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-
-          // ── Auth buttons or profile ───────────────────────────────────
-          if (!widget.isLoggedIn) ...[
-            // Sign In button
-            MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: () => Navigator.pushNamed(context, '/login'),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                        color: accent.withOpacity(0.4), width: 1.5),
-                    color: accent.withOpacity(0.06),
-                  ),
-                  child: Text(
-                    'Sign In',
-                    style: TextStyle(
-                      color: accent,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-
-            // Get Started button
-            MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: () => Navigator.pushNamed(context, '/register'),
-                child: Consumer<ThemeProvider>(
-                  builder: (context, theme, _) => Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      gradient: LinearGradient(
-                          colors: theme.accentGradient),
-                      boxShadow: [
-                        BoxShadow(
-                          color: accent.withOpacity(0.4),
-                          blurRadius: 14,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      'Get Started Free',
-                      style: TextStyle(
-                        color: theme.onAccent,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ] else ...[
-            // ── Profile avatar — real photo with glow ring ─────────────
-            MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: widget.onProfileTap,
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: widget.showProfileDropdown
-                          ? accent
-                          : accent.withOpacity(0.4),
-                      width: widget.showProfileDropdown ? 2.5 : 1.5,
-                    ),
-                    boxShadow: widget.showProfileDropdown
-                        ? [
-                            BoxShadow(
-                              color: accent.withOpacity(0.5),
-                              blurRadius: 14,
-                              spreadRadius: 0,
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: ClipOval(
-                    child: Image.network(
-                      _avatarImageUrl,
-                      width: 38,
-                      height: 38,
-                      fit: BoxFit.cover,
-                      // Fallback to icon if image fails
-                      errorBuilder: (_, __, ___) => Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: widget.showProfileDropdown
-                              ? LinearGradient(
-                                  colors: AppColors.gradientOf(context))
-                              : null,
-                          color: widget.showProfileDropdown
-                              ? null
-                              : accent.withOpacity(0.15),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.person_rounded,
-                            size: 20,
-                            color: widget.showProfileDropdown
-                                ? AppColors.onAccentOf(context)
-                                : accent,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(width: 8),
-        ],
       ),
     );
   }
+}
 
-  Widget _buildNavLink(
-      String label, bool isActive, Color textPrimary, Color accent) {
-    final isHovered = _hoveredNavLink == label;
+// ═══════════════════════════════════════════════════════════════════════════
+// PROFILE AVATAR
+// ═══════════════════════════════════════════════════════════════════════════
+class _ProfileAvatar extends StatefulWidget {
+  final String avatarImg;
+  final bool isLoggedIn;
+  final Color accent;
+  final ThemeProvider theme;
+  final VoidCallback onLogin;
+  final VoidCallback onLogout;
+
+  const _ProfileAvatar({
+    required this.avatarImg,
+    required this.isLoggedIn,
+    required this.accent,
+    required this.theme,
+    required this.onLogin,
+    required this.onLogout,
+  });
+
+  @override
+  State<_ProfileAvatar> createState() => _ProfileAvatarState();
+}
+
+class _ProfileAvatarState extends State<_ProfileAvatar> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hoveredNavLink = label),
-      onExit: (_) => setState(() => _hoveredNavLink = null),
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
-        onTap: () {
-          if (label == 'Dashboard') widget.onNavTap('Dashboard');
-          else if (label == 'Workouts') widget.onNavTap('Workouts');
-          else if (label == 'Diet') widget.onNavTap('Diet Plan');
-          else if (label == 'Progress') widget.onNavTap('Progress');
-        },
+        onTap: widget.isLoggedIn ? widget.onLogout : widget.onLogin,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          duration: const Duration(milliseconds: 200),
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: isActive
-                ? accent.withOpacity(0.15)
-                : isHovered
-                    ? accent.withOpacity(0.08)
-                    : Colors.transparent,
-            border: isActive
-                ? Border.all(color: accent.withOpacity(0.3), width: 1)
-                : null,
-            boxShadow: isActive
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: _hovered
+                  ? widget.accent.withOpacity(0.8)
+                  : widget.accent.withOpacity(0.35),
+              width: _hovered ? 2 : 1.5,
+            ),
+            boxShadow: _hovered
                 ? [
                     BoxShadow(
-                      color: accent.withOpacity(0.2),
-                      blurRadius: 8,
+                      color: widget.accent.withOpacity(0.4),
+                      blurRadius: 12,
                     ),
                   ]
                 : null,
           ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight:
-                  isActive ? FontWeight.w700 : FontWeight.w500,
-              color: isActive || isHovered
-                  ? accent
-                  : textPrimary.withOpacity(0.55),
-            ),
+          child: ClipOval(
+            child: widget.isLoggedIn
+                ? Image.network(
+                    widget.avatarImg,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.topCenter,
+                    errorBuilder: (_, __, ___) => Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: widget.theme.accentGradient,
+                        ),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.person_rounded,
+                          size: 18,
+                          color: widget.theme.onAccent,
+                        ),
+                      ),
+                    ),
+                  )
+                : Container(
+                    decoration: BoxDecoration(
+                      color: widget.accent.withOpacity(0.1),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.person_rounded,
+                        size: 18,
+                        color: widget.accent,
+                      ),
+                    ),
+                  ),
           ),
         ),
       ),
@@ -399,25 +441,27 @@ class _WebTopNavState extends State<WebTopNav> {
   }
 }
 
-// ── Reusable nav icon button ──────────────────────────────────────────────────
-class _NavButton extends StatefulWidget {
-  final VoidCallback onTap;
+// ═══════════════════════════════════════════════════════════════════════════
+// NAV ICON BUTTON
+// ═══════════════════════════════════════════════════════════════════════════
+class _NavIconButton extends StatefulWidget {
+  final IconData icon;
   final Color accent;
   final bool isDark;
-  final Widget child;
+  final VoidCallback onTap;
 
-  const _NavButton({
-    required this.onTap,
+  const _NavIconButton({
+    required this.icon,
     required this.accent,
     required this.isDark,
-    required this.child,
+    required this.onTap,
   });
 
   @override
-  State<_NavButton> createState() => _NavButtonState();
+  State<_NavIconButton> createState() => _NavIconButtonState();
 }
 
-class _NavButtonState extends State<_NavButton> {
+class _NavIconButtonState extends State<_NavIconButton> {
   bool _hovered = false;
 
   @override
@@ -430,29 +474,28 @@ class _NavButtonState extends State<_NavButton> {
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          width: 36,
-          height: 36,
+          width: 34,
+          height: 34,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
             color: _hovered
-                ? widget.accent.withOpacity(0.15)
-                : widget.accent.withOpacity(0.07),
-            border: Border.all(
-              color: _hovered
-                  ? widget.accent.withOpacity(0.4)
-                  : widget.accent.withOpacity(0.15),
-              width: 1,
-            ),
-            boxShadow: _hovered
-                ? [
-                    BoxShadow(
-                      color: widget.accent.withOpacity(0.2),
-                      blurRadius: 8,
-                    ),
-                  ]
+                ? widget.accent.withOpacity(0.12)
+                : Colors.transparent,
+            border: _hovered
+                ? Border.all(color: widget.accent.withOpacity(0.3), width: 1)
                 : null,
           ),
-          child: Center(child: widget.child),
+          child: Center(
+            child: Icon(
+              widget.icon,
+              size: 18,
+              color: _hovered
+                  ? widget.accent
+                  : widget.isDark
+                      ? Colors.white.withOpacity(0.6)
+                      : Colors.black.withOpacity(0.5),
+            ),
+          ),
         ),
       ),
     );
