@@ -24,6 +24,14 @@ class _UserInfoScreenState extends State<UserInfoScreen>
 
   final _formKey = GlobalKey<FormState>();
 
+  // ── Real athlete photos ─────────────────────────────────────────────────────
+  static const _maleImage =
+      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&q=80';
+  static const _femaleImage =
+      'https://images.unsplash.com/photo-1594381898411-846e7d193883?w=600&q=80';
+  static const _leftPanelImage =
+      'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1200&q=80';
+
   @override
   void initState() {
     super.initState();
@@ -38,6 +46,14 @@ class _UserInfoScreenState extends State<UserInfoScreen>
       CurvedAnimation(parent: _animController, curve: Curves.easeOut),
     );
     _animController.forward();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    precacheImage(const NetworkImage(_leftPanelImage), context);
+    precacheImage(const NetworkImage(_maleImage), context);
+    precacheImage(const NetworkImage(_femaleImage), context);
   }
 
   @override
@@ -61,28 +77,31 @@ class _UserInfoScreenState extends State<UserInfoScreen>
     return isWeb ? _buildWebLayout() : _buildMobileLayout();
   }
 
-  // ═══════════════════════════════════════════════════════
-  // WEB LAYOUT — left = decorative panel, right = form card
-  // ═══════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
+  // WEB LAYOUT
+  // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildWebLayout() {
     return Scaffold(
       backgroundColor: const Color(0xFF030806),
       body: Row(
         children: [
-          // ── Left decorative panel ──────────────────────────────────
+          // ── Left decorative panel ──────────────────────────────────────────
           Expanded(
             flex: 50,
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Background gym image
                 Image.network(
-                  'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1200&q=80',
+                  _leftPanelImage,
                   fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  frameBuilder: (ctx, child, frame, wasSynchronouslyLoaded) {
+                    if (wasSynchronouslyLoaded || frame != null) return child;
+                    return Container(color: const Color(0xFF0A1A0A));
+                  },
                   errorBuilder: (c, e, s) =>
                       Container(color: const Color(0xFF030806)),
                 ),
-                // Gradient overlay
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -98,9 +117,7 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                     ),
                   ),
                 ),
-                // Grid painter
                 CustomPaint(painter: _WebGridPainter(AppColors.primary)),
-                // Bottom content on image
                 Positioned(
                   bottom: 48,
                   left: 40,
@@ -156,14 +173,13 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                         ),
                       ),
                       const SizedBox(height: 24),
-                      // Stats chips
                       Wrap(
                         spacing: 10,
                         runSpacing: 10,
                         children: [
-                          _webStatChip('🎯', 'Personalised'),
-                          _webStatChip('🔒', 'Private'),
-                          _webStatChip('⚡', 'Instant Results'),
+                          _webChip('🎯', 'Personalised'),
+                          _webChip('🔒', 'Private'),
+                          _webChip('⚡', 'Instant Results'),
                         ],
                       ),
                     ],
@@ -173,7 +189,7 @@ class _UserInfoScreenState extends State<UserInfoScreen>
             ),
           ),
 
-          // ── Right: form card ───────────────────────────────────────
+          // ── Right: form card ───────────────────────────────────────────────
           Expanded(
             flex: 50,
             child: Container(
@@ -198,12 +214,8 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Progress bar
                             _buildProgressBar(1, 3),
-
                             const SizedBox(height: 32),
-
-                            // Title
                             Text(
                               AppStrings.userInfoTitle,
                               style: const TextStyle(
@@ -221,17 +233,14 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                                 color: AppColors.textSecondary.withOpacity(0.7),
                               ),
                             ),
-
                             const SizedBox(height: 28),
 
-                            // Gender selector
+                            // ── Gender selector with REAL photos ──────────────
                             _buildSectionLabel('Gender'),
-                            const SizedBox(height: 10),
-                            _buildGenderSelector(),
+                            const SizedBox(height: 12),
+                            _buildGenderPhotoCards(),
 
                             const SizedBox(height: 22),
-
-                            // Age
                             _buildSectionLabel(AppStrings.labelAge),
                             const SizedBox(height: 10),
                             _buildInputField(
@@ -240,19 +249,15 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                               suffix: 'yrs',
                               keyboardType: TextInputType.number,
                               validator: (val) {
-                                if (val == null || val.isEmpty) {
+                                if (val == null || val.isEmpty)
                                   return AppStrings.errorEmpty;
-                                }
-                                if (!Helpers.isValidAge(val)) {
+                                if (!Helpers.isValidAge(val))
                                   return 'Enter a valid age (10-100)';
-                                }
                                 return null;
                               },
                             ),
 
                             const SizedBox(height: 22),
-
-                            // Weight & Height
                             Row(
                               children: [
                                 Expanded(
@@ -260,8 +265,7 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      _buildSectionLabel(
-                                          AppStrings.labelWeight),
+                                      _buildSectionLabel(AppStrings.labelWeight),
                                       const SizedBox(height: 10),
                                       _buildInputField(
                                         controller: _weightController,
@@ -269,12 +273,10 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                                         suffix: 'kg',
                                         keyboardType: TextInputType.number,
                                         validator: (val) {
-                                          if (val == null || val.isEmpty) {
+                                          if (val == null || val.isEmpty)
                                             return AppStrings.errorEmpty;
-                                          }
-                                          if (!Helpers.isValidWeight(val)) {
+                                          if (!Helpers.isValidWeight(val))
                                             return 'Invalid weight';
-                                          }
                                           return null;
                                         },
                                       ),
@@ -287,8 +289,7 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      _buildSectionLabel(
-                                          AppStrings.labelHeight),
+                                      _buildSectionLabel(AppStrings.labelHeight),
                                       const SizedBox(height: 10),
                                       _buildInputField(
                                         controller: _heightController,
@@ -296,12 +297,10 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                                         suffix: 'cm',
                                         keyboardType: TextInputType.number,
                                         validator: (val) {
-                                          if (val == null || val.isEmpty) {
+                                          if (val == null || val.isEmpty)
                                             return AppStrings.errorEmpty;
-                                          }
-                                          if (!Helpers.isValidHeight(val)) {
+                                          if (!Helpers.isValidHeight(val))
                                             return 'Invalid height';
-                                          }
                                           return null;
                                         },
                                       ),
@@ -312,13 +311,9 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                             ),
 
                             const SizedBox(height: 24),
-
-                            // BMI preview
                             _buildBMIPreview(),
-
                             const SizedBox(height: 28),
 
-                            // Continue button
                             GestureDetector(
                               onTap: _continue,
                               child: Container(
@@ -334,8 +329,7 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color:
-                                          AppColors.primary.withOpacity(0.35),
+                                      color: AppColors.primary.withOpacity(0.35),
                                       blurRadius: 20,
                                       spreadRadius: 1,
                                       offset: const Offset(0, 6),
@@ -354,7 +348,6 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                                 ),
                               ),
                             ),
-
                             const SizedBox(height: 20),
                           ],
                         ),
@@ -370,7 +363,163 @@ class _UserInfoScreenState extends State<UserInfoScreen>
     );
   }
 
-  Widget _webStatChip(String emoji, String label) {
+  // ── Gender photo cards (used in both web + mobile) ──────────────────────────
+  Widget _buildGenderPhotoCards() {
+    final genders = [
+      {
+        'label': 'Male',
+        'url': _maleImage,
+        'accent': const Color(0xFF2979FF),
+        'align': Alignment.topCenter,
+      },
+      {
+        'label': 'Female',
+        'url': _femaleImage,
+        'accent': const Color(0xFFFF4081),
+        'align': Alignment.topCenter,
+      },
+    ];
+
+    return Row(
+      children: genders.map((g) {
+        final label = g['label'] as String;
+        final url = g['url'] as String;
+        final accent = g['accent'] as Color;
+        final align = g['align'] as Alignment;
+        final isSelected = _selectedGender == label;
+        final isMale = label == 'Male';
+
+        return Expanded(
+          child: GestureDetector(
+            onTap: () => setState(() => _selectedGender = label),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: EdgeInsets.only(
+                right: isMale ? 8 : 0,
+                left: isMale ? 0 : 8,
+              ),
+              height: 160,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isSelected ? accent : AppColors.border,
+                  width: isSelected ? 2.5 : 1,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: accent.withOpacity(0.4),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        )
+                      ]
+                    : [],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // ── Real photo ────────────────────────────────────────────
+                    Image.network(
+                      url,
+                      fit: BoxFit.cover,
+                      alignment: align,
+                      frameBuilder: (ctx, child, frame, wasSynchronouslyLoaded) {
+                        if (wasSynchronouslyLoaded || frame != null) return child;
+                        return Container(
+                          color: const Color(0xFF0E1A0E),
+                          child: Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: accent.withOpacity(0.5),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (c, e, s) =>
+                          Container(color: const Color(0xFF0E1A0E)),
+                    ),
+                    // ── Dark overlay ──────────────────────────────────────────
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withOpacity(0.05),
+                            Colors.black.withOpacity(isSelected ? 0.45 : 0.65),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // ── Accent bottom tint when selected ──────────────────────
+                    if (isSelected)
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              accent.withOpacity(0.45),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    // ── Label + checkmark ─────────────────────────────────────
+                    Positioned(
+                      bottom: 12,
+                      left: 0,
+                      right: 0,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isSelected)
+                            Container(
+                              width: 22,
+                              height: 22,
+                              margin: const EdgeInsets.only(bottom: 5),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: accent,
+                              ),
+                              child: const Icon(
+                                Icons.check,
+                                size: 13,
+                                color: Colors.white,
+                              ),
+                            ),
+                          Text(
+                            label,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.white.withOpacity(0.65),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _webChip(String emoji, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
@@ -396,15 +545,14 @@ class _UserInfoScreenState extends State<UserInfoScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // MOBILE LAYOUT — original unchanged
-  // ═══════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MOBILE LAYOUT
+  // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildMobileLayout() {
     return Scaffold(
       backgroundColor: const Color(0xFF050A05),
       body: Stack(
         children: [
-          // Background glow
           Positioned(
             top: -100,
             left: -100,
@@ -422,19 +570,16 @@ class _UserInfoScreenState extends State<UserInfoScreen>
               ),
             ),
           ),
-
           SafeArea(
             child: AnimatedBuilder(
               animation: _animController,
-              builder: (context, child) {
-                return FadeTransition(
-                  opacity: _fadeAnim,
-                  child: Transform.translate(
-                    offset: Offset(0, _slideAnim.value),
-                    child: child,
-                  ),
-                );
-              },
+              builder: (context, child) => FadeTransition(
+                opacity: _fadeAnim,
+                child: Transform.translate(
+                  offset: Offset(0, _slideAnim.value),
+                  child: child,
+                ),
+              ),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(AppConstants.paddingLG),
                 child: Form(
@@ -464,8 +609,8 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                       ),
                       const SizedBox(height: 36),
                       _buildSectionLabel('Gender'),
-                      const SizedBox(height: 10),
-                      _buildGenderSelector(),
+                      const SizedBox(height: 12),
+                      _buildGenderPhotoCards(),
                       const SizedBox(height: 24),
                       _buildSectionLabel(AppStrings.labelAge),
                       const SizedBox(height: 10),
@@ -475,12 +620,10 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                         suffix: 'yrs',
                         keyboardType: TextInputType.number,
                         validator: (val) {
-                          if (val == null || val.isEmpty) {
+                          if (val == null || val.isEmpty)
                             return AppStrings.errorEmpty;
-                          }
-                          if (!Helpers.isValidAge(val)) {
+                          if (!Helpers.isValidAge(val))
                             return 'Enter a valid age (10-100)';
-                          }
                           return null;
                         },
                       ),
@@ -499,12 +642,10 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                                   suffix: 'kg',
                                   keyboardType: TextInputType.number,
                                   validator: (val) {
-                                    if (val == null || val.isEmpty) {
+                                    if (val == null || val.isEmpty)
                                       return AppStrings.errorEmpty;
-                                    }
-                                    if (!Helpers.isValidWeight(val)) {
+                                    if (!Helpers.isValidWeight(val))
                                       return 'Invalid weight';
-                                    }
                                     return null;
                                   },
                                 ),
@@ -524,12 +665,10 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                                   suffix: 'cm',
                                   keyboardType: TextInputType.number,
                                   validator: (val) {
-                                    if (val == null || val.isEmpty) {
+                                    if (val == null || val.isEmpty)
                                       return AppStrings.errorEmpty;
-                                    }
-                                    if (!Helpers.isValidHeight(val)) {
+                                    if (!Helpers.isValidHeight(val))
                                       return 'Invalid height';
-                                    }
                                     return null;
                                   },
                                 ),
@@ -549,10 +688,7 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             gradient: const LinearGradient(
-                              colors: [
-                                Color(0xFF5EFC82),
-                                Color(0xFF00C853),
-                              ],
+                              colors: [Color(0xFF5EFC82), Color(0xFF00C853)],
                             ),
                             boxShadow: [
                               BoxShadow(
@@ -633,65 +769,6 @@ class _UserInfoScreenState extends State<UserInfoScreen>
         color: AppColors.textSecondary,
         letterSpacing: 0.5,
       ),
-    );
-  }
-
-  Widget _buildGenderSelector() {
-    return Row(
-      children: ['Male', 'Female'].map((gender) {
-        final isSelected = _selectedGender == gender;
-        return Expanded(
-          child: GestureDetector(
-            onTap: () => setState(() => _selectedGender = gender),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              margin: EdgeInsets.only(
-                right: gender == 'Male' ? 8 : 0,
-                left: gender == 'Female' ? 8 : 0,
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                color: isSelected
-                    ? AppColors.primary.withOpacity(0.15)
-                    : AppColors.surface,
-                border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.border,
-                  width: isSelected ? 2 : 1,
-                ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.2),
-                          blurRadius: 12,
-                          spreadRadius: 1,
-                        )
-                      ]
-                    : [],
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    gender == 'Male' ? '👨' : '👩',
-                    style: const TextStyle(fontSize: 28),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    gender,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 
@@ -800,7 +877,7 @@ class _UserInfoScreenState extends State<UserInfoScreen>
   }
 }
 
-// ── Web grid painter ─────────────────────────────────────────────────────────
+// ── Web grid painter ──────────────────────────────────────────────────────────
 class _WebGridPainter extends CustomPainter {
   final Color color;
   _WebGridPainter(this.color);

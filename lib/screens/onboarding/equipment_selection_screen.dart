@@ -24,34 +24,36 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
     EquipmentData(
       title: 'No Equipment',
       subtitle: 'Home',
-      description: 'Bodyweight exercises only\nNo gym needed',
+      description: 'Bodyweight exercises only. No gym needed — train anywhere.',
       emoji: '🏠',
       color: const Color(0xFF00C853),
       bgImage:
-          'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?w=600&q=80',
+          'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?w=1200&q=80',
       features: ['Push-ups', 'Squats', 'Planks', 'Burpees'],
     ),
     EquipmentData(
       title: 'Full Gym',
       subtitle: 'Gym',
-      description: 'Full access to machines\nand free weights',
+      description: 'Full access to machines and free weights for max results.',
       emoji: '🏋️',
       color: const Color(0xFF2979FF),
       bgImage:
-          'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&q=80',
+          'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200&q=80',
       features: ['Barbells', 'Machines', 'Cables', 'Dumbbells'],
     ),
     EquipmentData(
-      title: 'Home with Dumbbells',
-      subtitle: 'Home + Weights',
-      description: 'Dumbbells and basic\nhome equipment',
+      title: 'Home + Weights',
+      subtitle: 'Dumbbells',
+      description: 'Dumbbells and basic home equipment for a solid home gym.',
       emoji: '🥊',
       color: const Color(0xFFFF6D00),
       bgImage:
-          'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=600&q=80',
+          'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=1200&q=80',
       features: ['Dumbbells', 'Resistance bands', 'Pull-up bar', 'Bench'],
     ),
   ];
+
+  int _hoveredIndex = -1;
 
   @override
   void initState() {
@@ -72,15 +74,9 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Pre-cache all equipment bg images so they appear instantly on web
     for (final eq in _equipments) {
       precacheImage(NetworkImage(eq.bgImage), context);
     }
-    precacheImage(
-      const NetworkImage(
-          'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1200&q=80'),
-      context,
-    );
   }
 
   @override
@@ -121,38 +117,41 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
       ? _equipments.firstWhere((e) => e.title == _selectedEquipment).color
       : AppColors.primary;
 
+  EquipmentData? get _activeEquipment => _selectedEquipment != null
+      ? _equipments.firstWhere((e) => e.title == _selectedEquipment)
+      : (_hoveredIndex >= 0 ? _equipments[_hoveredIndex] : null);
+
   @override
   Widget build(BuildContext context) {
     final isWeb = MediaQuery.of(context).size.width > 600;
     return isWeb ? _buildWebLayout() : _buildMobileLayout();
   }
 
-  // ═══════════════════════════════════════════════════════
-  // WEB LAYOUT — left = decorative panel, right = cards
-  // ═══════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
+  // WEB LAYOUT — left = large image showcase, right = selection cards
+  // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildWebLayout() {
+    final active = _activeEquipment;
+
     return Scaffold(
       backgroundColor: const Color(0xFF030806),
       body: Row(
         children: [
-          // ── Left decorative panel ──────────────────────────────────
+          // ── Left: full-height IMAGE SHOWCASE panel ─────────────────────────
           Expanded(
-            flex: 45,
+            flex: 52,
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Background image — switches to selected equipment image
+                // Main background — switches based on hover/selection
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),
                   child: Image.network(
-                    _selectedEquipment != null
-                        ? _equipments
-                            .firstWhere((e) => e.title == _selectedEquipment)
-                            .bgImage
-                            .replaceAll('w=600', 'w=1200')
-                        : 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1200&q=80',
-                    key: ValueKey(_selectedEquipment ?? 'default'),
+                    active?.bgImage ??
+                        'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1200&q=80',
+                    key: ValueKey(active?.title ?? 'default'),
                     fit: BoxFit.cover,
+                    alignment: Alignment.center,
                     frameBuilder:
                         (ctx, child, frame, wasSynchronouslyLoaded) {
                       if (wasSynchronouslyLoaded || frame != null) return child;
@@ -162,7 +161,8 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                         Container(color: const Color(0xFF030806)),
                   ),
                 ),
-                // Gradient overlay
+
+                // Gradient — blends right edge into dark right panel
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -172,112 +172,183 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                         const Color(0xFF030806),
                         Colors.transparent,
                         Colors.transparent,
-                        const Color(0xFF030806).withOpacity(0.4),
+                        const Color(0xFF030806).withOpacity(0.35),
                       ],
-                      stops: const [0.0, 0.15, 0.7, 1.0],
+                      stops: const [0.0, 0.12, 0.72, 1.0],
                     ),
                   ),
                 ),
-                // Animated color tint based on selection
+
+                // Animated accent tint from bottom
                 AnimatedContainer(
-                  duration: const Duration(milliseconds: 400),
+                  duration: const Duration(milliseconds: 450),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        _accentColor.withOpacity(0.3),
-                        Colors.transparent,
+                        (active?.color ?? AppColors.primary).withOpacity(0.45),
+                        (active?.color ?? AppColors.primary).withOpacity(0.0),
                       ],
+                      stops: const [0.0, 0.6],
                     ),
                   ),
                 ),
-                // Grid painter
-                CustomPaint(painter: _WebGridPainter(_accentColor)),
-                // Bottom content on image
+
+                // Grid overlay
+                CustomPaint(
+                    painter: _WebGridPainter(
+                        active?.color ?? AppColors.primary)),
+
+                // ── Bottom info overlay on the image ──────────────────────────
                 Positioned(
-                  bottom: 48,
-                  left: 40,
-                  right: 40,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 350),
+                    child: Container(
+                      key: ValueKey(active?.title ?? 'default'),
+                      padding: const EdgeInsets.fromLTRB(40, 40, 40, 48),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                            Colors.black.withOpacity(0.85),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 400),
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: _accentColor,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: _accentColor.withOpacity(0.6),
-                                  blurRadius: 8,
+                          // Step badge
+                          Row(
+                            children: [
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 400),
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: active?.color ?? AppColors.primary,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: (active?.color ?? AppColors.primary)
+                                          .withOpacity(0.7),
+                                      blurRadius: 10,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'STEP 3 OF 3  ·  YOUR SETUP',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: active?.color ?? AppColors.primary,
+                                  letterSpacing: 2.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'STEP 3 OF 3  ·  YOUR SETUP',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: _accentColor,
-                              letterSpacing: 2.5,
-                              fontWeight: FontWeight.w600,
+                          const SizedBox(height: 14),
+
+                          // Active equipment name — big display text
+                          if (active != null) ...[
+                            Text(
+                              active.emoji,
+                              style: const TextStyle(fontSize: 40),
                             ),
-                          ),
+                            const SizedBox(height: 8),
+                            Text(
+                              active.title,
+                              style: const TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                height: 1.1,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              active.description,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white.withOpacity(0.7),
+                                height: 1.6,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            // Feature chips
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: active.features
+                                  .map((f) => Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          color: active.color.withOpacity(0.2),
+                                          border: Border.all(
+                                              color: active.color
+                                                  .withOpacity(0.5)),
+                                        ),
+                                        child: Text(
+                                          f,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: active.color,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ))
+                                  .toList(),
+                            ),
+                          ] else ...[
+                            const Text(
+                              'Choose Your\nTraining Setup',
+                              style: TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Hover or select an option to preview\nyour training environment.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white.withOpacity(0.55),
+                                height: 1.65,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Choose Your\nTraining Setup',
-                        style: TextStyle(
-                          fontSize: 34,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          height: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Your equipment determines\nthe exercises we build for you.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.6),
-                          height: 1.65,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          _webChip('🏠', 'Any location'),
-                          _webChip('⚙️', 'Fully tailored'),
-                          _webChip('🚀', 'Ready instantly'),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
 
-          // ── Right: equipment selection card ───────────────────────
+          // ── Right: selection cards ─────────────────────────────────────────
           Expanded(
-            flex: 55,
+            flex: 48,
             child: Container(
               color: const Color(0xFF030806),
               child: Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 48, vertical: 40),
+                      horizontal: 44, vertical: 40),
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 520),
+                    constraints: const BoxConstraints(maxWidth: 500),
                     child: AnimatedBuilder(
                       animation: _animController,
                       builder: (_, child) => FadeTransition(
@@ -306,220 +377,292 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                             AppStrings.equipmentSubtitle,
                             style: TextStyle(
                               fontSize: 13,
-                              color:
-                                  AppColors.textSecondary.withOpacity(0.7),
+                              color: AppColors.textSecondary.withOpacity(0.7),
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 28),
 
-                          // Equipment cards — web uses fixed list (no Expanded)
+                          // ── Equipment cards — tall with real background images ──
                           ...List.generate(_equipments.length, (index) {
                             final eq = _equipments[index];
-                            final isSelected =
-                                _selectedEquipment == eq.title;
+                            final isSelected = _selectedEquipment == eq.title;
+                            final isHovered = _hoveredIndex == index;
+
                             return Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: GestureDetector(
-                                onTap: () => setState(
-                                    () => _selectedEquipment = eq.title),
-                                child: AnimatedContainer(
-                                  duration:
-                                      const Duration(milliseconds: 300),
-                                  height: 160,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(18),
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? eq.color
-                                          : AppColors.border,
-                                      width: isSelected ? 2.5 : 1,
+                              padding: const EdgeInsets.only(bottom: 14),
+                              child: MouseRegion(
+                                onEnter: (_) =>
+                                    setState(() => _hoveredIndex = index),
+                                onExit: (_) =>
+                                    setState(() => _hoveredIndex = -1),
+                                child: GestureDetector(
+                                  onTap: () => setState(
+                                      () => _selectedEquipment = eq.title),
+                                  child: AnimatedContainer(
+                                    duration:
+                                        const Duration(milliseconds: 300),
+                                    height: 175,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? eq.color
+                                            : (isHovered
+                                                ? eq.color.withOpacity(0.5)
+                                                : AppColors.border),
+                                        width: isSelected ? 2.5 : 1.5,
+                                      ),
+                                      boxShadow: isSelected
+                                          ? [
+                                              BoxShadow(
+                                                color:
+                                                    eq.color.withOpacity(0.35),
+                                                blurRadius: 28,
+                                                spreadRadius: 2,
+                                              )
+                                            ]
+                                          : (isHovered
+                                              ? [
+                                                  BoxShadow(
+                                                    color: eq.color
+                                                        .withOpacity(0.15),
+                                                    blurRadius: 16,
+                                                  )
+                                                ]
+                                              : []),
                                     ),
-                                    boxShadow: isSelected
-                                        ? [
-                                            BoxShadow(
-                                              color:
-                                                  eq.color.withOpacity(0.3),
-                                              blurRadius: 20,
-                                              spreadRadius: 2,
-                                            )
-                                          ]
-                                        : [],
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Stack(
-                                      fit: StackFit.expand,
-                                      children: [
-                                        // Background image with frameBuilder
-                                        Image.network(
-                                          eq.bgImage,
-                                          fit: BoxFit.cover,
-                                          opacity: AlwaysStoppedAnimation(
-                                              isSelected ? 0.4 : 0.25),
-                                          frameBuilder: (ctx, child, frame,
-                                              wasSynchronouslyLoaded) {
-                                            if (wasSynchronouslyLoaded ||
-                                                frame != null) return child;
-                                            return Container(
-                                                color: const Color(
-                                                    0xFF0E1A0E));
-                                          },
-                                          errorBuilder: (c, e, s) =>
-                                              Container(
-                                                  color: const Color(
-                                                      0xFF0E1A0E)),
-                                        ),
-                                        // Color gradient overlay
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              begin: Alignment.centerLeft,
-                                              end: Alignment.centerRight,
-                                              colors: [
-                                                eq.color.withOpacity(
-                                                    isSelected ? 0.35 : 0.12),
-                                                Colors.transparent,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(18),
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          // ── REAL background photo ──────────
+                                          Image.network(
+                                            eq.bgImage,
+                                            fit: BoxFit.cover,
+                                            alignment: Alignment.center,
+                                            opacity: AlwaysStoppedAnimation(
+                                                isSelected
+                                                    ? 0.55
+                                                    : (isHovered ? 0.45 : 0.3)),
+                                            frameBuilder: (ctx, child, frame,
+                                                wasSynchronouslyLoaded) {
+                                              if (wasSynchronouslyLoaded ||
+                                                  frame != null) return child;
+                                              return Container(
+                                                  color: const Color(0xFF0E1A0E));
+                                            },
+                                            errorBuilder: (c, e, s) =>
+                                                Container(
+                                                    color:
+                                                        const Color(0xFF0E1A0E)),
+                                          ),
+
+                                          // ── Dark gradient for readability ──
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.centerRight,
+                                                end: Alignment.centerLeft,
+                                                colors: [
+                                                  Colors.black.withOpacity(
+                                                      isSelected ? 0.45 : 0.6),
+                                                  Colors.black.withOpacity(
+                                                      isSelected ? 0.15 : 0.35),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+
+                                          // ── Accent tint overlay ────────────
+                                          AnimatedContainer(
+                                            duration: const Duration(
+                                                milliseconds: 300),
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.bottomLeft,
+                                                end: Alignment.topRight,
+                                                colors: [
+                                                  eq.color.withOpacity(
+                                                      isSelected
+                                                          ? 0.4
+                                                          : (isHovered
+                                                              ? 0.2
+                                                              : 0.08)),
+                                                  Colors.transparent,
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+
+                                          // ── Card content ──────────────────
+                                          Padding(
+                                            padding: const EdgeInsets.all(20),
+                                            child: Row(
+                                              children: [
+                                                // Left: emoji badge + text
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment.center,
+                                                    children: [
+                                                      // Emoji + title row
+                                                      Row(
+                                                        children: [
+                                                          Container(
+                                                            width: 46,
+                                                            height: 46,
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              shape: BoxShape
+                                                                  .circle,
+                                                              color: Colors.black
+                                                                  .withOpacity(
+                                                                      0.5),
+                                                              border:
+                                                                  Border.all(
+                                                                color: eq.color
+                                                                    .withOpacity(
+                                                                        isSelected
+                                                                            ? 0.8
+                                                                            : 0.4),
+                                                                width: 1.5,
+                                                              ),
+                                                            ),
+                                                            child: Center(
+                                                              child: Text(
+                                                                eq.emoji,
+                                                                style:
+                                                                    const TextStyle(
+                                                                        fontSize:
+                                                                            22),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          const SizedBox(
+                                                              width: 12),
+                                                          Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              Text(
+                                                                eq.title,
+                                                                style: TextStyle(
+                                                                  fontSize: 17,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w800,
+                                                                  color: isSelected
+                                                                      ? Colors
+                                                                          .white
+                                                                      : Colors.white
+                                                                          .withOpacity(
+                                                                              0.9),
+                                                                ),
+                                                              ),
+                                                              Text(
+                                                                eq.subtitle,
+                                                                style: TextStyle(
+                                                                  fontSize: 10,
+                                                                  color: eq.color,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w700,
+                                                                  letterSpacing:
+                                                                      1.5,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 14),
+                                                      // Feature chips
+                                                      Wrap(
+                                                        spacing: 6,
+                                                        runSpacing: 6,
+                                                        children: eq.features
+                                                            .map(
+                                                              (f) => Container(
+                                                                padding:
+                                                                    const EdgeInsets
+                                                                        .symmetric(
+                                                                  horizontal: 9,
+                                                                  vertical: 4,
+                                                                ),
+                                                                decoration:
+                                                                    BoxDecoration(
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              8),
+                                                                  color: Colors
+                                                                      .black
+                                                                      .withOpacity(
+                                                                          0.4),
+                                                                  border: Border.all(
+                                                                      color: eq
+                                                                          .color
+                                                                          .withOpacity(
+                                                                              0.5)),
+                                                                ),
+                                                                child: Text(
+                                                                  f,
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontSize: 10,
+                                                                    color:
+                                                                        eq.color,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            )
+                                                            .toList(),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+
+                                                // Right: check circle
+                                                AnimatedContainer(
+                                                  duration: const Duration(
+                                                      milliseconds: 250),
+                                                  width: 30,
+                                                  height: 30,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: isSelected
+                                                        ? eq.color
+                                                        : Colors.black
+                                                            .withOpacity(0.4),
+                                                    border: Border.all(
+                                                      color: isSelected
+                                                          ? eq.color
+                                                          : Colors.white
+                                                              .withOpacity(0.25),
+                                                      width: 2,
+                                                    ),
+                                                  ),
+                                                  child: isSelected
+                                                      ? const Icon(
+                                                          Icons.check,
+                                                          size: 16,
+                                                          color: Colors.white,
+                                                        )
+                                                      : null,
+                                                ),
                                               ],
                                             ),
                                           ),
-                                        ),
-                                        // Content
-                                        Padding(
-                                          padding: const EdgeInsets.all(20),
-                                          child: Row(
-                                            children: [
-                                              // Left: emoji + text + tags
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment
-                                                          .start,
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .center,
-                                                  children: [
-                                                    Row(
-                                                      children: [
-                                                        Text(
-                                                          eq.emoji,
-                                                          style:
-                                                              const TextStyle(
-                                                                  fontSize:
-                                                                      26),
-                                                        ),
-                                                        const SizedBox(
-                                                            width: 10),
-                                                        Column(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            Text(
-                                                              eq.title,
-                                                              style:
-                                                                  TextStyle(
-                                                                fontSize: 16,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w800,
-                                                                color: isSelected
-                                                                    ? eq.color
-                                                                    : AppColors
-                                                                        .textPrimary,
-                                                              ),
-                                                            ),
-                                                            Text(
-                                                              eq.subtitle,
-                                                              style:
-                                                                  TextStyle(
-                                                                fontSize: 10,
-                                                                color: eq.color
-                                                                    .withOpacity(
-                                                                        0.7),
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                                letterSpacing:
-                                                                    1,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    const SizedBox(height: 12),
-                                                    Wrap(
-                                                      spacing: 6,
-                                                      runSpacing: 6,
-                                                      children: eq.features
-                                                          .map(
-                                                            (f) => Container(
-                                                              padding: const EdgeInsets
-                                                                  .symmetric(
-                                                                horizontal: 8,
-                                                                vertical: 3,
-                                                              ),
-                                                              decoration:
-                                                                  BoxDecoration(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            6),
-                                                                color: eq.color
-                                                                    .withOpacity(
-                                                                        0.15),
-                                                              ),
-                                                              child: Text(
-                                                                f,
-                                                                style:
-                                                                    TextStyle(
-                                                                  fontSize:
-                                                                      10,
-                                                                  color:
-                                                                      eq.color,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          )
-                                                          .toList(),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              // Check circle
-                                              AnimatedContainer(
-                                                duration: const Duration(
-                                                    milliseconds: 250),
-                                                width: 28,
-                                                height: 28,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  color: isSelected
-                                                      ? eq.color
-                                                      : Colors.transparent,
-                                                  border: Border.all(
-                                                    color: isSelected
-                                                        ? eq.color
-                                                        : AppColors
-                                                            .borderLight,
-                                                    width: 2,
-                                                  ),
-                                                ),
-                                                child: isSelected
-                                                    ? const Icon(
-                                                        Icons.check,
-                                                        size: 16,
-                                                        color: Colors.white,
-                                                      )
-                                                    : null,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -527,7 +670,7 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                             );
                           }),
 
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 8),
 
                           // Let's Go button
                           GestureDetector(
@@ -590,44 +733,20 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
     );
   }
 
-  Widget _webChip(String emoji, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: Colors.white.withOpacity(0.08),
-        border: Border.all(color: Colors.white.withOpacity(0.15)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 13)),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════
-  // MOBILE LAYOUT — original unchanged
-  // ═══════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MOBILE LAYOUT — full-bleed image cards with real photos
+  // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildMobileLayout() {
     return Scaffold(
       backgroundColor: const Color(0xFF050A05),
       body: Stack(
         children: [
+          // Ambient glow
           Positioned(
             bottom: -100,
             left: -100,
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 400),
               width: 400,
               height: 400,
               decoration: BoxDecoration(
@@ -679,11 +798,13 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                       ),
                     ),
                     const SizedBox(height: 28),
+
+                    // Equipment cards
                     Expanded(
                       child: ListView.separated(
                         itemCount: _equipments.length,
                         separatorBuilder: (_, __) =>
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 14),
                         itemBuilder: (context, index) {
                           final eq = _equipments[index];
                           final isSelected = _selectedEquipment == eq.title;
@@ -692,7 +813,7 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                 () => _selectedEquipment = eq.title),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
-                              height: 150,
+                              height: 155,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
@@ -704,8 +825,8 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                 boxShadow: isSelected
                                     ? [
                                         BoxShadow(
-                                          color: eq.color.withOpacity(0.3),
-                                          blurRadius: 20,
+                                          color: eq.color.withOpacity(0.35),
+                                          blurRadius: 24,
                                           spreadRadius: 2,
                                         )
                                       ]
@@ -716,11 +837,13 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                 child: Stack(
                                   fit: StackFit.expand,
                                   children: [
+                                    // Real photo background
                                     Image.network(
                                       eq.bgImage,
                                       fit: BoxFit.cover,
+                                      alignment: Alignment.center,
                                       opacity: AlwaysStoppedAnimation(
-                                          isSelected ? 0.35 : 0.2),
+                                          isSelected ? 0.5 : 0.3),
                                       frameBuilder: (ctx, child, frame,
                                           wasSynchronouslyLoaded) {
                                         if (wasSynchronouslyLoaded ||
@@ -728,22 +851,43 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                         return Container(
                                             color: AppColors.surface);
                                       },
-                                      errorBuilder: (c, e, s) => Container(
-                                          color: AppColors.surface),
+                                      errorBuilder: (c, e, s) =>
+                                          Container(color: AppColors.surface),
                                     ),
+
+                                    // Dark overlay for readability
                                     Container(
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
-                                          begin: Alignment.centerLeft,
-                                          end: Alignment.centerRight,
+                                          begin: Alignment.centerRight,
+                                          end: Alignment.centerLeft,
+                                          colors: [
+                                            Colors.black.withOpacity(
+                                                isSelected ? 0.4 : 0.6),
+                                            Colors.black.withOpacity(0.2),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+
+                                    // Accent tint
+                                    AnimatedContainer(
+                                      duration:
+                                          const Duration(milliseconds: 300),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.bottomLeft,
+                                          end: Alignment.topRight,
                                           colors: [
                                             eq.color.withOpacity(
-                                                isSelected ? 0.3 : 0.1),
+                                                isSelected ? 0.35 : 0.1),
                                             Colors.transparent,
                                           ],
                                         ),
                                       ),
                                     ),
+
+                                    // Content
                                     Padding(
                                       padding: const EdgeInsets.all(18),
                                       child: Row(
@@ -757,12 +901,31 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                               children: [
                                                 Row(
                                                   children: [
-                                                    Text(
-                                                      eq.emoji,
-                                                      style: const TextStyle(
-                                                          fontSize: 28),
+                                                    Container(
+                                                      width: 44,
+                                                      height: 44,
+                                                      decoration: BoxDecoration(
+                                                        shape: BoxShape.circle,
+                                                        color: Colors.black
+                                                            .withOpacity(0.5),
+                                                        border: Border.all(
+                                                          color: eq.color
+                                                              .withOpacity(
+                                                                  isSelected
+                                                                      ? 0.8
+                                                                      : 0.4),
+                                                          width: 1.5,
+                                                        ),
+                                                      ),
+                                                      child: Center(
+                                                        child: Text(
+                                                          eq.emoji,
+                                                          style: const TextStyle(
+                                                              fontSize: 20),
+                                                        ),
+                                                      ),
                                                     ),
-                                                    const SizedBox(width: 10),
+                                                    const SizedBox(width: 12),
                                                     Column(
                                                       crossAxisAlignment:
                                                           CrossAxisAlignment
@@ -775,21 +938,20 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                             fontWeight:
                                                                 FontWeight.w800,
                                                             color: isSelected
-                                                                ? eq.color
-                                                                : AppColors
-                                                                    .textPrimary,
+                                                                ? Colors.white
+                                                                : Colors.white
+                                                                    .withOpacity(
+                                                                        0.9),
                                                           ),
                                                         ),
                                                         Text(
                                                           eq.subtitle,
                                                           style: TextStyle(
-                                                            fontSize: 11,
-                                                            color: eq.color
-                                                                .withOpacity(
-                                                                    0.7),
+                                                            fontSize: 10,
+                                                            color: eq.color,
                                                             fontWeight:
-                                                                FontWeight.w600,
-                                                            letterSpacing: 1,
+                                                                FontWeight.w700,
+                                                            letterSpacing: 1.5,
                                                           ),
                                                         ),
                                                       ],
@@ -815,9 +977,13 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                                 BorderRadius
                                                                     .circular(
                                                                         6),
-                                                            color: eq.color
+                                                            color: Colors.black
                                                                 .withOpacity(
-                                                                    0.15),
+                                                                    0.4),
+                                                            border: Border.all(
+                                                                color: eq.color
+                                                                    .withOpacity(
+                                                                        0.5)),
                                                           ),
                                                           child: Text(
                                                             f,
@@ -836,6 +1002,7 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                               ],
                                             ),
                                           ),
+                                          // Check circle
                                           AnimatedContainer(
                                             duration: const Duration(
                                                 milliseconds: 250),
@@ -845,11 +1012,13 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                               shape: BoxShape.circle,
                                               color: isSelected
                                                   ? eq.color
-                                                  : Colors.transparent,
+                                                  : Colors.black
+                                                      .withOpacity(0.4),
                                               border: Border.all(
                                                 color: isSelected
                                                     ? eq.color
-                                                    : AppColors.borderLight,
+                                                    : Colors.white
+                                                        .withOpacity(0.25),
                                                 width: 2,
                                               ),
                                             ),
@@ -872,7 +1041,10 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                         },
                       ),
                     ),
+
                     const SizedBox(height: 16),
+
+                    // Let's Go button
                     GestureDetector(
                       onTap: _continue,
                       child: AnimatedContainer(
@@ -983,7 +1155,7 @@ class EquipmentData {
   });
 }
 
-// ── Web grid painter ─────────────────────────────────────────────────────────
+// ── Web grid painter ──────────────────────────────────────────────────────────
 class _WebGridPainter extends CustomPainter {
   final Color color;
   _WebGridPainter(this.color);
@@ -991,7 +1163,7 @@ class _WebGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color.withOpacity(0.03)
+      ..color = color.withOpacity(0.04)
       ..strokeWidth = 0.5;
     for (double x = 0; x < size.width; x += 40) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
