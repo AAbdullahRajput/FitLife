@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 
@@ -60,15 +59,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-
     _fadeAnim = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeIn),
     );
-
     _slideAnim = Tween<double>(begin: 30, end: 0).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeOut),
     );
-
     _animController.forward();
   }
 
@@ -96,12 +92,424 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     }
   }
 
-  void _skip() {
-    Navigator.pushReplacementNamed(context, '/user-info');
-  }
+  void _skip() => Navigator.pushReplacementNamed(context, '/user-info');
 
   @override
   Widget build(BuildContext context) {
+    final isWeb = MediaQuery.of(context).size.width > 600;
+    return isWeb ? _buildWebLayout() : _buildMobileLayout();
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // WEB LAYOUT — left = full bg image panel, right = card
+  // ═══════════════════════════════════════════════════════
+  Widget _buildWebLayout() {
+    final current = _pages[_currentPage];
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF030806),
+      body: Row(
+        children: [
+          // ── Left: full-height background image panel ──────────────
+          Expanded(
+            flex: 55,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 700),
+                  child: Image.network(
+                    current.bgImage,
+                    key: ValueKey(current.bgImage),
+                    fit: BoxFit.cover,
+                    errorBuilder: (c, e, s) =>
+                        Container(color: const Color(0xFF030806)),
+                  ),
+                ),
+                // Dark gradient blending into right panel
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerRight,
+                      end: Alignment.centerLeft,
+                      colors: [
+                        const Color(0xFF030806),
+                        Colors.transparent,
+                        Colors.transparent,
+                        const Color(0xFF030806).withOpacity(0.3),
+                      ],
+                      stops: const [0.0, 0.15, 0.75, 1.0],
+                    ),
+                  ),
+                ),
+                // Grid overlay
+                CustomPaint(painter: _GridPainter(current.accentColor)),
+                // Bottom text overlay on image
+                Positioned(
+                  bottom: 48,
+                  left: 40,
+                  right: 40,
+                  child: AnimatedBuilder(
+                    animation: _animController,
+                    builder: (_, __) => FadeTransition(
+                      opacity: _fadeAnim,
+                      child: Transform.translate(
+                        offset: Offset(0, _slideAnim.value),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: current.accentColor,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: current.accentColor
+                                            .withOpacity(0.6),
+                                        blurRadius: 8,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  'FitLife  ·  ${_currentPage + 1} of ${_pages.length}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: current.accentColor,
+                                    letterSpacing: 2,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              current.title,
+                              style: const TextStyle(
+                                fontSize: 34,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              current.description,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white.withOpacity(0.6),
+                                height: 1.6,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Right: centered card ───────────────────────────────────
+          Expanded(
+            flex: 45,
+            child: Container(
+              color: const Color(0xFF030806),
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 48, vertical: 40),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Brand name
+                        ShaderMask(
+                          shaderCallback: (bounds) => LinearGradient(
+                            colors: [
+                              current.accentColor,
+                              current.accentColor.withOpacity(0.6),
+                            ],
+                          ).createShader(bounds),
+                          child: const Text(
+                            'FitLife',
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 3,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 44),
+
+                        // Emoji icon with glow
+                        AnimatedBuilder(
+                          animation: _animController,
+                          builder: (_, __) => FadeTransition(
+                            opacity: _fadeAnim,
+                            child: Transform.translate(
+                              offset: Offset(0, _slideAnim.value),
+                              child: Container(
+                                width: 110,
+                                height: 110,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: current.accentColor.withOpacity(0.10),
+                                  border: Border.all(
+                                    color:
+                                        current.accentColor.withOpacity(0.35),
+                                    width: 2,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: current.accentColor
+                                          .withOpacity(0.28),
+                                      blurRadius: 36,
+                                      spreadRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    current.emoji,
+                                    style: const TextStyle(fontSize: 46),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 30),
+
+                        // Title
+                        AnimatedBuilder(
+                          animation: _animController,
+                          builder: (_, __) => FadeTransition(
+                            opacity: _fadeAnim,
+                            child: Transform.translate(
+                              offset: Offset(0, _slideAnim.value),
+                              child: ShaderMask(
+                                shaderCallback: (bounds) => LinearGradient(
+                                  colors: [
+                                    current.accentColor,
+                                    current.accentColor.withOpacity(0.7),
+                                  ],
+                                ).createShader(bounds),
+                                child: Text(
+                                  current.title,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    height: 1.25,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Description
+                        AnimatedBuilder(
+                          animation: _animController,
+                          builder: (_, __) => FadeTransition(
+                            opacity: _fadeAnim,
+                            child: Text(
+                              current.description,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color:
+                                    AppColors.textSecondary.withOpacity(0.7),
+                                height: 1.65,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 36),
+
+                        // Page dots
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            _pages.length,
+                            (i) => AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              margin:
+                                  const EdgeInsets.symmetric(horizontal: 4),
+                              width: _currentPage == i ? 24 : 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(3),
+                                color: _currentPage == i
+                                    ? current.accentColor
+                                    : AppColors.textHint.withOpacity(0.3),
+                                boxShadow: _currentPage == i
+                                    ? [
+                                        BoxShadow(
+                                          color: current.accentColor
+                                              .withOpacity(0.5),
+                                          blurRadius: 8,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 28),
+
+                        // Next / Get Started button
+                        GestureDetector(
+                          onTap: _nextPage,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            width: double.infinity,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(14),
+                              gradient: LinearGradient(
+                                colors: [
+                                  current.accentColor,
+                                  current.accentColor.withOpacity(0.75),
+                                ],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color:
+                                      current.accentColor.withOpacity(0.35),
+                                  blurRadius: 20,
+                                  spreadRadius: 1,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                _currentPage == _pages.length - 1
+                                    ? AppStrings.btnGetStarted
+                                    : AppStrings.btnNext,
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        // Skip
+                        if (_currentPage < _pages.length - 1)
+                          TextButton(
+                            onPressed: _skip,
+                            child: Text(
+                              AppStrings.btnSkip,
+                              style: TextStyle(
+                                color:
+                                    AppColors.textSecondary.withOpacity(0.45),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+
+                        const SizedBox(height: 20),
+
+                        // Prev / Next arrow nav
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _currentPage > 0
+                                ? GestureDetector(
+                                    onTap: () => _pageController.previousPage(
+                                      duration:
+                                          const Duration(milliseconds: 400),
+                                      curve: Curves.easeInOut,
+                                    ),
+                                    child: Container(
+                                      width: 42,
+                                      height: 42,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: AppColors.border,
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.arrow_back_ios_new_rounded,
+                                        size: 15,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  )
+                                : const SizedBox(width: 42),
+                            Text(
+                              '${_currentPage + 1} / ${_pages.length}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textHint.withOpacity(0.35),
+                                letterSpacing: 1,
+                              ),
+                            ),
+                            _currentPage < _pages.length - 1
+                                ? GestureDetector(
+                                    onTap: _nextPage,
+                                    child: Container(
+                                      width: 42,
+                                      height: 42,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: current.accentColor
+                                            .withOpacity(0.12),
+                                        border: Border.all(
+                                          color: current.accentColor
+                                              .withOpacity(0.4),
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.arrow_forward_ios_rounded,
+                                        size: 15,
+                                        color: current.accentColor,
+                                      ),
+                                    ),
+                                  )
+                                : const SizedBox(width: 42),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // MOBILE LAYOUT — original unchanged
+  // ═══════════════════════════════════════════════════════
+  Widget _buildMobileLayout() {
     final current = _pages[_currentPage];
 
     return Scaffold(
@@ -109,7 +517,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background image
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 600),
             child: Image.network(
@@ -123,8 +530,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   Container(color: const Color(0xFF050A05)),
             ),
           ),
-
-          // Gradient overlay
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -139,23 +544,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               ),
             ),
           ),
-
-          // Grid painter
-          CustomPaint(
-            painter: _GridPainter(current.accentColor),
-          ),
-
-          // Page content
+          CustomPaint(painter: _GridPainter(current.accentColor)),
           PageView.builder(
             controller: _pageController,
             onPageChanged: _onPageChanged,
             itemCount: _pages.length,
-            itemBuilder: (context, index) {
-              return _buildPage(_pages[index]);
-            },
+            itemBuilder: (context, index) => _buildMobilePage(_pages[index]),
           ),
-
-          // Top skip button
           Positioned(
             top: 50,
             right: 24,
@@ -172,8 +567,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   )
                 : const SizedBox.shrink(),
           ),
-
-          // Bottom controls
           Positioned(
             bottom: 0,
             left: 0,
@@ -193,7 +586,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               ),
               child: Column(
                 children: [
-                  // Page dots
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(
@@ -212,54 +604,49 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 28),
-
-                  // Next / Get Started button
                   AnimatedBuilder(
                     animation: _animController,
-                    builder: (context, child) {
-                      return FadeTransition(
-                        opacity: _fadeAnim,
-                        child: GestureDetector(
-                          onTap: _nextPage,
-                          child: Container(
-                            width: double.infinity,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              gradient: LinearGradient(
-                                colors: [
-                                  current.accentColor,
-                                  current.accentColor.withOpacity(0.7),
-                                ],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: current.accentColor.withOpacity(0.4),
-                                  blurRadius: 20,
-                                  spreadRadius: 2,
-                                  offset: const Offset(0, 6),
-                                ),
+                    builder: (_, __) => FadeTransition(
+                      opacity: _fadeAnim,
+                      child: GestureDetector(
+                        onTap: _nextPage,
+                        child: Container(
+                          width: double.infinity,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: LinearGradient(
+                              colors: [
+                                current.accentColor,
+                                current.accentColor.withOpacity(0.7),
                               ],
                             ),
-                            child: Center(
-                              child: Text(
-                                _currentPage == _pages.length - 1
-                                    ? AppStrings.btnGetStarted
-                                    : AppStrings.btnNext,
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5,
-                                ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: current.accentColor.withOpacity(0.4),
+                                blurRadius: 20,
+                                spreadRadius: 2,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              _currentPage == _pages.length - 1
+                                  ? AppStrings.btnGetStarted
+                                  : AppStrings.btnNext,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.5,
                               ),
                             ),
                           ),
                         ),
-                      );
-                    },
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -270,107 +657,91 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
-  Widget _buildPage(OnboardingData data) {
+  Widget _buildMobilePage(OnboardingData data) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const SizedBox(height: 60),
-
-          // Emoji icon with glow
           AnimatedBuilder(
             animation: _animController,
-            builder: (context, child) {
-              return FadeTransition(
-                opacity: _fadeAnim,
-                child: Transform.translate(
-                  offset: Offset(0, _slideAnim.value),
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: data.accentColor.withOpacity(0.12),
-                      border: Border.all(
-                        color: data.accentColor.withOpacity(0.4),
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: data.accentColor.withOpacity(0.3),
-                          blurRadius: 30,
-                          spreadRadius: 5,
-                        ),
-                      ],
+            builder: (_, __) => FadeTransition(
+              opacity: _fadeAnim,
+              child: Transform.translate(
+                offset: Offset(0, _slideAnim.value),
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: data.accentColor.withOpacity(0.12),
+                    border: Border.all(
+                      color: data.accentColor.withOpacity(0.4),
+                      width: 2,
                     ),
-                    child: Center(
-                      child: Text(
-                        data.emoji,
-                        style: const TextStyle(fontSize: 52),
+                    boxShadow: [
+                      BoxShadow(
+                        color: data.accentColor.withOpacity(0.3),
+                        blurRadius: 30,
+                        spreadRadius: 5,
                       ),
-                    ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(data.emoji,
+                        style: const TextStyle(fontSize: 52)),
                   ),
                 ),
-              );
-            },
+              ),
+            ),
           ),
-
           const SizedBox(height: 40),
-
-          // Title
           AnimatedBuilder(
             animation: _animController,
-            builder: (context, child) {
-              return FadeTransition(
-                opacity: _fadeAnim,
-                child: Transform.translate(
-                  offset: Offset(0, _slideAnim.value),
-                  child: ShaderMask(
-                    shaderCallback: (bounds) => LinearGradient(
-                      colors: [
-                        data.accentColor,
-                        data.accentColor.withOpacity(0.7),
-                      ],
-                    ).createShader(bounds),
-                    child: Text(
-                      data.title,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        height: 1.2,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-
-          const SizedBox(height: 16),
-
-          // Description
-          AnimatedBuilder(
-            animation: _animController,
-            builder: (context, child) {
-              return FadeTransition(
-                opacity: _fadeAnim,
-                child: Transform.translate(
-                  offset: Offset(0, _slideAnim.value * 1.5),
+            builder: (_, __) => FadeTransition(
+              opacity: _fadeAnim,
+              child: Transform.translate(
+                offset: Offset(0, _slideAnim.value),
+                child: ShaderMask(
+                  shaderCallback: (bounds) => LinearGradient(
+                    colors: [
+                      data.accentColor,
+                      data.accentColor.withOpacity(0.7),
+                    ],
+                  ).createShader(bounds),
                   child: Text(
-                    data.description,
+                    data.title,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: AppColors.textSecondary.withOpacity(0.8),
-                      height: 1.6,
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      height: 1.2,
                     ),
                   ),
                 ),
-              );
-            },
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          AnimatedBuilder(
+            animation: _animController,
+            builder: (_, __) => FadeTransition(
+              opacity: _fadeAnim,
+              child: Transform.translate(
+                offset: Offset(0, _slideAnim.value * 1.5),
+                child: Text(
+                  data.description,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: AppColors.textSecondary.withOpacity(0.8),
+                    height: 1.6,
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -378,7 +749,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 }
 
-// Data model for each onboarding page
+// ── Data model ──────────────────────────────────────────────────────────────
 class OnboardingData {
   final String emoji;
   final String title;
@@ -395,7 +766,7 @@ class OnboardingData {
   });
 }
 
-// Grid painter
+// ── Grid painter ─────────────────────────────────────────────────────────────
 class _GridPainter extends CustomPainter {
   final Color color;
   _GridPainter(this.color);
@@ -405,7 +776,6 @@ class _GridPainter extends CustomPainter {
     final paint = Paint()
       ..color = color.withOpacity(0.03)
       ..strokeWidth = 0.5;
-
     for (double x = 0; x < size.width; x += 40) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }

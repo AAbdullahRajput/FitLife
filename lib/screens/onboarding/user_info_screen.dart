@@ -57,6 +57,349 @@ class _UserInfoScreenState extends State<UserInfoScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isWeb = MediaQuery.of(context).size.width > 600;
+    return isWeb ? _buildWebLayout() : _buildMobileLayout();
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // WEB LAYOUT — left = decorative panel, right = form card
+  // ═══════════════════════════════════════════════════════
+  Widget _buildWebLayout() {
+    return Scaffold(
+      backgroundColor: const Color(0xFF030806),
+      body: Row(
+        children: [
+          // ── Left decorative panel ──────────────────────────────────
+          Expanded(
+            flex: 50,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Background gym image
+                Image.network(
+                  'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1200&q=80',
+                  fit: BoxFit.cover,
+                  errorBuilder: (c, e, s) =>
+                      Container(color: const Color(0xFF030806)),
+                ),
+                // Gradient overlay
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerRight,
+                      end: Alignment.centerLeft,
+                      colors: [
+                        const Color(0xFF030806),
+                        Colors.transparent,
+                        Colors.transparent,
+                        const Color(0xFF030806).withOpacity(0.4),
+                      ],
+                      stops: const [0.0, 0.15, 0.7, 1.0],
+                    ),
+                  ),
+                ),
+                // Grid painter
+                CustomPaint(painter: _WebGridPainter(AppColors.primary)),
+                // Bottom content on image
+                Positioned(
+                  bottom: 48,
+                  left: 40,
+                  right: 40,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primary,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withOpacity(0.6),
+                                  blurRadius: 8,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'STEP 1 OF 3  ·  YOUR PROFILE',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.primary,
+                              letterSpacing: 2.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Build Your\nFitness Profile',
+                        style: TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Your data helps us craft a plan\nperfectly tailored to your body.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.6),
+                          height: 1.65,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      // Stats chips
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          _webStatChip('🎯', 'Personalised'),
+                          _webStatChip('🔒', 'Private'),
+                          _webStatChip('⚡', 'Instant Results'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Right: form card ───────────────────────────────────────
+          Expanded(
+            flex: 50,
+            child: Container(
+              color: const Color(0xFF030806),
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 48, vertical: 40),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    child: AnimatedBuilder(
+                      animation: _animController,
+                      builder: (_, child) => FadeTransition(
+                        opacity: _fadeAnim,
+                        child: Transform.translate(
+                          offset: Offset(0, _slideAnim.value),
+                          child: child,
+                        ),
+                      ),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Progress bar
+                            _buildProgressBar(1, 3),
+
+                            const SizedBox(height: 32),
+
+                            // Title
+                            Text(
+                              AppStrings.userInfoTitle,
+                              style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textPrimary,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              AppStrings.userInfoSubtitle,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textSecondary.withOpacity(0.7),
+                              ),
+                            ),
+
+                            const SizedBox(height: 28),
+
+                            // Gender selector
+                            _buildSectionLabel('Gender'),
+                            const SizedBox(height: 10),
+                            _buildGenderSelector(),
+
+                            const SizedBox(height: 22),
+
+                            // Age
+                            _buildSectionLabel(AppStrings.labelAge),
+                            const SizedBox(height: 10),
+                            _buildInputField(
+                              controller: _ageController,
+                              hint: AppStrings.hintAge,
+                              suffix: 'yrs',
+                              keyboardType: TextInputType.number,
+                              validator: (val) {
+                                if (val == null || val.isEmpty) {
+                                  return AppStrings.errorEmpty;
+                                }
+                                if (!Helpers.isValidAge(val)) {
+                                  return 'Enter a valid age (10-100)';
+                                }
+                                return null;
+                              },
+                            ),
+
+                            const SizedBox(height: 22),
+
+                            // Weight & Height
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      _buildSectionLabel(
+                                          AppStrings.labelWeight),
+                                      const SizedBox(height: 10),
+                                      _buildInputField(
+                                        controller: _weightController,
+                                        hint: '70',
+                                        suffix: 'kg',
+                                        keyboardType: TextInputType.number,
+                                        validator: (val) {
+                                          if (val == null || val.isEmpty) {
+                                            return AppStrings.errorEmpty;
+                                          }
+                                          if (!Helpers.isValidWeight(val)) {
+                                            return 'Invalid weight';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      _buildSectionLabel(
+                                          AppStrings.labelHeight),
+                                      const SizedBox(height: 10),
+                                      _buildInputField(
+                                        controller: _heightController,
+                                        hint: '175',
+                                        suffix: 'cm',
+                                        keyboardType: TextInputType.number,
+                                        validator: (val) {
+                                          if (val == null || val.isEmpty) {
+                                            return AppStrings.errorEmpty;
+                                          }
+                                          if (!Helpers.isValidHeight(val)) {
+                                            return 'Invalid height';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // BMI preview
+                            _buildBMIPreview(),
+
+                            const SizedBox(height: 28),
+
+                            // Continue button
+                            GestureDetector(
+                              onTap: _continue,
+                              child: Container(
+                                width: double.infinity,
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(14),
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF5EFC82),
+                                      Color(0xFF00C853),
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          AppColors.primary.withOpacity(0.35),
+                                      blurRadius: 20,
+                                      spreadRadius: 1,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    AppStrings.btnContinue,
+                                    style: TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _webStatChip(String emoji, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: Colors.white.withOpacity(0.08),
+        border: Border.all(color: Colors.white.withOpacity(0.15)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 13)),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // MOBILE LAYOUT — original unchanged
+  // ═══════════════════════════════════════════════════════
+  Widget _buildMobileLayout() {
     return Scaffold(
       backgroundColor: const Color(0xFF050A05),
       body: Stack(
@@ -100,13 +443,8 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 20),
-
-                      // Progress indicator
                       _buildProgressBar(1, 3),
-
                       const SizedBox(height: 32),
-
-                      // Title
                       Text(
                         AppStrings.userInfoTitle,
                         style: const TextStyle(
@@ -124,17 +462,11 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                           color: AppColors.textSecondary.withOpacity(0.7),
                         ),
                       ),
-
                       const SizedBox(height: 36),
-
-                      // Gender selector
                       _buildSectionLabel('Gender'),
                       const SizedBox(height: 10),
                       _buildGenderSelector(),
-
                       const SizedBox(height: 24),
-
-                      // Age
                       _buildSectionLabel(AppStrings.labelAge),
                       const SizedBox(height: 10),
                       _buildInputField(
@@ -152,10 +484,7 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                           return null;
                         },
                       ),
-
                       const SizedBox(height: 24),
-
-                      // Weight & Height side by side
                       Row(
                         children: [
                           Expanded(
@@ -209,15 +538,9 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 32),
-
-                      // BMI preview
                       _buildBMIPreview(),
-
                       const SizedBox(height: 32),
-
-                      // Continue button
                       GestureDetector(
                         onTap: _continue,
                         child: Container(
@@ -252,7 +575,6 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 32),
                     ],
                   ),
@@ -265,6 +587,7 @@ class _UserInfoScreenState extends State<UserInfoScreen>
     );
   }
 
+  // ── Shared widgets ──────────────────────────────────────────────────────────
   Widget _buildProgressBar(int current, int total) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,9 +656,7 @@ class _UserInfoScreenState extends State<UserInfoScreen>
                     ? AppColors.primary.withOpacity(0.15)
                     : AppColors.surface,
                 border: Border.all(
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.border,
+                  color: isSelected ? AppColors.primary : AppColors.border,
                   width: isSelected ? 2 : 1,
                 ),
                 boxShadow: isSelected
@@ -477,4 +798,26 @@ class _UserInfoScreenState extends State<UserInfoScreen>
       ),
     );
   }
+}
+
+// ── Web grid painter ─────────────────────────────────────────────────────────
+class _WebGridPainter extends CustomPainter {
+  final Color color;
+  _WebGridPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color.withOpacity(0.03)
+      ..strokeWidth = 0.5;
+    for (double x = 0; x < size.width; x += 40) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (double y = 0; y < size.height; y += 40) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _WebGridPainter old) => old.color != color;
 }
