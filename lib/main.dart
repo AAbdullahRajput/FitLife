@@ -94,7 +94,7 @@ class FitLifeApp extends StatelessWidget {
 
         // ── Other tabs ──
         '/progress': (context) => const ProgressScreen(),
-        // '/profile': (context) => const ProfileScreen(),
+        '/profile': (context) => const ProfileScreen(),
         '/settings': (context) => const SettingsScreen(),
       },
     );
