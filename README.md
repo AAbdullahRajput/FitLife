@@ -1,3 +1,3 @@
 # fitlife
 
-A new Flutter projec
+A new Flutter project.
