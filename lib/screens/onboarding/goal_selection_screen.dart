@@ -25,8 +25,9 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
       description: 'Burn fat and get lean',
       emoji: '🔥',
       color: const Color(0xFFFF6D00),
+      // Changed to a different running/cardio image to avoid duplicate key with default bg
       bgImage:
-          'https://images.unsplash.com/photo-1538805060514-97d9cc17730c?w=1200&q=80',
+          'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&q=80',
     ),
     GoalData(
       title: 'Build Muscle',
@@ -62,8 +63,9 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
     ),
   ];
 
+  // Default bg is now unique — different from all goal images above
   static const String _defaultBg =
-      'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=1200&q=80';
+      'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1200&q=80';
 
   @override
   void initState() {
@@ -87,6 +89,7 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
     for (final g in _goals) {
       precacheImage(NetworkImage(g.bgImage), context);
     }
+    precacheImage(const NetworkImage(_defaultBg), context);
   }
 
   @override
@@ -123,6 +126,9 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
     return null;
   }
 
+  // Key is now based on goal title (unique) or '__default__', NOT the image URL.
+  // This is the root-cause fix for the "Duplicate keys found" error.
+  String get _activeBgKey => _activeGoal?.title ?? '__default__';
   String get _activeBgImage => _activeGoal?.bgImage ?? _defaultBg;
 
   @override
@@ -148,12 +154,12 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Single AnimatedSwitcher — background image only
+                // KEY FIX: use goal title as key, NOT the image URL
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),
                   child: Image.network(
                     _activeBgImage,
-                    key: ValueKey(_activeBgImage),
+                    key: ValueKey(_activeBgKey), // ← FIXED: unique title-based key
                     fit: BoxFit.cover,
                     alignment: Alignment.center,
                     frameBuilder:
@@ -183,7 +189,7 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                   ),
                 ),
 
-                // Accent tint — AnimatedContainer, no key
+                // Accent tint — AnimatedContainer, no key needed
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 450),
                   decoration: BoxDecoration(
@@ -202,8 +208,7 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                 // Grid
                 CustomPaint(painter: _WebGridPainter(accentColor)),
 
-                // Bottom overlay — plain Container (no AnimatedSwitcher wrapper)
-                // Inner content uses its own AnimatedSwitcher with proper unique keys
+                // Bottom overlay
                 Positioned(
                   bottom: 0,
                   left: 0,
@@ -256,17 +261,16 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                         ),
                         const SizedBox(height: 14),
 
-                        // Inner AnimatedSwitcher — switches between goal info & default
-                        // Keys are guaranteed unique: goal title vs '__default__'
+                        // Inner AnimatedSwitcher — uses unique title-based keys
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 300),
                           child: active != null
                               ? _GoalOverlayContent(
-                                  key: ValueKey(active.title),
+                                  key: ValueKey('overlay_${active.title}'),
                                   goal: active,
                                 )
                               : const _DefaultOverlayContent(
-                                  key: ValueKey('__default__'),
+                                  key: ValueKey('overlay___default__'),
                                 ),
                         ),
                       ],
@@ -930,8 +934,6 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
 }
 
 // ── Separate stateless widgets for AnimatedSwitcher children ──────────────────
-// Using separate classes guarantees Flutter treats them as different widget types
-// and never produces duplicate keys within the same AnimatedSwitcher.
 
 class _GoalOverlayContent extends StatelessWidget {
   final GoalData goal;
