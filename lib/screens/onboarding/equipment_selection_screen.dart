@@ -55,6 +55,10 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
 
   int _hoveredIndex = -1;
 
+  // Default bg — unique, not shared with any equipment image
+  static const String _defaultBg =
+      'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1200&q=80';
+
   @override
   void initState() {
     super.initState();
@@ -77,6 +81,7 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
     for (final eq in _equipments) {
       precacheImage(NetworkImage(eq.bgImage), context);
     }
+    precacheImage(const NetworkImage(_defaultBg), context);
   }
 
   @override
@@ -121,6 +126,10 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
       ? _equipments.firstWhere((e) => e.title == _selectedEquipment)
       : (_hoveredIndex >= 0 ? _equipments[_hoveredIndex] : null);
 
+  // Key based on title, NOT image URL — prevents duplicate key crash
+  String get _activeBgKey => _activeEquipment?.title ?? '__default__';
+  String get _activeBgImage => _activeEquipment?.bgImage ?? _defaultBg;
+
   @override
   Widget build(BuildContext context) {
     final isWeb = MediaQuery.of(context).size.width > 600;
@@ -128,213 +137,221 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // WEB LAYOUT — left = large image showcase, right = selection cards
+  // WEB LAYOUT
   // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildWebLayout() {
     final active = _activeEquipment;
 
     return Scaffold(
       backgroundColor: const Color(0xFF030806),
+      extendBodyBehindAppBar: true,
       body: Row(
         children: [
           // ── Left: full-height IMAGE SHOWCASE panel ─────────────────────────
           Expanded(
             flex: 52,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Main background — switches based on hover/selection
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 500),
-                  child: Image.network(
-                    active?.bgImage ??
-                        'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1200&q=80',
-                    key: ValueKey(active?.title ?? 'default'),
-                    fit: BoxFit.cover,
-                    alignment: Alignment.center,
-                    frameBuilder:
-                        (ctx, child, frame, wasSynchronouslyLoaded) {
-                      if (wasSynchronouslyLoaded || frame != null) return child;
-                      return Container(color: const Color(0xFF0A1A0A));
-                    },
-                    errorBuilder: (c, e, s) =>
-                        Container(color: const Color(0xFF030806)),
-                  ),
-                ),
-
-                // Gradient — blends right edge into dark right panel
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.centerRight,
-                      end: Alignment.centerLeft,
-                      colors: [
-                        const Color(0xFF030806),
-                        Colors.transparent,
-                        Colors.transparent,
-                        const Color(0xFF030806).withOpacity(0.35),
-                      ],
-                      stops: const [0.0, 0.12, 0.72, 1.0],
+            child: ClipRect(
+              child: Container(
+                color: const Color(0xFF030806),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Main background — switches based on hover/selection
+                    // KEY FIX: ValueKey uses title, not image URL
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 500),
+                      child: SizedBox.expand(
+                        key: ValueKey(_activeBgKey),
+                        child: Image.network(
+                          _activeBgImage,
+                          fit: BoxFit.fitHeight,
+                          alignment: Alignment.center,
+                          frameBuilder:
+                              (ctx, child, frame, wasSynchronouslyLoaded) {
+                            if (wasSynchronouslyLoaded || frame != null) return child;
+                            return Container(color: const Color(0xFF0A1A0A));
+                          },
+                          errorBuilder: (c, e, s) =>
+                              Container(color: const Color(0xFF030806)),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
 
-                // Animated accent tint from bottom
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 450),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        (active?.color ?? AppColors.primary).withOpacity(0.45),
-                        (active?.color ?? AppColors.primary).withOpacity(0.0),
-                      ],
-                      stops: const [0.0, 0.6],
+                    // Gradient — blends right edge into dark right panel
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerRight,
+                          end: Alignment.centerLeft,
+                          colors: [
+                            const Color(0xFF030806),
+                            Colors.transparent,
+                            Colors.transparent,
+                            const Color(0xFF030806).withOpacity(0.35),
+                          ],
+                          stops: const [0.0, 0.12, 0.72, 1.0],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
 
-                // Grid overlay
-                CustomPaint(
-                    painter: _WebGridPainter(
-                        active?.color ?? AppColors.primary)),
-
-                // ── Bottom info overlay on the image ──────────────────────────
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 350),
-                    child: Container(
-                      key: ValueKey('overlay_${active?.title ?? 'default'}'),
-                      padding: const EdgeInsets.fromLTRB(40, 40, 40, 48),
+                    // Animated accent tint from bottom
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 450),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.bottomCenter,
                           end: Alignment.topCenter,
                           colors: [
-                            Colors.black.withOpacity(0.85),
-                            Colors.transparent,
+                            (active?.color ?? AppColors.primary).withOpacity(0.45),
+                            (active?.color ?? AppColors.primary).withOpacity(0.0),
                           ],
+                          stops: const [0.0, 0.6],
                         ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Step badge
-                          Row(
+                    ),
+
+                    // Grid overlay
+                    CustomPaint(
+                        painter: _WebGridPainter(
+                            active?.color ?? AppColors.primary)),
+
+                    // ── Bottom info overlay on the image ──────────────────────────
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 350),
+                        child: Container(
+                          key: ValueKey('overlay_${active?.title ?? '__default__'}'),
+                          padding: const EdgeInsets.fromLTRB(40, 40, 40, 48),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                Colors.black.withOpacity(0.85),
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 400),
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: active?.color ?? AppColors.primary,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: (active?.color ?? AppColors.primary)
-                                          .withOpacity(0.7),
-                                      blurRadius: 10,
+                              // Step badge
+                              Row(
+                                children: [
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 400),
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: active?.color ?? AppColors.primary,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: (active?.color ?? AppColors.primary)
+                                              .withOpacity(0.7),
+                                          blurRadius: 10,
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'STEP 3 OF 3  ·  YOUR SETUP',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: active?.color ?? AppColors.primary,
+                                      letterSpacing: 2.5,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 10),
-                              Text(
-                                'STEP 3 OF 3  ·  YOUR SETUP',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: active?.color ?? AppColors.primary,
-                                  letterSpacing: 2.5,
-                                  fontWeight: FontWeight.w600,
+                              const SizedBox(height: 14),
+
+                              // Active equipment name — big display text
+                              if (active != null) ...[
+                                Text(
+                                  active.emoji,
+                                  style: const TextStyle(fontSize: 40),
                                 ),
-                              ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  active.title,
+                                  style: const TextStyle(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  active.description,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.white.withOpacity(0.7),
+                                    height: 1.6,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                // Feature chips
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: active.features
+                                      .map((f) => Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 12, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              color: active.color.withOpacity(0.2),
+                                              border: Border.all(
+                                                  color: active.color
+                                                      .withOpacity(0.5)),
+                                            ),
+                                            child: Text(
+                                              f,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: active.color,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ))
+                                      .toList(),
+                                ),
+                              ] else ...[
+                                const Text(
+                                  'Choose Your\nTraining Setup',
+                                  style: TextStyle(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    height: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Hover or select an option to preview\nyour training environment.',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.white.withOpacity(0.55),
+                                    height: 1.65,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
-                          const SizedBox(height: 14),
-
-                          // Active equipment name — big display text
-                          if (active != null) ...[
-                            Text(
-                              active.emoji,
-                              style: const TextStyle(fontSize: 40),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              active.title,
-                              style: const TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                height: 1.1,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              active.description,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white.withOpacity(0.7),
-                                height: 1.6,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            // Feature chips
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: active.features
-                                  .map((f) => Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 12, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(20),
-                                          color: active.color.withOpacity(0.2),
-                                          border: Border.all(
-                                              color: active.color
-                                                  .withOpacity(0.5)),
-                                        ),
-                                        child: Text(
-                                          f,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: active.color,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ))
-                                  .toList(),
-                            ),
-                          ] else ...[
-                            const Text(
-                              'Choose Your\nTraining Setup',
-                              style: TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                height: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              'Hover or select an option to preview\nyour training environment.',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white.withOpacity(0.55),
-                                height: 1.65,
-                              ),
-                            ),
-                          ],
-                        ],
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
 
@@ -382,7 +399,7 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                           ),
                           const SizedBox(height: 28),
 
-                          // ── Equipment cards — tall with real background images ──
+                          // ── Equipment cards ──
                           ...List.generate(_equipments.length, (index) {
                             final eq = _equipments[index];
                             final isSelected = _selectedEquipment == eq.title;
@@ -436,7 +453,7 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                       child: Stack(
                                         fit: StackFit.expand,
                                         children: [
-                                          // ── REAL background photo ──────────
+                                          // Real background photo
                                           Image.network(
                                             eq.bgImage,
                                             fit: BoxFit.cover,
@@ -458,7 +475,7 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                         const Color(0xFF0E1A0E)),
                                           ),
 
-                                          // ── Dark gradient for readability ──
+                                          // Dark gradient for readability
                                           Container(
                                             decoration: BoxDecoration(
                                               gradient: LinearGradient(
@@ -474,7 +491,7 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                             ),
                                           ),
 
-                                          // ── Accent tint overlay ────────────
+                                          // Accent tint overlay
                                           AnimatedContainer(
                                             duration: const Duration(
                                                 milliseconds: 300),
@@ -495,12 +512,11 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                             ),
                                           ),
 
-                                          // ── Card content ──────────────────
+                                          // Card content
                                           Padding(
                                             padding: const EdgeInsets.all(20),
                                             child: Row(
                                               children: [
-                                                // Left: emoji badge + text
                                                 Expanded(
                                                   child: Column(
                                                     crossAxisAlignment:
@@ -509,7 +525,6 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                     mainAxisAlignment:
                                                         MainAxisAlignment.center,
                                                     children: [
-                                                      // Emoji + title row
                                                       Row(
                                                         children: [
                                                           Container(
@@ -581,7 +596,6 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                         ],
                                                       ),
                                                       const SizedBox(height: 14),
-                                                      // Feature chips
                                                       Wrap(
                                                         spacing: 6,
                                                         runSpacing: 6,
@@ -630,7 +644,7 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                   ),
                                                 ),
 
-                                                // Right: check circle
+                                                // Check circle
                                                 AnimatedContainer(
                                                   duration: const Duration(
                                                       milliseconds: 250),
@@ -734,7 +748,7 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // MOBILE LAYOUT — full-bleed image cards with real photos
+  // MOBILE LAYOUT
   // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildMobileLayout() {
     return Scaffold(
@@ -855,7 +869,6 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                           Container(color: AppColors.surface),
                                     ),
 
-                                    // Dark overlay for readability
                                     Container(
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
@@ -870,7 +883,6 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                       ),
                                     ),
 
-                                    // Accent tint
                                     AnimatedContainer(
                                       duration:
                                           const Duration(milliseconds: 300),
@@ -887,7 +899,6 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                       ),
                                     ),
 
-                                    // Content
                                     Padding(
                                       padding: const EdgeInsets.all(18),
                                       child: Row(
@@ -1002,7 +1013,6 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                               ],
                                             ),
                                           ),
-                                          // Check circle
                                           AnimatedContainer(
                                             duration: const Duration(
                                                 milliseconds: 250),
