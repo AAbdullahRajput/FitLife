@@ -146,29 +146,35 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
 
     return Scaffold(
       backgroundColor: const Color(0xFF030806),
+      extendBodyBehindAppBar: true,
       body: Row(
         children: [
           // ── Left: image showcase ───────────────────────────────────────────
           Expanded(
             flex: 50,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
+            child: ClipRect(
+              child: Container(
+                color: const Color(0xFF030806),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
                 // KEY FIX: use goal title as key, NOT the image URL
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),
-                  child: Image.network(
-                    _activeBgImage,
-                    key: ValueKey(_activeBgKey), // ← FIXED: unique title-based key
-                    fit: BoxFit.cover,
-                    alignment: Alignment.center,
-                    frameBuilder:
-                        (ctx, child, frame, wasSynchronouslyLoaded) {
-                      if (wasSynchronouslyLoaded || frame != null) return child;
-                      return Container(color: const Color(0xFF0A1A0A));
-                    },
-                    errorBuilder: (c, e, s) =>
-                        Container(color: const Color(0xFF030806)),
+                  child: SizedBox.expand(
+                    key: ValueKey(_activeBgKey),
+                    child: Image.network(
+                      _activeBgImage,
+                      fit: BoxFit.fitHeight,
+                      alignment: Alignment.center,
+                      frameBuilder:
+                          (ctx, child, frame, wasSynchronouslyLoaded) {
+                        if (wasSynchronouslyLoaded || frame != null) return child;
+                        return Container(color: const Color(0xFF0A1A0A));
+                      },
+                      errorBuilder: (c, e, s) =>
+                          Container(color: const Color(0xFF030806)),
+                    ),
                   ),
                 ),
 
@@ -278,6 +284,8 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                   ),
                 ),
               ],
+                ),
+              ),
             ),
           ),
 
