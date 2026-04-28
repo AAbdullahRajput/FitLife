@@ -1291,19 +1291,19 @@ class _MobileProfileState extends State<MobileProfile>
     );
   }
 
-  Widget _miniChip(String text, Color accent) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
-        color: accent.withOpacity(0.18),
-        border: Border.all(color: accent.withOpacity(0.35)),
-      ),
-      child: Text(text,
-          style: TextStyle(
-              fontSize: 10,
-              color: accent,
-              fontWeight: FontWeight.w700)),
-    );
-  }
-}
+//   Widget _miniChip(String text, Color accent) {
+//     return Container(
+//       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+//       decoration: BoxDecoration(
+//         borderRadius: BorderRadius.circular(6),
+//         color: accent.withOpacity(0.18),
+//         border: Border.all(color: accent.withOpacity(0.35)),
+//       ),
+//       child: Text(text,
+//           style: TextStyle(
+//               fontSize: 10,
+//               color: accent,
+//               fontWeight: FontWeight.w700)),
+//     );
+//   }
+// }
