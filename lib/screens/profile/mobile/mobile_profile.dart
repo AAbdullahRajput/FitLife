@@ -8,9 +8,9 @@ import '../../../services/storage_service.dart';
 
 // ── Mobile-only image URLs (different from web_profile.dart) ──────────────
 class _MImgs {
-  // Sunrise runner on a misty trail — hero card bg
+  // Full-body athlete centered — hero card bg
   static const heroBg =
-      'https://images.unsplash.com/photo-1461896836934-ffe607ba8211'
+      'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61'
       '?w=800&q=80&auto=format&fit=crop';
 
   // Overhead flat-lay of fitness gear (shoes, bands, water bottle)
@@ -18,25 +18,56 @@ class _MImgs {
       'https://images.unsplash.com/photo-1519505907962-0a6cb0167c73'
       '?w=600&q=80&auto=format&fit=crop';
 
-  // Person doing yoga at golden hour on a rooftop
+  // Body measurement / physique — measurements bg
   static const yogaGolden =
-      'https://images.unsplash.com/photo-1506126613408-eca07ce68773'
+      'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b'
       '?w=600&q=80&auto=format&fit=crop';
 
-  // Close-up of hands holding a fresh green smoothie bowl
+  // Trophy / medal — achievements bg
   static const smoothieBowl =
-      'https://images.unsplash.com/photo-1490645935967-10de6ba17061'
+      'https://images.unsplash.com/photo-1552674605-db6ffd4facb5'
       '?w=600&q=80&auto=format&fit=crop';
 
-  // Dark moody weight plates on a barbell — stats bg
+  // Gym / fitness equipment — stats bg
   static const barbellDark =
-      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48'
+      'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e'
       '?w=600&q=80&auto=format&fit=crop';
 
-  // Aerial view of a running track — weekly summary bg
+  // Gym calendar / planner — weekly summary bg
   static const trackAerial =
-      'https://images.unsplash.com/photo-1587280501635-68a0e82cd5ff'
+      'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff'
       '?w=800&q=80&auto=format&fit=crop';
+
+  // ── Per-achievement images ──────────────────────────────────────────────
+  // First Workout — person at gym first day
+  static const achFirstWorkout =
+      'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b'
+      '?w=200&q=80&auto=format&fit=crop';
+
+  // Hydration Hero — water / hydration
+  static const achHydration =
+      'https://images.unsplash.com/photo-1548839140-29a749e1cf4d'
+      '?w=200&q=80&auto=format&fit=crop';
+
+  // Iron Will — heavy weights / barbell
+  static const achIronWill =
+      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48'
+      '?w=200&q=80&auto=format&fit=crop';
+
+  // Clean Eater — healthy food / salad
+  static const achCleanEater =
+      'https://images.unsplash.com/photo-1490645935967-10de6ba17061'
+      '?w=200&q=80&auto=format&fit=crop';
+
+  // On Track — person running / progress
+  static const achOnTrack =
+      'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8'
+      '?w=200&q=80&auto=format&fit=crop';
+
+  // Streak Master — calendar / consistency
+  static const achStreak =
+      'https://images.unsplash.com/photo-1506126613408-eca07ce68773'
+      '?w=200&q=80&auto=format&fit=crop';
 }
 
 class MobileProfile extends StatefulWidget {
@@ -73,36 +104,42 @@ class _MobileProfileState extends State<MobileProfile>
       'title': 'First Workout',
       'desc': 'Completed your first session',
       'unlocked': true,
+      'img': _MImgs.achFirstWorkout,
     },
     {
       'icon': '💧',
       'title': 'Hydration Hero',
       'desc': 'Hit water goal 7 days straight',
       'unlocked': true,
+      'img': _MImgs.achHydration,
     },
     {
       'icon': '🏋️',
       'title': 'Iron Will',
       'desc': 'Logged 10 workouts',
       'unlocked': false,
+      'img': _MImgs.achIronWill,
     },
     {
       'icon': '🥗',
       'title': 'Clean Eater',
       'desc': 'Logged meals for 5 days',
       'unlocked': false,
+      'img': _MImgs.achCleanEater,
     },
     {
       'icon': '📈',
       'title': 'On Track',
       'desc': 'Reached your weekly goal',
       'unlocked': false,
+      'img': _MImgs.achOnTrack,
     },
     {
       'icon': '⚡',
       'title': 'Streak Master',
       'desc': '30-day streak',
       'unlocked': false,
+      'img': _MImgs.achStreak,
     },
   ];
 
@@ -451,7 +488,7 @@ class _MobileProfileState extends State<MobileProfile>
     );
   }
 
-  // ── Hero card — photo bg (sunrise runner) ─────────────────────────────────
+  // ── Hero card — full-body athlete bg ──────────────────────────────────────
   Widget _buildHeroCard(
     bool isDark,
     Color accent,
@@ -473,7 +510,7 @@ class _MobileProfileState extends State<MobileProfile>
             child: Image.network(
               _MImgs.heroBg,
               fit: BoxFit.cover,
-              alignment: const Alignment(0, -0.4),
+              alignment: Alignment.center,
               errorBuilder: (_, __, ___) =>
                   Container(color: accent.withOpacity(0.08)),
             ),
@@ -673,11 +710,12 @@ class _MobileProfileState extends State<MobileProfile>
       borderRadius: BorderRadius.circular(16),
       child: Stack(
         children: [
-          // Barbell dark bg image
+          // Gym equipment bg image
           Positioned.fill(
             child: Image.network(
               _MImgs.barbellDark,
               fit: BoxFit.cover,
+              alignment: Alignment.center,
               errorBuilder: (_, __, ___) =>
                   Container(color: accent.withOpacity(0.05)),
             ),
@@ -733,21 +771,21 @@ class _MobileProfileState extends State<MobileProfile>
     );
   }
 
-  // ── Body measurements — horizontal row with yoga image bg ─────────────────
+  // ── Body measurements — horizontal row with measurement bg ────────────────
   Widget _buildMeasurementsRow(bool isDark, Color textPrimary,
       Color textSecondary, Color cardColor, Color borderColor) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: Stack(
         children: [
-          // Yoga golden hour bg
+          // Body measurement bg
           SizedBox(
             width: double.infinity,
             height: 110,
             child: Image.network(
               _MImgs.yogaGolden,
               fit: BoxFit.cover,
-              alignment: const Alignment(0, 0.2),
+              alignment: Alignment.center,
               errorBuilder: (_, __, ___) =>
                   Container(color: const Color(0xFF1A1A1A)),
             ),
@@ -804,7 +842,7 @@ class _MobileProfileState extends State<MobileProfile>
     );
   }
 
-  // ── Achievements grid with smoothie bowl bg ────────────────────────────────
+  // ── Achievements grid — each badge has its own image ──────────────────────
   Widget _buildMobileAchievementsGrid(
     bool isDark,
     Color accent,
@@ -817,7 +855,7 @@ class _MobileProfileState extends State<MobileProfile>
       borderRadius: BorderRadius.circular(16),
       child: Stack(
         children: [
-          // Smoothie bowl bg for a fresh, health-food vibe
+          // Achievements section bg
           Positioned.fill(
             child: Image.network(
               _MImgs.smoothieBowl,
@@ -845,6 +883,7 @@ class _MobileProfileState extends State<MobileProfile>
               childAspectRatio: 0.95,
               children: _achievements.map((a) {
                 final unlocked = a['unlocked'] as bool;
+                final imgUrl = a['img'] as String;
                 return Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
@@ -860,13 +899,35 @@ class _MobileProfileState extends State<MobileProfile>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      if (unlocked)
-                        Text(a['icon'] as String,
-                            style: const TextStyle(fontSize: 22))
-                      else
-                        Icon(Icons.lock_rounded,
-                            size: 22,
-                            color: Colors.white.withOpacity(0.25)),
+                      // ── Per-achievement image (unlocked) or lock icon ──
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: unlocked
+                            ? Image.network(
+                                imgUrl,
+                                width: 36,
+                                height: 36,
+                                fit: BoxFit.cover,
+                                alignment: Alignment.center,
+                                errorBuilder: (_, __, ___) => Text(
+                                  a['icon'] as String,
+                                  style: const TextStyle(fontSize: 22),
+                                ),
+                              )
+                            : Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  color: Colors.white.withOpacity(0.06),
+                                ),
+                                child: Icon(
+                                  Icons.lock_rounded,
+                                  size: 20,
+                                  color: Colors.white.withOpacity(0.25),
+                                ),
+                              ),
+                      ),
                       const SizedBox(height: 6),
                       Text(a['title'] as String,
                           textAlign: TextAlign.center,
@@ -897,7 +958,7 @@ class _MobileProfileState extends State<MobileProfile>
     );
   }
 
-  // ── Weekly summary — aerial running track bg ───────────────────────────────
+  // ── Weekly summary — gym planner bg ───────────────────────────────────────
   Widget _buildWeeklySummary(
     bool isDark,
     Color accent,
@@ -915,11 +976,12 @@ class _MobileProfileState extends State<MobileProfile>
       borderRadius: BorderRadius.circular(16),
       child: Stack(
         children: [
-          // Aerial track bg
+          // Gym planner bg
           Positioned.fill(
             child: Image.network(
               _MImgs.trackAerial,
               fit: BoxFit.cover,
+              alignment: Alignment.center,
               errorBuilder: (_, __, ___) =>
                   Container(color: accent.withOpacity(0.05)),
             ),
