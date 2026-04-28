@@ -103,8 +103,8 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
           content: const Text('Please select a goal'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10)),
         ),
       );
       return;
@@ -124,17 +124,15 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
     return null;
   }
 
-  // FIX: prefix 'bg_' ensures these keys never collide with 'overlay_' keys
-  // inside the same AnimatedSwitcher transition frame.
-  String get _activeBgKey => 'bg_${_activeGoal?.title ?? '__default__'}';
-  String get _activeBgImage => _activeGoal?.bgImage ?? _defaultBg;
-
   @override
   Widget build(BuildContext context) {
     final isWeb = MediaQuery.of(context).size.width > 600;
     return isWeb ? _buildWebLayout() : _buildMobileLayout();
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // WEB LAYOUT
+  // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildWebLayout() {
     final active = _activeGoal;
     final accentColor = active?.color ?? AppColors.primary;
@@ -144,7 +142,7 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
       extendBodyBehindAppBar: true,
       body: Row(
         children: [
-          // ── Left: image showcase ───────────────────────────────────────────
+          // ── Left: image showcase ─────────────────────────────────────────
           Expanded(
             flex: 50,
             child: ClipRect(
@@ -153,35 +151,31 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Remove AnimatedSwitcher entirely — use AnimatedCrossFade instead
-// which handles two explicit children with no key conflict.
-AnimatedCrossFade(
-  duration: const Duration(milliseconds: 500),
-  crossFadeState: _activeGoal != null
-      ? CrossFadeState.showSecond
-      : CrossFadeState.showFirst,
-  layoutBuilder: (top, topKey, bottom, bottomKey) => Stack(
-    fit: StackFit.expand,
-    children: [
-      Positioned.fill(key: bottomKey, child: bottom),
-      Positioned.fill(key: topKey, child: top),
-    ],
-  ),
-  firstChild: Image.network(
-    _defaultBg,
-    fit: BoxFit.fitHeight,
-    alignment: Alignment.center,
-    errorBuilder: (c, e, s) =>
-        Container(color: const Color(0xFF030806)),
-  ),
-  secondChild: Image.network(
-    _activeGoal?.bgImage ?? _defaultBg,
-    fit: BoxFit.fitHeight,
-    alignment: Alignment.center,
-    errorBuilder: (c, e, s) =>
-        Container(color: const Color(0xFF030806)),
-  ),
-),
+                    // ── BACKGROUND: all images always in tree, opacity animates ──
+                    // Default bg — visible when nothing hovered/selected
+                    AnimatedOpacity(
+                      duration: const Duration(milliseconds: 500),
+                      opacity: active == null ? 1.0 : 0.0,
+                      child: Image.network(
+                        _defaultBg,
+                        fit: BoxFit.fitHeight,
+                        alignment: Alignment.center,
+                        errorBuilder: (c, e, s) =>
+                            Container(color: const Color(0xFF030806)),
+                      ),
+                    ),
+                    // Each goal image — fades in when its goal is active
+                    ..._goals.map((g) => AnimatedOpacity(
+                          duration: const Duration(milliseconds: 500),
+                          opacity: active?.title == g.title ? 1.0 : 0.0,
+                          child: Image.network(
+                            g.bgImage,
+                            fit: BoxFit.fitHeight,
+                            alignment: Alignment.center,
+                            errorBuilder: (c, e, s) =>
+                                Container(color: const Color(0xFF030806)),
+                          ),
+                        )),
 
                     // Right-edge blend
                     Container(
@@ -225,7 +219,8 @@ AnimatedCrossFade(
                       left: 0,
                       right: 0,
                       child: Container(
-                        padding: const EdgeInsets.fromLTRB(40, 48, 40, 48),
+                        padding:
+                            const EdgeInsets.fromLTRB(40, 48, 40, 48),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.bottomCenter,
@@ -244,7 +239,8 @@ AnimatedCrossFade(
                             Row(
                               children: [
                                 AnimatedContainer(
-                                  duration: const Duration(milliseconds: 400),
+                                  duration:
+                                      const Duration(milliseconds: 400),
                                   width: 8,
                                   height: 8,
                                   decoration: BoxDecoration(
@@ -252,7 +248,8 @@ AnimatedCrossFade(
                                     color: accentColor,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: accentColor.withOpacity(0.7),
+                                        color:
+                                            accentColor.withOpacity(0.7),
                                         blurRadius: 10,
                                       ),
                                     ],
@@ -272,17 +269,119 @@ AnimatedCrossFade(
                             ),
                             const SizedBox(height: 14),
 
-                            // FIX: overlay keys use 'overlay_' prefix — distinct namespace
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 300),
-                              child: active != null
-                                  ? _GoalOverlayContent(
-                                      key: ValueKey('overlay_${active.title}'),
-                                      goal: active,
-                                    )
-                                  : const _DefaultOverlayContent(
-                                      key: ValueKey('overlay___default__'),
-                                    ),
+                            // Overlay text — also uses AnimatedOpacity,
+                            // NO AnimatedSwitcher, NO keys = NO crash
+                            Stack(
+                              children: [
+                                // Default text
+                                AnimatedOpacity(
+                                  duration:
+                                      const Duration(milliseconds: 300),
+                                  opacity: active == null ? 1.0 : 0.0,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text(
+                                        'What Do You\nWant to Achieve?',
+                                        style: TextStyle(
+                                          fontSize: 36,
+                                          fontWeight: FontWeight.w900,
+                                          color: Colors.white,
+                                          height: 1.2,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        'Hover a goal to preview your\ntraining direction.',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.white
+                                              .withOpacity(0.55),
+                                          height: 1.65,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Each goal's overlay text
+                                ..._goals.map((g) => AnimatedOpacity(
+                                      duration: const Duration(
+                                          milliseconds: 300),
+                                      opacity: active?.title == g.title
+                                          ? 1.0
+                                          : 0.0,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            g.emoji,
+                                            style: const TextStyle(
+                                                fontSize: 40),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            g.title,
+                                            style: const TextStyle(
+                                              fontSize: 36,
+                                              fontWeight: FontWeight.w900,
+                                              color: Colors.white,
+                                              height: 1.1,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            g.description,
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              color: Colors.white
+                                                  .withOpacity(0.7),
+                                              height: 1.6,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Container(
+                                            padding:
+                                                const EdgeInsets.symmetric(
+                                                    horizontal: 14,
+                                                    vertical: 8),
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      20),
+                                              color: g.color
+                                                  .withOpacity(0.2),
+                                              border: Border.all(
+                                                  color: g.color
+                                                      .withOpacity(0.5)),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize:
+                                                  MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.auto_awesome,
+                                                    size: 13,
+                                                    color: g.color),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  'AI-personalized plan',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: g.color,
+                                                    fontWeight:
+                                                        FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )),
+                              ],
                             ),
                           ],
                         ),
@@ -294,7 +393,7 @@ AnimatedCrossFade(
             ),
           ),
 
-          // ── Right: goal list ───────────────────────────────────────────────
+          // ── Right: goal list ─────────────────────────────────────────────
           Expanded(
             flex: 50,
             child: Container(
@@ -333,21 +432,23 @@ AnimatedCrossFade(
                             AppStrings.goalSubtitle,
                             style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.textSecondary.withOpacity(0.7),
+                              color: AppColors.textSecondary
+                                  .withOpacity(0.7),
                             ),
                           ),
                           const SizedBox(height: 24),
 
                           ...List.generate(_goals.length, (index) {
                             final goal = _goals[index];
-                            final isSelected = _selectedGoal == goal.title;
+                            final isSelected =
+                                _selectedGoal == goal.title;
                             final isHovered = _hoveredIndex == index;
 
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 10),
                               child: MouseRegion(
-                                onEnter: (_) =>
-                                    setState(() => _hoveredIndex = index),
+                                onEnter: (_) => setState(
+                                    () => _hoveredIndex = index),
                                 onExit: (_) =>
                                     setState(() => _hoveredIndex = -1),
                                 child: GestureDetector(
@@ -358,12 +459,14 @@ AnimatedCrossFade(
                                         const Duration(milliseconds: 280),
                                     height: 96,
                                     decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius:
+                                          BorderRadius.circular(16),
                                       border: Border.all(
                                         color: isSelected
                                             ? goal.color
                                             : (isHovered
-                                                ? goal.color.withOpacity(0.5)
+                                                ? goal.color
+                                                    .withOpacity(0.5)
                                                 : AppColors.border),
                                         width: isSelected ? 2.5 : 1.5,
                                       ),
@@ -387,7 +490,8 @@ AnimatedCrossFade(
                                               : []),
                                     ),
                                     child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(14),
+                                      borderRadius:
+                                          BorderRadius.circular(14),
                                       child: Stack(
                                         fit: StackFit.expand,
                                         children: [
@@ -395,16 +499,19 @@ AnimatedCrossFade(
                                             goal.bgImage,
                                             fit: BoxFit.cover,
                                             alignment: Alignment.center,
-                                            opacity: AlwaysStoppedAnimation(
-                                                isSelected
-                                                    ? 0.5
-                                                    : (isHovered
-                                                        ? 0.4
-                                                        : 0.25)),
-                                            frameBuilder: (ctx, child, frame,
+                                            opacity:
+                                                AlwaysStoppedAnimation(
+                                                    isSelected
+                                                        ? 0.5
+                                                        : (isHovered
+                                                            ? 0.4
+                                                            : 0.25)),
+                                            frameBuilder: (ctx, child,
+                                                frame,
                                                 wasSynchronouslyLoaded) {
                                               if (wasSynchronouslyLoaded ||
-                                                  frame != null) return child;
+                                                  frame != null)
+                                                return child;
                                               return Container(
                                                   color: const Color(
                                                       0xFF0E1A0E));
@@ -417,11 +524,14 @@ AnimatedCrossFade(
                                           Container(
                                             decoration: BoxDecoration(
                                               gradient: LinearGradient(
-                                                begin: Alignment.centerRight,
+                                                begin:
+                                                    Alignment.centerRight,
                                                 end: Alignment.centerLeft,
                                                 colors: [
                                                   Colors.black.withOpacity(
-                                                      isSelected ? 0.4 : 0.6),
+                                                      isSelected
+                                                          ? 0.4
+                                                          : 0.6),
                                                   Colors.black
                                                       .withOpacity(0.15),
                                                 ],
@@ -433,7 +543,8 @@ AnimatedCrossFade(
                                                 milliseconds: 280),
                                             decoration: BoxDecoration(
                                               gradient: LinearGradient(
-                                                begin: Alignment.centerLeft,
+                                                begin:
+                                                    Alignment.centerLeft,
                                                 end: Alignment.centerRight,
                                                 colors: [
                                                   goal.color.withOpacity(
@@ -448,8 +559,10 @@ AnimatedCrossFade(
                                             ),
                                           ),
                                           Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 18, vertical: 14),
+                                            padding:
+                                                const EdgeInsets.symmetric(
+                                                    horizontal: 18,
+                                                    vertical: 14),
                                             child: Row(
                                               children: [
                                                 AnimatedContainer(
@@ -471,9 +584,12 @@ AnimatedCrossFade(
                                                     ),
                                                   ),
                                                   child: Center(
-                                                    child: Text(goal.emoji,
-                                                        style: const TextStyle(
-                                                            fontSize: 22)),
+                                                    child: Text(
+                                                        goal.emoji,
+                                                        style:
+                                                            const TextStyle(
+                                                                fontSize:
+                                                                    22)),
                                                   ),
                                                 ),
                                                 const SizedBox(width: 14),
@@ -491,15 +607,18 @@ AnimatedCrossFade(
                                                         style: TextStyle(
                                                           fontSize: 15,
                                                           fontWeight:
-                                                              FontWeight.w800,
-                                                          color: Colors.white
+                                                              FontWeight
+                                                                  .w800,
+                                                          color: Colors
+                                                              .white
                                                               .withOpacity(
                                                                   isSelected
                                                                       ? 1.0
                                                                       : 0.88),
                                                         ),
                                                       ),
-                                                      const SizedBox(height: 3),
+                                                      const SizedBox(
+                                                          height: 3),
                                                       Text(
                                                         goal.description,
                                                         style: TextStyle(
@@ -526,7 +645,8 @@ AnimatedCrossFade(
                                                     color: isSelected
                                                         ? goal.color
                                                         : Colors.black
-                                                            .withOpacity(0.45),
+                                                            .withOpacity(
+                                                                0.45),
                                                     border: Border.all(
                                                       color: isSelected
                                                           ? goal.color
@@ -537,9 +657,11 @@ AnimatedCrossFade(
                                                     ),
                                                   ),
                                                   child: isSelected
-                                                      ? const Icon(Icons.check,
+                                                      ? const Icon(
+                                                          Icons.check,
                                                           size: 14,
-                                                          color: Colors.white)
+                                                          color: Colors
+                                                              .white)
                                                       : null,
                                                 ),
                                               ],
@@ -578,8 +700,8 @@ AnimatedCrossFade(
                                 boxShadow: _selectedGoal != null
                                     ? [
                                         BoxShadow(
-                                          color:
-                                              _accentColor.withOpacity(0.35),
+                                          color: _accentColor
+                                              .withOpacity(0.35),
                                           blurRadius: 20,
                                           spreadRadius: 1,
                                           offset: const Offset(0, 6),
@@ -616,6 +738,9 @@ AnimatedCrossFade(
     );
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MOBILE LAYOUT
+  // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildMobileLayout() {
     return Scaffold(
       backgroundColor: const Color(0xFF050A05),
@@ -700,7 +825,8 @@ AnimatedCrossFade(
                                 boxShadow: isSelected
                                     ? [
                                         BoxShadow(
-                                          color: goal.color.withOpacity(0.3),
+                                          color:
+                                              goal.color.withOpacity(0.3),
                                           blurRadius: 20,
                                           spreadRadius: 2,
                                         )
@@ -725,8 +851,8 @@ AnimatedCrossFade(
                                         return Container(
                                             color: AppColors.surface);
                                       },
-                                      errorBuilder: (c, e, s) => Container(
-                                          color: AppColors.surface),
+                                      errorBuilder: (c, e, s) =>
+                                          Container(color: AppColors.surface),
                                     ),
                                     Container(
                                       decoration: BoxDecoration(
@@ -742,8 +868,8 @@ AnimatedCrossFade(
                                       ),
                                     ),
                                     AnimatedContainer(
-                                      duration:
-                                          const Duration(milliseconds: 250),
+                                      duration: const Duration(
+                                          milliseconds: 250),
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
                                           begin: Alignment.centerLeft,
@@ -771,8 +897,10 @@ AnimatedCrossFade(
                                               color: Colors.black
                                                   .withOpacity(0.5),
                                               border: Border.all(
-                                                color: goal.color.withOpacity(
-                                                    isSelected ? 0.8 : 0.4),
+                                                color: goal.color
+                                                    .withOpacity(isSelected
+                                                        ? 0.8
+                                                        : 0.4),
                                                 width: 1.5,
                                               ),
                                             ),
@@ -794,7 +922,8 @@ AnimatedCrossFade(
                                                   goal.title,
                                                   style: TextStyle(
                                                     fontSize: 16,
-                                                    fontWeight: FontWeight.w800,
+                                                    fontWeight:
+                                                        FontWeight.w800,
                                                     color: Colors.white
                                                         .withOpacity(
                                                             isSelected
@@ -809,9 +938,11 @@ AnimatedCrossFade(
                                                     fontSize: 12,
                                                     color: isSelected
                                                         ? goal.color
-                                                            .withOpacity(0.85)
+                                                            .withOpacity(
+                                                                0.85)
                                                         : Colors.white
-                                                            .withOpacity(0.45),
+                                                            .withOpacity(
+                                                                0.45),
                                                   ),
                                                 ),
                                               ],
@@ -936,99 +1067,6 @@ AnimatedCrossFade(
                 ),
               ),
             ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Overlay widgets ───────────────────────────────────────────────────────────
-
-class _GoalOverlayContent extends StatelessWidget {
-  final GoalData goal;
-  const _GoalOverlayContent({required super.key, required this.goal});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(goal.emoji, style: const TextStyle(fontSize: 40)),
-        const SizedBox(height: 8),
-        Text(
-          goal.title,
-          style: const TextStyle(
-            fontSize: 36,
-            fontWeight: FontWeight.w900,
-            color: Colors.white,
-            height: 1.1,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          goal.description,
-          style: TextStyle(
-            fontSize: 15,
-            color: Colors.white.withOpacity(0.7),
-            height: 1.6,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            color: goal.color.withOpacity(0.2),
-            border: Border.all(color: goal.color.withOpacity(0.5)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.auto_awesome, size: 13, color: goal.color),
-              const SizedBox(width: 6),
-              Text(
-                'AI-personalized plan',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: goal.color,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DefaultOverlayContent extends StatelessWidget {
-  const _DefaultOverlayContent({required super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text(
-          'What Do You\nWant to Achieve?',
-          style: TextStyle(
-            fontSize: 36,
-            fontWeight: FontWeight.w900,
-            color: Colors.white,
-            height: 1.2,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          'Hover a goal to preview your\ntraining direction.',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.white.withOpacity(0.55),
-            height: 1.65,
           ),
         ),
       ],
