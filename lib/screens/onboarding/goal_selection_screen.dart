@@ -25,7 +25,6 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
       description: 'Burn fat and get lean',
       emoji: '🔥',
       color: const Color(0xFFFF6D00),
-      // Changed to a different running/cardio image to avoid duplicate key with default bg
       bgImage:
           'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&q=80',
     ),
@@ -63,7 +62,6 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
     ),
   ];
 
-  // Default bg is now unique — different from all goal images above
   static const String _defaultBg =
       'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1200&q=80';
 
@@ -126,9 +124,9 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
     return null;
   }
 
-  // Key is now based on goal title (unique) or '__default__', NOT the image URL.
-  // This is the root-cause fix for the "Duplicate keys found" error.
-  String get _activeBgKey => _activeGoal?.title ?? '__default__';
+  // FIX: prefix 'bg_' ensures these keys never collide with 'overlay_' keys
+  // inside the same AnimatedSwitcher transition frame.
+  String get _activeBgKey => 'bg_${_activeGoal?.title ?? '__default__'}';
   String get _activeBgImage => _activeGoal?.bgImage ?? _defaultBg;
 
   @override
@@ -137,9 +135,6 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
     return isWeb ? _buildWebLayout() : _buildMobileLayout();
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // WEB LAYOUT
-  // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildWebLayout() {
     final active = _activeGoal;
     final accentColor = active?.color ?? AppColors.primary;
@@ -158,132 +153,142 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                // KEY FIX: use goal title as key, NOT the image URL
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 500),
-                  child: SizedBox.expand(
-                    key: ValueKey(_activeBgKey),
-                    child: Image.network(
-                      _activeBgImage,
-                      fit: BoxFit.fitHeight,
-                      alignment: Alignment.center,
-                      frameBuilder:
-                          (ctx, child, frame, wasSynchronouslyLoaded) {
-                        if (wasSynchronouslyLoaded || frame != null) return child;
-                        return Container(color: const Color(0xFF0A1A0A));
-                      },
-                      errorBuilder: (c, e, s) =>
-                          Container(color: const Color(0xFF030806)),
-                    ),
-                  ),
-                ),
+                    // Remove AnimatedSwitcher entirely — use AnimatedCrossFade instead
+// which handles two explicit children with no key conflict.
+AnimatedCrossFade(
+  duration: const Duration(milliseconds: 500),
+  crossFadeState: _activeGoal != null
+      ? CrossFadeState.showSecond
+      : CrossFadeState.showFirst,
+  layoutBuilder: (top, topKey, bottom, bottomKey) => Stack(
+    fit: StackFit.expand,
+    children: [
+      Positioned.fill(key: bottomKey, child: bottom),
+      Positioned.fill(key: topKey, child: top),
+    ],
+  ),
+  firstChild: Image.network(
+    _defaultBg,
+    fit: BoxFit.fitHeight,
+    alignment: Alignment.center,
+    errorBuilder: (c, e, s) =>
+        Container(color: const Color(0xFF030806)),
+  ),
+  secondChild: Image.network(
+    _activeGoal?.bgImage ?? _defaultBg,
+    fit: BoxFit.fitHeight,
+    alignment: Alignment.center,
+    errorBuilder: (c, e, s) =>
+        Container(color: const Color(0xFF030806)),
+  ),
+),
 
-                // Right-edge blend
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.centerRight,
-                      end: Alignment.centerLeft,
-                      colors: [
-                        const Color(0xFF030806),
-                        Colors.transparent,
-                        Colors.transparent,
-                        const Color(0xFF030806).withOpacity(0.35),
-                      ],
-                      stops: const [0.0, 0.12, 0.72, 1.0],
-                    ),
-                  ),
-                ),
-
-                // Accent tint — AnimatedContainer, no key needed
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 450),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        accentColor.withOpacity(0.5),
-                        accentColor.withOpacity(0.0),
-                      ],
-                      stops: const [0.0, 0.65],
-                    ),
-                  ),
-                ),
-
-                // Grid
-                CustomPaint(painter: _WebGridPainter(accentColor)),
-
-                // Bottom overlay
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(40, 48, 40, 48),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                        colors: [
-                          Colors.black.withOpacity(0.88),
-                          Colors.transparent,
-                        ],
+                    // Right-edge blend
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerRight,
+                          end: Alignment.centerLeft,
+                          colors: [
+                            const Color(0xFF030806),
+                            Colors.transparent,
+                            Colors.transparent,
+                            const Color(0xFF030806).withOpacity(0.35),
+                          ],
+                          stops: const [0.0, 0.12, 0.72, 1.0],
+                        ),
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Step badge
-                        Row(
+
+                    // Accent tint
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 450),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                            accentColor.withOpacity(0.5),
+                            accentColor.withOpacity(0.0),
+                          ],
+                          stops: const [0.0, 0.65],
+                        ),
+                      ),
+                    ),
+
+                    // Grid
+                    CustomPaint(painter: _WebGridPainter(accentColor)),
+
+                    // Bottom overlay
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(40, 48, 40, 48),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              Colors.black.withOpacity(0.88),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 400),
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: accentColor,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: accentColor.withOpacity(0.7),
-                                    blurRadius: 10,
+                            // Step badge
+                            Row(
+                              children: [
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 400),
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: accentColor,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: accentColor.withOpacity(0.7),
+                                        blurRadius: 10,
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  'STEP 2 OF 3  ·  YOUR GOAL',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: accentColor,
+                                    letterSpacing: 2.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'STEP 2 OF 3  ·  YOUR GOAL',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: accentColor,
-                                letterSpacing: 2.5,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            const SizedBox(height: 14),
+
+                            // FIX: overlay keys use 'overlay_' prefix — distinct namespace
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              child: active != null
+                                  ? _GoalOverlayContent(
+                                      key: ValueKey('overlay_${active.title}'),
+                                      goal: active,
+                                    )
+                                  : const _DefaultOverlayContent(
+                                      key: ValueKey('overlay___default__'),
+                                    ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 14),
-
-                        // Inner AnimatedSwitcher — uses unique title-based keys
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          child: active != null
-                              ? _GoalOverlayContent(
-                                  key: ValueKey('overlay_${active.title}'),
-                                  goal: active,
-                                )
-                              : const _DefaultOverlayContent(
-                                  key: ValueKey('overlay___default__'),
-                                ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              ],
+                  ],
                 ),
               ),
             ),
@@ -611,9 +616,6 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // MOBILE LAYOUT
-  // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildMobileLayout() {
     return Scaffold(
       backgroundColor: const Color(0xFF050A05),
@@ -941,7 +943,7 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen>
   }
 }
 
-// ── Separate stateless widgets for AnimatedSwitcher children ──────────────────
+// ── Overlay widgets ───────────────────────────────────────────────────────────
 
 class _GoalOverlayContent extends StatelessWidget {
   final GoalData goal;

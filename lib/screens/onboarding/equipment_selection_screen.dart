@@ -28,7 +28,7 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
       emoji: '🏠',
       color: const Color(0xFF00C853),
       bgImage:
-          'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?w=1200&q=80',
+          'https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3?w=1200&q=80',
       features: ['Push-ups', 'Squats', 'Planks', 'Burpees'],
     ),
     EquipmentData(
@@ -55,7 +55,6 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
 
   int _hoveredIndex = -1;
 
-  // Default bg — unique, not shared with any equipment image
   static const String _defaultBg =
       'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1200&q=80';
 
@@ -126,8 +125,9 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
       ? _equipments.firstWhere((e) => e.title == _selectedEquipment)
       : (_hoveredIndex >= 0 ? _equipments[_hoveredIndex] : null);
 
-  // Key based on title, NOT image URL — prevents duplicate key crash
-  String get _activeBgKey => _activeEquipment?.title ?? '__default__';
+  // FIX: 'bg_' prefix keeps background switcher keys in a separate namespace
+  // from any other AnimatedSwitcher keys — prevents duplicate key crashes.
+  String get _activeBgKey => 'bg_${_activeEquipment?.title ?? '__default__'}';
   String get _activeBgImage => _activeEquipment?.bgImage ?? _defaultBg;
 
   @override
@@ -156,8 +156,7 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Main background — switches based on hover/selection
-                    // KEY FIX: ValueKey uses title, not image URL
+                    // FIX: 'bg_' prefix ensures unique keys across all switchers
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 500),
                       child: SizedBox.expand(
@@ -168,7 +167,9 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                           alignment: Alignment.center,
                           frameBuilder:
                               (ctx, child, frame, wasSynchronouslyLoaded) {
-                            if (wasSynchronouslyLoaded || frame != null) return child;
+                            if (wasSynchronouslyLoaded || frame != null) {
+                              return child;
+                            }
                             return Container(color: const Color(0xFF0A1A0A));
                           },
                           errorBuilder: (c, e, s) =>
@@ -202,8 +203,10 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                           begin: Alignment.bottomCenter,
                           end: Alignment.topCenter,
                           colors: [
-                            (active?.color ?? AppColors.primary).withOpacity(0.45),
-                            (active?.color ?? AppColors.primary).withOpacity(0.0),
+                            (active?.color ?? AppColors.primary)
+                                .withOpacity(0.45),
+                            (active?.color ?? AppColors.primary)
+                                .withOpacity(0.0),
                           ],
                           stops: const [0.0, 0.6],
                         ),
@@ -215,7 +218,7 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                         painter: _WebGridPainter(
                             active?.color ?? AppColors.primary)),
 
-                    // ── Bottom info overlay on the image ──────────────────────────
+                    // ── Bottom info overlay on the image ──────────────────────
                     Positioned(
                       bottom: 0,
                       left: 0,
@@ -223,7 +226,8 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 350),
                         child: Container(
-                          key: ValueKey('overlay_${active?.title ?? '__default__'}'),
+                          key: ValueKey(
+                              'overlay_${active?.title ?? '__default__'}'),
                           padding: const EdgeInsets.fromLTRB(40, 40, 40, 48),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
@@ -247,10 +251,12 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                     height: 8,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: active?.color ?? AppColors.primary,
+                                      color:
+                                          active?.color ?? AppColors.primary,
                                       boxShadow: [
                                         BoxShadow(
-                                          color: (active?.color ?? AppColors.primary)
+                                          color: (active?.color ??
+                                                  AppColors.primary)
                                               .withOpacity(0.7),
                                           blurRadius: 10,
                                         ),
@@ -308,7 +314,8 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                             decoration: BoxDecoration(
                                               borderRadius:
                                                   BorderRadius.circular(20),
-                                              color: active.color.withOpacity(0.2),
+                                              color: active.color
+                                                  .withOpacity(0.2),
                                               border: Border.all(
                                                   color: active.color
                                                       .withOpacity(0.5)),
@@ -394,7 +401,8 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                             AppStrings.equipmentSubtitle,
                             style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.textSecondary.withOpacity(0.7),
+                              color:
+                                  AppColors.textSecondary.withOpacity(0.7),
                             ),
                           ),
                           const SizedBox(height: 28),
@@ -402,7 +410,8 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                           // ── Equipment cards ──
                           ...List.generate(_equipments.length, (index) {
                             final eq = _equipments[index];
-                            final isSelected = _selectedEquipment == eq.title;
+                            final isSelected =
+                                _selectedEquipment == eq.title;
                             final isHovered = _hoveredIndex == index;
 
                             return Padding(
@@ -420,7 +429,8 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                         const Duration(milliseconds: 300),
                                     height: 175,
                                     decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(20),
+                                      borderRadius:
+                                          BorderRadius.circular(20),
                                       border: Border.all(
                                         color: isSelected
                                             ? eq.color
@@ -432,8 +442,8 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                       boxShadow: isSelected
                                           ? [
                                               BoxShadow(
-                                                color:
-                                                    eq.color.withOpacity(0.35),
+                                                color: eq.color
+                                                    .withOpacity(0.35),
                                                 blurRadius: 28,
                                                 spreadRadius: 2,
                                               )
@@ -449,11 +459,12 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                               : []),
                                     ),
                                     child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(18),
+                                      borderRadius:
+                                          BorderRadius.circular(18),
                                       child: Stack(
                                         fit: StackFit.expand,
                                         children: [
-                                          // Real background photo
+                                          // Background photo
                                           Image.network(
                                             eq.bgImage,
                                             fit: BoxFit.cover,
@@ -461,31 +472,40 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                             opacity: AlwaysStoppedAnimation(
                                                 isSelected
                                                     ? 0.55
-                                                    : (isHovered ? 0.45 : 0.3)),
-                                            frameBuilder: (ctx, child, frame,
+                                                    : (isHovered
+                                                        ? 0.45
+                                                        : 0.3)),
+                                            frameBuilder: (ctx, child,
+                                                frame,
                                                 wasSynchronouslyLoaded) {
                                               if (wasSynchronouslyLoaded ||
                                                   frame != null) return child;
                                               return Container(
-                                                  color: const Color(0xFF0E1A0E));
+                                                  color: const Color(
+                                                      0xFF0E1A0E));
                                             },
                                             errorBuilder: (c, e, s) =>
                                                 Container(
-                                                    color:
-                                                        const Color(0xFF0E1A0E)),
+                                                    color: const Color(
+                                                        0xFF0E1A0E)),
                                           ),
 
                                           // Dark gradient for readability
                                           Container(
                                             decoration: BoxDecoration(
                                               gradient: LinearGradient(
-                                                begin: Alignment.centerRight,
+                                                begin:
+                                                    Alignment.centerRight,
                                                 end: Alignment.centerLeft,
                                                 colors: [
                                                   Colors.black.withOpacity(
-                                                      isSelected ? 0.45 : 0.6),
+                                                      isSelected
+                                                          ? 0.45
+                                                          : 0.6),
                                                   Colors.black.withOpacity(
-                                                      isSelected ? 0.15 : 0.35),
+                                                      isSelected
+                                                          ? 0.15
+                                                          : 0.35),
                                                 ],
                                               ),
                                             ),
@@ -497,7 +517,8 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                 milliseconds: 300),
                                             decoration: BoxDecoration(
                                               gradient: LinearGradient(
-                                                begin: Alignment.bottomLeft,
+                                                begin:
+                                                    Alignment.bottomLeft,
                                                 end: Alignment.topRight,
                                                 colors: [
                                                   eq.color.withOpacity(
@@ -514,7 +535,8 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
 
                                           // Card content
                                           Padding(
-                                            padding: const EdgeInsets.all(20),
+                                            padding:
+                                                const EdgeInsets.all(20),
                                             child: Row(
                                               children: [
                                                 Expanded(
@@ -523,7 +545,8 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                         CrossAxisAlignment
                                                             .start,
                                                     mainAxisAlignment:
-                                                        MainAxisAlignment.center,
+                                                        MainAxisAlignment
+                                                            .center,
                                                     children: [
                                                       Row(
                                                         children: [
@@ -534,12 +557,14 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                                 BoxDecoration(
                                                               shape: BoxShape
                                                                   .circle,
-                                                              color: Colors.black
+                                                              color: Colors
+                                                                  .black
                                                                   .withOpacity(
                                                                       0.5),
                                                               border:
                                                                   Border.all(
-                                                                color: eq.color
+                                                                color: eq
+                                                                    .color
                                                                     .withOpacity(
                                                                         isSelected
                                                                             ? 0.8
@@ -550,10 +575,9 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                             child: Center(
                                                               child: Text(
                                                                 eq.emoji,
-                                                                style:
-                                                                    const TextStyle(
-                                                                        fontSize:
-                                                                            22),
+                                                                style: const TextStyle(
+                                                                    fontSize:
+                                                                        22),
                                                               ),
                                                             ),
                                                           ),
@@ -566,24 +590,30 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                             children: [
                                                               Text(
                                                                 eq.title,
-                                                                style: TextStyle(
-                                                                  fontSize: 17,
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize:
+                                                                      17,
                                                                   fontWeight:
                                                                       FontWeight
                                                                           .w800,
                                                                   color: isSelected
                                                                       ? Colors
                                                                           .white
-                                                                      : Colors.white
+                                                                      : Colors
+                                                                          .white
                                                                           .withOpacity(
                                                                               0.9),
                                                                 ),
                                                               ),
                                                               Text(
                                                                 eq.subtitle,
-                                                                style: TextStyle(
-                                                                  fontSize: 10,
-                                                                  color: eq.color,
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize:
+                                                                      10,
+                                                                  color: eq
+                                                                      .color,
                                                                   fontWeight:
                                                                       FontWeight
                                                                           .w700,
@@ -595,18 +625,22 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                           ),
                                                         ],
                                                       ),
-                                                      const SizedBox(height: 14),
+                                                      const SizedBox(
+                                                          height: 14),
                                                       Wrap(
                                                         spacing: 6,
                                                         runSpacing: 6,
-                                                        children: eq.features
+                                                        children: eq
+                                                            .features
                                                             .map(
-                                                              (f) => Container(
-                                                                padding:
-                                                                    const EdgeInsets
-                                                                        .symmetric(
-                                                                  horizontal: 9,
-                                                                  vertical: 4,
+                                                              (f) =>
+                                                                  Container(
+                                                                padding: const EdgeInsets
+                                                                    .symmetric(
+                                                                  horizontal:
+                                                                      9,
+                                                                  vertical:
+                                                                      4,
                                                                 ),
                                                                 decoration:
                                                                     BoxDecoration(
@@ -628,9 +662,10 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                                   f,
                                                                   style:
                                                                       TextStyle(
-                                                                    fontSize: 10,
-                                                                    color:
-                                                                        eq.color,
+                                                                    fontSize:
+                                                                        10,
+                                                                    color: eq
+                                                                        .color,
                                                                     fontWeight:
                                                                         FontWeight
                                                                             .w600,
@@ -655,12 +690,14 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                     color: isSelected
                                                         ? eq.color
                                                         : Colors.black
-                                                            .withOpacity(0.4),
+                                                            .withOpacity(
+                                                                0.4),
                                                     border: Border.all(
                                                       color: isSelected
                                                           ? eq.color
                                                           : Colors.white
-                                                              .withOpacity(0.25),
+                                                              .withOpacity(
+                                                                  0.25),
                                                       width: 2,
                                                     ),
                                                   ),
@@ -668,7 +705,8 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                       ? const Icon(
                                                           Icons.check,
                                                           size: 16,
-                                                          color: Colors.white,
+                                                          color: Colors
+                                                              .white,
                                                         )
                                                       : null,
                                                 ),
@@ -709,8 +747,8 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                 boxShadow: _selectedEquipment != null
                                     ? [
                                         BoxShadow(
-                                          color:
-                                              _accentColor.withOpacity(0.35),
+                                          color: _accentColor
+                                              .withOpacity(0.35),
                                           blurRadius: 20,
                                           spreadRadius: 1,
                                           offset: const Offset(0, 6),
@@ -915,8 +953,10 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                     Container(
                                                       width: 44,
                                                       height: 44,
-                                                      decoration: BoxDecoration(
-                                                        shape: BoxShape.circle,
+                                                      decoration:
+                                                          BoxDecoration(
+                                                        shape:
+                                                            BoxShape.circle,
                                                         color: Colors.black
                                                             .withOpacity(0.5),
                                                         border: Border.all(
@@ -947,7 +987,8 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                           style: TextStyle(
                                                             fontSize: 16,
                                                             fontWeight:
-                                                                FontWeight.w800,
+                                                                FontWeight
+                                                                    .w800,
                                                             color: isSelected
                                                                 ? Colors.white
                                                                 : Colors.white
@@ -961,8 +1002,10 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                             fontSize: 10,
                                                             color: eq.color,
                                                             fontWeight:
-                                                                FontWeight.w700,
-                                                            letterSpacing: 1.5,
+                                                                FontWeight
+                                                                    .w700,
+                                                            letterSpacing:
+                                                                1.5,
                                                           ),
                                                         ),
                                                       ],
@@ -988,11 +1031,13 @@ class _EquipmentSelectionScreenState extends State<EquipmentSelectionScreen>
                                                                 BorderRadius
                                                                     .circular(
                                                                         6),
-                                                            color: Colors.black
+                                                            color: Colors
+                                                                .black
                                                                 .withOpacity(
                                                                     0.4),
                                                             border: Border.all(
-                                                                color: eq.color
+                                                                color: eq
+                                                                    .color
                                                                     .withOpacity(
                                                                         0.5)),
                                                           ),
