@@ -1,30 +1,101 @@
 // lib/screens/profile/web/web_profile.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/theme_provider.dart';
 import '../../../core/data/app_data.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../services/storage_service.dart';
 
 // ── Profile image URLs (unique, not used elsewhere in the app) ─────────────
 class _Imgs {
+  // Hero banner — wide gym with visible athlete face + body
   static const heroBg =
-      'https://images.unsplash.com/photo-1517836357463-d25dfeac3438'
-      '?w=1200&q=80&auto=format&fit=crop'; // wide gym panorama
+      'https://images.unsplash.com/photo-1517963879433-6ad2b056d712'
+      '?w=1200&q=80&auto=format&fit=crop';
+
+  // Avatar — athlete close-up face
   static const avatarBg =
       'https://images.unsplash.com/photo-1594381898411-846e7d193883'
-      '?w=300&q=80&auto=format&fit=crop'; // athlete close-up
+      '?w=300&q=80&auto=format&fit=crop';
+
+  // ── Per-stat card images (each unique) ─────────────────────────────────
+  static const statWeight =
+      'https://images.unsplash.com/photo-1549060279-7e168fcee0c2'
+      '?w=300&q=80&auto=format&fit=crop'; // dumbbell / scale
+
+  static const statHeight =
+      'https://images.unsplash.com/photo-1517836357463-d25dfeac3438'
+      '?w=300&q=80&auto=format&fit=crop'; // full-body standing gym
+
+  static const statAge =
+      'https://images.unsplash.com/photo-1530822847156-5df684ec5933'
+      '?w=300&q=80&auto=format&fit=crop'; // face / upper body
+
+  static const statBmi =
+      'https://images.unsplash.com/photo-1576678927484-cc907957088c'
+      '?w=300&q=80&auto=format&fit=crop'; // health / scale
+
+  static const statCategory =
+      'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b'
+      '?w=300&q=80&auto=format&fit=crop'; // fit person flexing
+
+  static const statGoal =
+      'https://images.unsplash.com/photo-1552674605-db6ffd4facb5'
+      '?w=300&q=80&auto=format&fit=crop'; // person achieving goal / finish line
+
+  // ── Body measurements bg ───────────────────────────────────────────────
   static const statBody =
       'https://images.unsplash.com/photo-1571731956672-f2b94d7dd0cb'
       '?w=400&q=80&auto=format&fit=crop'; // body measurement tape
-  static const statBmi =
-      'https://images.unsplash.com/photo-1576678927484-cc907957088c'
-      '?w=400&q=80&auto=format&fit=crop'; // scale / health check
+
+  // ── Per-measurement images ─────────────────────────────────────────────
+  static const measChest =
+      'https://images.unsplash.com/photo-1571731956672-f2b94d7dd0cb'
+      '?w=200&q=80&auto=format&fit=crop'; // measurement tape / chest area
+
+  static const measWaist =
+      'https://images.unsplash.com/photo-1549060279-7e168fcee0c2'
+      '?w=200&q=80&auto=format&fit=crop'; // waist / fitness
+
+  static const measHips =
+      'https://images.unsplash.com/photo-1594381898411-846e7d193883'
+      '?w=200&q=80&auto=format&fit=crop'; // lower body athlete
+
+  static const measArms =
+      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48'
+      '?w=200&q=80&auto=format&fit=crop'; // arms / bicep curl
+
+  // ── Achievement bg ─────────────────────────────────────────────────────
   static const achievementBg =
       'https://images.unsplash.com/photo-1552674605-db6ffd4facb5'
       '?w=400&q=80&auto=format&fit=crop'; // trophy / medal
+
+  // ── Per-achievement images ─────────────────────────────────────────────
+  static const achFirstWorkout =
+      'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b'
+      '?w=200&q=80&auto=format&fit=crop'; // first gym day
+
+  static const achHydration =
+      'https://images.unsplash.com/photo-1548839140-29a749e1cf4d'
+      '?w=200&q=80&auto=format&fit=crop'; // water / hydration
+
+  static const achIronWill =
+      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48'
+      '?w=200&q=80&auto=format&fit=crop'; // heavy barbell
+
+  static const achCleanEater =
+      'https://images.unsplash.com/photo-1490645935967-10de6ba17061'
+      '?w=200&q=80&auto=format&fit=crop'; // healthy food / salad
+
+  static const achOnTrack =
+      'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8'
+      '?w=200&q=80&auto=format&fit=crop'; // person running / progress
+
+  static const achStreak =
+      'https://images.unsplash.com/photo-1506126613408-eca07ce68773'
+      '?w=200&q=80&auto=format&fit=crop'; // calendar / consistency
+
+  // ── Weekly summary bg ──────────────────────────────────────────────────
   static const weeklyBg =
       'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff'
       '?w=800&q=80&auto=format&fit=crop'; // gym calendar / planner
@@ -64,36 +135,42 @@ class _WebProfileState extends State<WebProfile>
       'title': 'First Workout',
       'desc': 'Completed your first session',
       'unlocked': true,
+      'img': _Imgs.achFirstWorkout,
     },
     {
       'icon': '💧',
       'title': 'Hydration Hero',
       'desc': 'Hit water goal 7 days straight',
       'unlocked': true,
+      'img': _Imgs.achHydration,
     },
     {
       'icon': '🏋️',
       'title': 'Iron Will',
       'desc': 'Logged 10 workouts',
       'unlocked': false,
+      'img': _Imgs.achIronWill,
     },
     {
       'icon': '🥗',
       'title': 'Clean Eater',
       'desc': 'Logged meals for 5 days',
       'unlocked': false,
+      'img': _Imgs.achCleanEater,
     },
     {
       'icon': '📈',
       'title': 'On Track',
       'desc': 'Reached your weekly goal',
       'unlocked': false,
+      'img': _Imgs.achOnTrack,
     },
     {
       'icon': '⚡',
       'title': 'Streak Master',
       'desc': '30-day streak',
       'unlocked': false,
+      'img': _Imgs.achStreak,
     },
   ];
 
@@ -103,24 +180,28 @@ class _WebProfileState extends State<WebProfile>
       'value': '94 cm',
       'icon': Icons.straighten_rounded,
       'color': const Color(0xFF2979FF),
+      'img': _Imgs.measChest,
     },
     {
       'label': 'Waist',
       'value': '80 cm',
       'icon': Icons.straighten_rounded,
       'color': const Color(0xFFFF6D00),
+      'img': _Imgs.measWaist,
     },
     {
       'label': 'Hips',
       'value': '96 cm',
       'icon': Icons.straighten_rounded,
       'color': const Color(0xFFAA00FF),
+      'img': _Imgs.measHips,
     },
     {
       'label': 'Arms',
       'value': '35 cm',
       'icon': Icons.straighten_rounded,
       'color': const Color(0xFF00BCD4),
+      'img': _Imgs.measArms,
     },
   ];
 
@@ -149,7 +230,8 @@ class _WebProfileState extends State<WebProfile>
         content: Text(msg),
         backgroundColor: isError ? const Color(0xFFFF1744) : accent,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
       ),
     );
@@ -334,12 +416,12 @@ class _WebProfileState extends State<WebProfile>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Hero banner ────────────────────────────────────────────────
+            // ── Hero banner ──────────────────────────────────────────────
             _buildHeroBanner(isDark, accent, gradient, onAccent,
                 textPrimary, textSecondary, borderColor),
             const SizedBox(height: 24),
 
-            // ── Stats + Body measurements ──────────────────────────────────
+            // ── Stats + Body measurements ────────────────────────────────
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -351,8 +433,8 @@ class _WebProfileState extends State<WebProfile>
                       _sectionHeader('Fitness Stats',
                           Icons.monitor_heart_rounded, accent, textPrimary),
                       const SizedBox(height: 12),
-                      _buildStatsGrid(
-                          accent, textPrimary, cardColor, borderColor),
+                      _buildStatsGrid(isDark, accent, textPrimary,
+                          cardColor, borderColor),
                     ],
                   ),
                 ),
@@ -374,7 +456,7 @@ class _WebProfileState extends State<WebProfile>
             ),
             const SizedBox(height: 24),
 
-            // ── Achievements + Weekly ──────────────────────────────────────
+            // ── Achievements + Weekly ────────────────────────────────────
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -410,7 +492,7 @@ class _WebProfileState extends State<WebProfile>
             ),
             const SizedBox(height: 24),
 
-            // ── Account actions ────────────────────────────────────────────
+            // ── Account actions ──────────────────────────────────────────
             _sectionHeader('Account',
                 Icons.manage_accounts_rounded, accent, textPrimary),
             const SizedBox(height: 12),
@@ -425,7 +507,7 @@ class _WebProfileState extends State<WebProfile>
     );
   }
 
-  // ── Hero banner with gym photo bg ──────────────────────────────────────────
+  // ── Hero banner ────────────────────────────────────────────────────────────
   Widget _buildHeroBanner(
     bool isDark,
     Color accent,
@@ -441,25 +523,25 @@ class _WebProfileState extends State<WebProfile>
         width: double.infinity,
         child: Stack(
           children: [
-            // Real gym photo background
+            // Athlete background — face + body centered
             Positioned.fill(
               child: Image.network(
                 _Imgs.heroBg,
                 fit: BoxFit.cover,
-                alignment: const Alignment(0, -0.3),
+                alignment: Alignment.center,
                 errorBuilder: (_, __, ___) =>
                     Container(color: accent.withOpacity(0.08)),
               ),
             ),
-            // Dark gradient overlay
+            // Dark gradient overlay — readable text on left
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.black.withOpacity(0.90),
-                      Colors.black.withOpacity(0.70),
-                      Colors.black.withOpacity(0.30),
+                      Colors.black.withOpacity(0.92),
+                      Colors.black.withOpacity(0.72),
+                      Colors.black.withOpacity(0.25),
                     ],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
@@ -472,7 +554,8 @@ class _WebProfileState extends State<WebProfile>
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: accent.withOpacity(0.3), width: 1.5),
+                  border:
+                      Border.all(color: accent.withOpacity(0.3), width: 1.5),
                 ),
               ),
             ),
@@ -481,7 +564,7 @@ class _WebProfileState extends State<WebProfile>
               padding: const EdgeInsets.all(28),
               child: Row(
                 children: [
-                  // Avatar with photo background
+                  // Avatar circle
                   Stack(
                     children: [
                       Container(
@@ -490,7 +573,7 @@ class _WebProfileState extends State<WebProfile>
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                              color: accent.withOpacity(0.5), width: 2.5),
+                              color: accent.withOpacity(0.55), width: 2.5),
                           boxShadow: [
                             BoxShadow(
                                 color: accent.withOpacity(0.4),
@@ -505,10 +588,11 @@ class _WebProfileState extends State<WebProfile>
                               Image.network(
                                 _Imgs.avatarBg,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    Container(color: accent.withOpacity(0.2)),
+                                alignment: Alignment.center,
+                                errorBuilder: (_, __, ___) => Container(
+                                    color: accent.withOpacity(0.2)),
                               ),
-                              Container(color: accent.withOpacity(0.15)),
+                              Container(color: accent.withOpacity(0.12)),
                               Center(
                                 child: Text(
                                   _userName.isNotEmpty
@@ -533,8 +617,8 @@ class _WebProfileState extends State<WebProfile>
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: const Color(0xFF00C853),
-                            border: Border.all(
-                                color: Colors.black, width: 2),
+                            border:
+                                Border.all(color: Colors.black, width: 2),
                           ),
                         ),
                       ),
@@ -555,7 +639,7 @@ class _WebProfileState extends State<WebProfile>
                         Text(_userEmail,
                             style: TextStyle(
                                 fontSize: 13,
-                                color: Colors.white.withOpacity(0.5))),
+                                color: Colors.white.withOpacity(0.50))),
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 8,
@@ -586,7 +670,7 @@ class _WebProfileState extends State<WebProfile>
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                               color: accent.withOpacity(0.5), width: 1.5),
-                          color: accent.withOpacity(0.1),
+                          color: accent.withOpacity(0.10),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -612,45 +696,51 @@ class _WebProfileState extends State<WebProfile>
     );
   }
 
-  // ── Stats grid ─────────────────────────────────────────────────────────────
-  Widget _buildStatsGrid(
-      Color accent, Color textPrimary, Color cardColor, Color borderColor) {
+  // ── Stats grid — each card has its own photo bg ────────────────────────────
+  Widget _buildStatsGrid(bool isDark, Color accent, Color textPrimary,
+      Color cardColor, Color borderColor) {
     final stats = [
       {
         'label': 'Weight',
         'value': '${_userWeight}kg',
         'icon': Icons.monitor_weight_rounded,
         'color': const Color(0xFF2979FF),
+        'img': _Imgs.statWeight,
       },
       {
         'label': 'Height',
         'value': '${_userHeight}cm',
         'icon': Icons.height_rounded,
         'color': const Color(0xFFFF6D00),
+        'img': _Imgs.statHeight,
       },
       {
         'label': 'Age',
         'value': '$_userAge yrs',
         'icon': Icons.cake_rounded,
         'color': const Color(0xFFAA00FF),
+        'img': _Imgs.statAge,
       },
       {
         'label': 'BMI',
         'value': _bmi.toStringAsFixed(1),
         'icon': Icons.analytics_rounded,
         'color': accent,
+        'img': _Imgs.statBmi,
       },
       {
         'label': 'Category',
         'value': _bmiCategory,
         'icon': Icons.flag_rounded,
         'color': const Color(0xFFFFD600),
+        'img': _Imgs.statCategory,
       },
       {
         'label': 'Goal',
         'value': _userGoal.split(' ').first,
         'icon': Icons.emoji_events_rounded,
         'color': const Color(0xFF00BCD4),
+        'img': _Imgs.statGoal,
       },
     ];
 
@@ -660,54 +750,82 @@ class _WebProfileState extends State<WebProfile>
       children: stats.map((stat) {
         final color = stat['color'] as Color;
         final icon = stat['icon'] as IconData;
+        final imgUrl = stat['img'] as String;
         return MouseRegion(
           cursor: SystemMouseCursors.click,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 155,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: cardColor,
-              border: Border.all(color: color.withOpacity(0.25)),
-              boxShadow: [
-                BoxShadow(
-                    color: color.withOpacity(0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4)),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: color.withOpacity(0.12),
-                    border:
-                        Border.all(color: color.withOpacity(0.3), width: 1),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: SizedBox(
+              width: 155,
+              child: Stack(
+                children: [
+                  // Per-stat image
+                  Positioned.fill(
+                    child: Image.network(
+                      imgUrl,
+                      fit: BoxFit.cover,
+                      alignment: Alignment.center,
+                      errorBuilder: (_, __, ___) =>
+                          Container(color: color.withOpacity(0.10)),
+                    ),
                   ),
-                  child: Center(child: Icon(icon, size: 18, color: color)),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(stat['value'] as String,
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: color)),
-                      Text(stat['label'] as String,
-                          style: TextStyle(
-                              fontSize: 10,
-                              color: textPrimary.withOpacity(0.45))),
-                    ],
+                  // Dark overlay
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black.withOpacity(0.65),
+                    ),
                   ),
-                ),
-              ],
+                  // Colored border
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border:
+                            Border.all(color: color.withOpacity(0.35)),
+                      ),
+                    ),
+                  ),
+                  // Content
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: color.withOpacity(0.18),
+                            border: Border.all(
+                                color: color.withOpacity(0.4), width: 1),
+                          ),
+                          child:
+                              Center(child: Icon(icon, size: 18, color: color)),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(stat['value'] as String,
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      color: color)),
+                              const SizedBox(height: 2),
+                              Text(stat['label'] as String,
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      color:
+                                          Colors.white.withOpacity(0.50))),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -715,7 +833,7 @@ class _WebProfileState extends State<WebProfile>
     );
   }
 
-  // ── Body measurements ──────────────────────────────────────────────────────
+  // ── Body measurements — each row item has its own image ───────────────────
   Widget _buildMeasurements(
     bool isDark,
     Color accent,
@@ -728,11 +846,12 @@ class _WebProfileState extends State<WebProfile>
       borderRadius: BorderRadius.circular(16),
       child: Stack(
         children: [
-          // Photo background
+          // Section-level measurement bg
           Positioned.fill(
             child: Image.network(
               _Imgs.statBody,
               fit: BoxFit.cover,
+              alignment: Alignment.center,
               errorBuilder: (_, __, ___) =>
                   Container(color: accent.withOpacity(0.05)),
             ),
@@ -744,47 +863,72 @@ class _WebProfileState extends State<WebProfile>
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.7),
-                    Colors.black.withOpacity(0.88),
+                    Colors.black.withOpacity(0.72),
+                    Colors.black.withOpacity(0.90),
                   ],
                 ),
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
             child: Column(
               children: _bodyStats.asMap().entries.map((entry) {
                 final i = entry.key;
                 final stat = entry.value;
                 final color = stat['color'] as Color;
+                final imgUrl = stat['img'] as String;
                 return Container(
                   margin: EdgeInsets.only(
                       bottom: i < _bodyStats.length - 1 ? 10 : 0),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    color: Colors.white.withOpacity(0.06),
-                    border: Border.all(color: color.withOpacity(0.3)),
+                    border: Border.all(color: color.withOpacity(0.35)),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(stat['icon'] as IconData,
-                          size: 16, color: color),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(stat['label'] as String,
-                            style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.white.withOpacity(0.7))),
-                      ),
-                      Text(stat['value'] as String,
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                              color: color)),
-                    ],
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Stack(
+                      children: [
+                        // Per-measurement image
+                        Positioned.fill(
+                          child: Image.network(
+                            imgUrl,
+                            fit: BoxFit.cover,
+                            alignment: Alignment.center,
+                            errorBuilder: (_, __, ___) =>
+                                Container(color: color.withOpacity(0.10)),
+                          ),
+                        ),
+                        Positioned.fill(
+                          child: Container(
+                            color: Colors.black.withOpacity(0.58),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
+                          child: Row(
+                            children: [
+                              Icon(stat['icon'] as IconData,
+                                  size: 16, color: color),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(stat['label'] as String,
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        color:
+                                            Colors.white.withOpacity(0.75))),
+                              ),
+                              Text(stat['value'] as String,
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w800,
+                                      color: color)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }).toList(),
@@ -795,7 +939,7 @@ class _WebProfileState extends State<WebProfile>
     );
   }
 
-  // ── Achievements grid ──────────────────────────────────────────────────────
+  // ── Achievements — each badge has its own image ────────────────────────────
   Widget _buildAchievements(
     bool isDark,
     Color accent,
@@ -809,22 +953,17 @@ class _WebProfileState extends State<WebProfile>
       runSpacing: 10,
       children: _achievements.map((a) {
         final unlocked = a['unlocked'] as bool;
+        final imgUrl = a['img'] as String;
         return MouseRegion(
           cursor: SystemMouseCursors.click,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             width: 145,
-            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              color: unlocked
-                  ? accent.withOpacity(0.1)
-                  : (isDark
-                      ? const Color(0xFF1A1A1A)
-                      : const Color(0xFFF5F5F5)),
               border: Border.all(
                   color: unlocked
-                      ? accent.withOpacity(0.4)
+                      ? accent.withOpacity(0.45)
                       : borderColor),
               boxShadow: unlocked
                   ? [
@@ -834,33 +973,101 @@ class _WebProfileState extends State<WebProfile>
                     ]
                   : null,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                unlocked
-                    ? Text(a['icon'] as String,
-                        style: const TextStyle(fontSize: 28))
-                    : Icon(Icons.lock_rounded,
-                        size: 28,
-                        color: Colors.grey.withOpacity(0.35)),
-                const SizedBox(height: 8),
-                Text(a['title'] as String,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: unlocked
-                            ? textPrimary
-                            : textPrimary.withOpacity(0.3))),
-                const SizedBox(height: 3),
-                Text(a['desc'] as String,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 10,
-                        color: unlocked
-                            ? textSecondary
-                            : textSecondary.withOpacity(0.3))),
-              ],
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Stack(
+                children: [
+                  // Per-achievement image (unlocked) or muted bg (locked)
+                  Positioned.fill(
+                    child: unlocked
+                        ? Image.network(
+                            imgUrl,
+                            fit: BoxFit.cover,
+                            alignment: Alignment.center,
+                            errorBuilder: (_, __, ___) => Container(
+                                color: accent.withOpacity(0.10)),
+                          )
+                        : Container(
+                            color: isDark
+                                ? const Color(0xFF1A1A1A)
+                                : const Color(0xFFF0F0F0)),
+                  ),
+                  // Overlay — heavier for unlocked to keep text readable
+                  Positioned.fill(
+                    child: Container(
+                      color: unlocked
+                          ? Colors.black.withOpacity(0.52)
+                          : Colors.black.withOpacity(0.08),
+                    ),
+                  ),
+                  // Accent tint for unlocked
+                  if (unlocked)
+                    Positioned.fill(
+                      child: Container(
+                        color: accent.withOpacity(0.10),
+                      ),
+                    ),
+                  // Content
+                  Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Icon image or lock
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: unlocked
+                              ? Image.network(
+                                  imgUrl,
+                                  width: 42,
+                                  height: 42,
+                                  fit: BoxFit.cover,
+                                  alignment: Alignment.center,
+                                  errorBuilder: (_, __, ___) => Text(
+                                    a['icon'] as String,
+                                    style:
+                                        const TextStyle(fontSize: 28),
+                                  ),
+                                )
+                              : Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    borderRadius:
+                                        BorderRadius.circular(10),
+                                    color: isDark
+                                        ? const Color(0xFF252525)
+                                        : const Color(0xFFE8E8E8),
+                                  ),
+                                  child: Icon(Icons.lock_rounded,
+                                      size: 22,
+                                      color: isDark
+                                          ? Colors.white.withOpacity(0.22)
+                                          : Colors.black.withOpacity(0.18)),
+                                ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(a['title'] as String,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: unlocked
+                                    ? Colors.white
+                                    : textPrimary.withOpacity(0.30))),
+                        const SizedBox(height: 3),
+                        Text(a['desc'] as String,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: unlocked
+                                    ? Colors.white.withOpacity(0.65)
+                                    : textSecondary.withOpacity(0.30))),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -890,6 +1097,7 @@ class _WebProfileState extends State<WebProfile>
             child: Image.network(
               _Imgs.weeklyBg,
               fit: BoxFit.cover,
+              alignment: Alignment.center,
               errorBuilder: (_, __, ___) =>
                   Container(color: accent.withOpacity(0.05)),
             ),
@@ -934,9 +1142,8 @@ class _WebProfileState extends State<WebProfile>
                           height: 36,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: done
-                                ? LinearGradient(colors: gradient)
-                                : null,
+                            gradient:
+                                done ? LinearGradient(colors: gradient) : null,
                             color: done
                                 ? null
                                 : (isDark
@@ -1223,7 +1430,8 @@ class _WebActionTileState extends State<_WebActionTile> {
         behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           color: _hovered
               ? widget.color.withOpacity(0.05)
               : Colors.transparent,
