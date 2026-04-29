@@ -7,7 +7,7 @@ import '../../../core/data/app_data.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../services/storage_service.dart';
 
-// ── Profile image URLs (unique, not used elsewhere in the app) ─────────────
+
 class _Imgs {
   static const heroBg =
       'https://images.unsplash.com/photo-1517963879433-6ad2b056d712'
