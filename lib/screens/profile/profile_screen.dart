@@ -9,7 +9,7 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (kIsWeb) return const WebProfile();
+    // if (kIsWeb) return const WebProfile();
     return const MobileProfile();
   }
 }
