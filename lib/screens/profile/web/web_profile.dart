@@ -2195,7 +2195,7 @@ class _WebActionTileState extends State<_WebActionTile> {
                     size: 18,
                     color: _hovered
                         ? widget.color
-                        : widget.textSecondary.withOpacity(0.5)),
+                        // : widget.textSecondary.withOpacity(0.5)),
               ),
             ],
           ),
