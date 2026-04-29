@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'mobile/mobile_profile.dart';
 import 'web/web_profile.dart';
 
-// class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
