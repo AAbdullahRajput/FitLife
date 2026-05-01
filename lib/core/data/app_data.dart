@@ -92,9 +92,17 @@ class AppData {
     },
   ];
 
-  static const String userName = 'Abdullah';
-  static const double userWeight = 75.0;
-  static const double userHeight = 175.0;
-  static const int userAge = 24;
-  static const String userGoal = 'Build Muscle';
+  static String userName = 'Abdullah';
+  static double userWeight = 75.0;
+  static double userHeight = 175.0;
+  static int userAge = 24;
+  static String userGoal = 'Build Muscle';
+
+  static void loadFromMap(Map<String, dynamic> data) {
+    if (data['name'] != null) userName = data['name'];
+    if (data['weight'] != null) userWeight = (data['weight'] as num).toDouble();
+    if (data['height'] != null) userHeight = (data['height'] as num).toDouble();
+    if (data['age'] != null) userAge = (data['age'] as num).toInt();
+    if (data['goal'] != null) userGoal = data['goal'];
+  }
 }
