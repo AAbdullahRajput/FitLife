@@ -835,28 +835,35 @@ class _MobileProfileState extends State<MobileProfile>
                           ],
                         ),
                         child: ClipOval(
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  gradient:
-                                      LinearGradient(colors: gradient),
+                          child: _profilePhotoPath != null
+                              ? Image.file(
+                                  File(_profilePhotoPath!),
+                                  fit: BoxFit.cover,
+                                  width: 64,
+                                  height: 64,
+                                )
+                              : Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                            colors: gradient),
+                                      ),
+                                    ),
+                                    Center(
+                                      child: Text(
+                                        _userName.isNotEmpty
+                                            ? _userName[0].toUpperCase()
+                                            : '?',
+                                        style: TextStyle(
+                                            fontSize: 26,
+                                            fontWeight: FontWeight.w900,
+                                            color: onAccent),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              Center(
-                                child: Text(
-                                  _userName.isNotEmpty
-                                      ? _userName[0].toUpperCase()
-                                      : '?',
-                                  style: TextStyle(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w900,
-                                      color: onAccent),
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
                       Positioned(
