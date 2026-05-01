@@ -63,4 +63,36 @@ class StorageService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('fitlife_user');
   }
+
+  // ── Profile Photo ─────────────────────────────────────────────────────────
+  static Future<void> saveProfilePhoto(String path) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('profile_photo', path);
+  }
+
+  static Future<String?> getProfilePhoto() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('profile_photo');
+  }
+
+  // ── Home Banner Image ─────────────────────────────────────────────────────
+  static Future<void> saveHomeBanner(String path) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('home_banner', path);
+  }
+
+  static Future<String?> getHomeBanner() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('home_banner');
+  }
+
+  // ── Update Single Profile Field ───────────────────────────────────────────
+  static Future<void> updateUserField(String field, dynamic value) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('fitlife_user');
+    if (raw == null) return;
+    final data = jsonDecode(raw);
+    data[field] = value;
+    await prefs.setString('fitlife_user', jsonEncode(data));
+  }
 }
