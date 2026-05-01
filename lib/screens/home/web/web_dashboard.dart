@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../core/data/app_data.dart';
+import '../../../services/storage_service.dart';
 import 'web_cursor_effects.dart';
 
 class WebDashboard extends StatefulWidget {
@@ -77,11 +78,11 @@ class _WebDashboardState extends State<WebDashboard> {
                 userWeight: userWeight,
                 userHeight: userHeight,
                 completedWorkouts: completedWorkouts,
-                totalWorkouts: todayWorkouts.length,
-                isLoggedIn: isLoggedIn,
+                totalWorkouts: widget.todayWorkouts.length,
+                isLoggedIn: widget.isLoggedIn,
                 isDark: isDark,
                 accent: accent,
-                onNavigate: onNavigate,
+                onNavigate: widget.onNavigate,
               ),
               const SizedBox(height: 24),
 
@@ -92,20 +93,20 @@ class _WebDashboardState extends State<WebDashboard> {
                 userAge: userAge,
                 totalCalories: totalCalories,
                 completedWorkouts: completedWorkouts,
-                totalWorkouts: todayWorkouts.length,
+                totalWorkouts: widget.todayWorkouts.length,
                 isDark: isDark,
                 accent: accent,
               ),
               const SizedBox(height: 24),
 
               // ── Guest unlock banner ──────────────────────────────────
-              if (!isLoggedIn) ...[
+              if (!widget.isLoggedIn) ...[
                 _GuestBanner(isDark: isDark, accent: accent),
                 const SizedBox(height: 24),
               ],
 
               // ── Workout + Meals row ──────────────────────────────────
-              if (isLoadingData)
+              if (widget.isLoadingData)
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 60),
@@ -120,23 +121,23 @@ class _WebDashboardState extends State<WebDashboard> {
                     Expanded(
                       flex: 3,
                       child: _WorkoutCard(
-                        todayWorkouts: todayWorkouts,
+                        todayWorkouts: widget.todayWorkouts,
                         completedWorkouts: completedWorkouts,
                         isDark: isDark,
                         accent: accent,
-                        onToggle: onWorkoutToggle,
-                        onShowTooltip: onShowTooltip,
+                        onToggle: widget.onWorkoutToggle,
+                        onShowTooltip: widget.onShowTooltip,
                       ),
                     ),
                     const SizedBox(width: 20),
                     Expanded(
                       flex: 2,
                       child: _MealsCard(
-                        todayMeals: todayMeals,
+                        todayMeals: widget.todayMeals,
                         totalCalories: totalCalories,
                         isDark: isDark,
                         accent: accent,
-                        onShowTooltip: onShowTooltip,
+                        onShowTooltip: widget.onShowTooltip,
                       ),
                     ),
                   ],
@@ -144,7 +145,7 @@ class _WebDashboardState extends State<WebDashboard> {
               const SizedBox(height: 24),
 
               // ── Locked features ──────────────────────────────────────
-              if (!isLoggedIn)
+              if (!widget.isLoggedIn)
                 _LockedSection(isDark: isDark, accent: accent),
             ],
           ),
@@ -348,6 +349,7 @@ class _WelcomeBanner extends StatelessWidget {
   final bool isDark;
   final Color accent;
   final void Function(String) onNavigate;
+  final String? homeBannerPath;
 
   const _WelcomeBanner({
     required this.userName,
@@ -360,6 +362,7 @@ class _WelcomeBanner extends StatelessWidget {
     required this.isDark,
     required this.accent,
     required this.onNavigate,
+    this.homeBannerPath,
   });
 
   @override
@@ -375,14 +378,24 @@ class _WelcomeBanner extends StatelessWidget {
               children: [
                 // ── Real gym photo background ──────────────────────
                 Positioned.fill(
-                  child: Image.network(
-                    _Imgs.welcomeBg,
-                    fit: BoxFit.cover,
-                    alignment: const Alignment(0, -0.3),
-                    errorBuilder: (_, __, ___) => Container(
-                      color: accent.withOpacity(0.08),
-                    ),
-                  ),
+                  child: homeBannerPath != null
+                      ? Image.network(
+                          homeBannerPath!,
+                          fit: BoxFit.cover,
+                          alignment: const Alignment(0, -0.3),
+                          errorBuilder: (_, __, ___) => Image.network(
+                            _Imgs.welcomeBg,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Image.network(
+                          _Imgs.welcomeBg,
+                          fit: BoxFit.cover,
+                          alignment: const Alignment(0, -0.3),
+                          errorBuilder: (_, __, ___) => Container(
+                            color: accent.withOpacity(0.08),
+                          ),
+                        ),
                 ),
 
                 // ── Dark gradient overlay ──────────────────────────
