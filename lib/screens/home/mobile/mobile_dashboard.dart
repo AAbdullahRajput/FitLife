@@ -5,6 +5,9 @@ import '../../../core/theme/theme_provider.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../core/data/app_data.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import '../../../services/storage_service.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // IMAGE URLS  (mirrors web _Imgs class)
@@ -125,6 +128,8 @@ class _MobileDashboardState extends State<MobileDashboard>
   OverlayEntry? _tooltipOverlay;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnim;
+  String? _homeBannerPath;
+  String? _profilePhotoPath;
 
   String get userName     => AppData.userName;
   double get userWeight   => AppData.userWeight;
@@ -136,7 +141,6 @@ class _MobileDashboardState extends State<MobileDashboard>
       widget.todayWorkouts.where((w) => w['done'] == true).length;
   int get totalCalories =>
       widget.todayMeals.fold(0, (sum, m) => sum + (m['calories'] as int));
-
   @override
   void initState() {
     super.initState();
@@ -147,6 +151,18 @@ class _MobileDashboardState extends State<MobileDashboard>
     _pulseAnim = Tween<double>(begin: 0.6, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+    _loadSavedImages();
+  }
+
+  Future<void> _loadSavedImages() async {
+    final banner = await StorageService.getHomeBanner();
+    final photo = await StorageService.getProfilePhoto();
+    if (mounted) {
+      setState(() {
+        _homeBannerPath = banner;
+        _profilePhotoPath = photo;
+      });
+    }
   }
 
   @override
@@ -379,6 +395,7 @@ class _MobileDashboardState extends State<MobileDashboard>
           ),
         ),
         // Animated avatar
+        // Animated avatar
         AnimatedBuilder(
           animation: _pulseAnim,
           builder: (_, __) => Container(
@@ -397,8 +414,18 @@ class _MobileDashboardState extends State<MobileDashboard>
                 ),
               ],
             ),
-            child: Center(
-                child: Icon(Icons.person_rounded, size: 22, color: accent)),
+            child: ClipOval(
+              child: _profilePhotoPath != null
+                  ? Image.file(
+                      File(_profilePhotoPath!),
+                      fit: BoxFit.cover,
+                      width: 46,
+                      height: 46,
+                    )
+                  : Center(
+                      child: Icon(Icons.person_rounded,
+                          size: 22, color: accent)),
+            ),
           ),
         ),
         const SizedBox(width: 8),
@@ -443,21 +470,38 @@ class _MobileDashboardState extends State<MobileDashboard>
   Widget _buildHeroBanner(bool isDark, Color accent, Color textPrimary) {
     final bmi = Helpers.calculateBMI(userWeight, userHeight);
     return Consumer<ThemeProvider>(
-      builder: (context, theme, _) => ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: SizedBox(
+      builder: (context, theme, _) => GestureDetector(
+        onLongPress: () async {
+          final picker = ImagePicker();
+          final picked = await picker.pickImage(
+              source: ImageSource.gallery, imageQuality: 85);
+          if (picked != null) {
+            await StorageService.saveHomeBanner(picked.path);
+            if (mounted) setState(() => _homeBannerPath = picked.path);
+          }
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: SizedBox(
           width: double.infinity,
           child: Stack(
             children: [
               // Real gym photo background
+              // Real gym photo background
               Positioned.fill(
-                child: Image.network(
-                  _Imgs.welcomeBg,
-                  fit: BoxFit.cover,
-                  alignment: const Alignment(0, -0.3),
-                  errorBuilder: (_, __, ___) =>
-                      Container(color: accent.withOpacity(0.08)),
-                ),
+                child: _homeBannerPath != null
+                    ? Image.file(
+                        File(_homeBannerPath!),
+                        fit: BoxFit.cover,
+                        alignment: const Alignment(0, -0.3),
+                      )
+                    : Image.network(
+                        _Imgs.welcomeBg,
+                        fit: BoxFit.cover,
+                        alignment: const Alignment(0, -0.3),
+                        errorBuilder: (_, __, ___) =>
+                            Container(color: accent.withOpacity(0.08)),
+                      ),
               ),
               // Dark gradient overlay
               Positioned.fill(
@@ -617,6 +661,7 @@ class _MobileDashboardState extends State<MobileDashboard>
               ),
             ],
           ),
+        ),
         ),
       ),
     );
