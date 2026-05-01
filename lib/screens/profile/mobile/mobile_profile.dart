@@ -5,6 +5,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/data/app_data.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../services/storage_service.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 // ── Mobile-only image URLs (different from web_profile.dart) ──────────────
 class _MImgs {
@@ -97,6 +99,7 @@ class _MobileProfileState extends State<MobileProfile>
   String get _bmiCategory => Helpers.getBMICategory(_bmi);
 
   bool _isLoggingOut = false;
+  String? _profilePhotoPath;
 
   final List<Map<String, dynamic>> _achievements = [
     {
@@ -169,7 +172,6 @@ class _MobileProfileState extends State<MobileProfile>
       'color': const Color(0xFF00BCD4),
     },
   ];
-
   @override
   void initState() {
     super.initState();
@@ -178,12 +180,278 @@ class _MobileProfileState extends State<MobileProfile>
     _fadeAnim = Tween<double>(begin: 0, end: 1).animate(
         CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
+    _loadProfilePhoto();
+  }
+
+  Future<void> _loadProfilePhoto() async {
+    final path = await StorageService.getProfilePhoto();
+    if (mounted) setState(() => _profilePhotoPath = path);
   }
 
   @override
   void dispose() {
     _animController.dispose();
     super.dispose();
+  }
+
+
+  // ── Profile Photo Picker ──────────────────────────────────────────────────
+  Future<void> _pickProfilePhoto() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+        source: ImageSource.gallery, imageQuality: 80);
+    if (picked != null) {
+      await StorageService.saveProfilePhoto(picked.path);
+      if (mounted) setState(() => _profilePhotoPath = picked.path);
+    }
+  }
+
+  // ── Edit Profile Bottom Sheet ─────────────────────────────────────────────
+  void _showEditProfileSheet() {
+    final nameCtrl = TextEditingController(text: AppData.userName);
+    final weightCtrl =
+        TextEditingController(text: AppData.userWeight.toString());
+    final heightCtrl =
+        TextEditingController(text: AppData.userHeight.toString());
+    final ageCtrl = TextEditingController(text: AppData.userAge.toString());
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = AppColors.of(context, listen: false);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0A0A0A);
+    final cardColor = isDark ? const Color(0xFF1A1A1A) : Colors.white;
+    final borderColor =
+        isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(color: borderColor),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Edit Profile',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: textPrimary)),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(ctx),
+                      child: Icon(Icons.close_rounded, color: textPrimary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Profile photo picker
+                Center(
+                  child: GestureDetector(
+                    onTap: () async {
+                      final picker = ImagePicker();
+                      final picked = await picker.pickImage(
+                          source: ImageSource.gallery, imageQuality: 80);
+                      if (picked != null) {
+                        await StorageService.saveProfilePhoto(picked.path);
+                        if (mounted) {
+                          setState(() => _profilePhotoPath = picked.path);
+                          setSheetState(() {});
+                        }
+                      }
+                    },
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border:
+                                Border.all(color: accent, width: 2.5),
+                          ),
+                          child: ClipOval(
+                            child: _profilePhotoPath != null
+                                ? Image.file(
+                                    File(_profilePhotoPath!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : Container(
+                                    color: accent.withOpacity(0.15),
+                                    child: Center(
+                                      child: Text(
+                                        AppData.userName.isNotEmpty
+                                            ? AppData.userName[0]
+                                                .toUpperCase()
+                                            : '?',
+                                        style: TextStyle(
+                                            fontSize: 28,
+                                            fontWeight: FontWeight.w900,
+                                            color: accent),
+                                      ),
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: accent,
+                              border: Border.all(
+                                  color: cardColor, width: 2),
+                            ),
+                            child: const Icon(Icons.camera_alt_rounded,
+                                size: 13, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Center(
+                  child: Text('Tap to change photo',
+                      style:
+                          TextStyle(fontSize: 12, color: accent)),
+                ),
+                const SizedBox(height: 20),
+
+                // Name
+                _editField('Name', nameCtrl, textPrimary, borderColor,
+                    cardColor),
+                const SizedBox(height: 12),
+
+                // Weight + Height row
+                Row(
+                  children: [
+                    Expanded(
+                      child: _editField('Weight (kg)', weightCtrl,
+                          textPrimary, borderColor, cardColor,
+                          isNumber: true),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _editField('Height (cm)', heightCtrl,
+                          textPrimary, borderColor, cardColor,
+                          isNumber: true),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Age
+                _editField(
+                    'Age', ageCtrl, textPrimary, borderColor, cardColor,
+                    isNumber: true),
+                const SizedBox(height: 24),
+
+                // Save button
+                GestureDetector(
+                  onTap: () async {
+                    await StorageService.updateUserField(
+                        'name', nameCtrl.text.trim());
+                    await StorageService.updateUserField(
+                        'weight',
+                        double.tryParse(weightCtrl.text) ??
+                            AppData.userWeight);
+                    await StorageService.updateUserField(
+                        'height',
+                        double.tryParse(heightCtrl.text) ??
+                            AppData.userHeight);
+                    await StorageService.updateUserField('age',
+                        int.tryParse(ageCtrl.text) ?? AppData.userAge);
+                    final info = await StorageService.getUserInfo();
+                    if (info != null) AppData.loadFromMap(info);
+                    if (mounted) {
+                      Navigator.pop(ctx);
+                      setState(() {});
+                      _showSnack('Profile updated!');
+                    }
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      gradient: LinearGradient(
+                          colors: AppColors.gradientOf(context,
+                              listen: false)),
+                    ),
+                    child: Center(
+                      child: Text('Save Changes',
+                          style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.onAccentOf(context,
+                                  listen: false))),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Edit field helper ─────────────────────────────────────────────────────
+  Widget _editField(
+    String label,
+    TextEditingController ctrl,
+    Color textPrimary,
+    Color borderColor,
+    Color cardColor, {
+    bool isNumber = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: textPrimary)),
+        const SizedBox(height: 6),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor),
+            color: cardColor,
+          ),
+          child: TextField(
+            controller: ctrl,
+            keyboardType:
+                isNumber ? TextInputType.number : TextInputType.text,
+            style: TextStyle(fontSize: 14, color: textPrimary),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
@@ -642,7 +910,7 @@ class _MobileProfileState extends State<MobileProfile>
                   ),
                   // Edit button
                   GestureDetector(
-                    onTap: () => _showSnack('Edit profile coming soon!'),
+                    onTap: () => _showEditProfileSheet(),
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
