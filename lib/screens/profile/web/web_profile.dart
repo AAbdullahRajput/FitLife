@@ -108,6 +108,7 @@ class _WebProfileState extends State<WebProfile>
   String get _bmiCategory => Helpers.getBMICategory(_bmi);
 
   bool _isLoggingOut = false;
+  String? _profilePhotoPath;
 
   // ── Profile completion ─────────────────────────────────────────────────────
   double get _profileCompletion {
@@ -237,10 +238,17 @@ class _WebProfileState extends State<WebProfile>
         parent: _bmiGaugeController, curve: Curves.easeOutBack);
 
     _animController.forward();
+    _loadProfilePhoto();
     Future.delayed(const Duration(milliseconds: 300), () {
       _counterController.forward();
       _bmiGaugeController.forward();
     });
+  }
+
+
+Future<void> _loadProfilePhoto() async {
+    final path = await StorageService.getProfilePhoto();
+    if (mounted) setState(() => _profilePhotoPath = path);
   }
 
   @override
@@ -250,6 +258,240 @@ class _WebProfileState extends State<WebProfile>
     _bmiGaugeController.dispose();
     super.dispose();
   }
+
+
+// ── Edit Profile Dialog ────────────────────────────────────────────────────
+  void _showEditProfileDialog() {
+    final nameCtrl = TextEditingController(text: AppData.userName);
+    final weightCtrl = TextEditingController(text: AppData.userWeight.toString());
+    final heightCtrl = TextEditingController(text: AppData.userHeight.toString());
+    final ageCtrl = TextEditingController(text: AppData.userAge.toString());
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = AppColors.of(context, listen: false);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0A0A0A);
+    final cardColor = isDark ? const Color(0xFF1A1A1A) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.6),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: 480,
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: borderColor),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black.withOpacity(0.4),
+                    blurRadius: 40,
+                    offset: const Offset(0, 12)),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Edit Profile',
+                        style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: textPrimary)),
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(ctx),
+                        child: Icon(Icons.close_rounded, color: textPrimary),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Profile photo + name row
+                Row(
+                  children: [
+                    // Photo picker
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () async {
+                          // Web uses html input — show snack for now
+                          _showSnack('Photo upload coming soon for web!');
+                        },
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: accent, width: 2.5),
+                              ),
+                              child: ClipOval(
+                                child: Container(
+                                  color: accent.withOpacity(0.15),
+                                  child: Center(
+                                    child: Text(
+                                      AppData.userName.isNotEmpty
+                                          ? AppData.userName[0].toUpperCase()
+                                          : '?',
+                                      style: TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w900,
+                                          color: accent),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: accent,
+                                  border: Border.all(color: cardColor, width: 2),
+                                ),
+                                child: const Icon(Icons.camera_alt_rounded,
+                                    size: 13, color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: _webEditField('Name', nameCtrl, textPrimary,
+                          borderColor, cardColor),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Weight + Height row
+                Row(
+                  children: [
+                    Expanded(
+                      child: _webEditField('Weight (kg)', weightCtrl,
+                          textPrimary, borderColor, cardColor,
+                          isNumber: true),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _webEditField('Height (cm)', heightCtrl,
+                          textPrimary, borderColor, cardColor,
+                          isNumber: true),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _webEditField('Age', ageCtrl, textPrimary,
+                          borderColor, cardColor,
+                          isNumber: true),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Save button
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () async {
+                      await StorageService.updateUserField(
+                          'name', nameCtrl.text.trim());
+                      await StorageService.updateUserField('weight',
+                          double.tryParse(weightCtrl.text) ?? AppData.userWeight);
+                      await StorageService.updateUserField('height',
+                          double.tryParse(heightCtrl.text) ?? AppData.userHeight);
+                      await StorageService.updateUserField(
+                          'age', int.tryParse(ageCtrl.text) ?? AppData.userAge);
+                      final info = await StorageService.getUserInfo();
+                      if (info != null) AppData.loadFromMap(info);
+                      if (mounted) {
+                        Navigator.pop(ctx);
+                        setState(() {});
+                        _showSnack('Profile updated!');
+                      }
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        gradient: LinearGradient(
+                            colors: AppColors.gradientOf(context, listen: false)),
+                      ),
+                      child: Center(
+                        child: Text('Save Changes',
+                            style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.onAccentOf(context,
+                                    listen: false))),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _webEditField(
+    String label,
+    TextEditingController ctrl,
+    Color textPrimary,
+    Color borderColor,
+    Color cardColor, {
+    bool isNumber = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: textPrimary)),
+        const SizedBox(height: 6),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor),
+            color: cardColor,
+          ),
+          child: TextField(
+            controller: ctrl,
+            keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+            style: TextStyle(fontSize: 14, color: textPrimary),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   void _showSnack(String msg, {bool isError = false}) {
@@ -638,30 +880,60 @@ class _WebProfileState extends State<WebProfile>
                             ],
                           ),
                           child: ClipOval(
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                Image.network(
-                                  _Imgs.avatarBg,
-                                  fit: BoxFit.cover,
-                                  alignment: Alignment.center,
-                                  errorBuilder: (_, __, ___) => Container(
-                                      color: accent.withOpacity(0.2)),
-                                ),
-                                Container(color: accent.withOpacity(0.10)),
-                                Center(
-                                  child: Text(
-                                    _userName.isNotEmpty
-                                        ? _userName[0].toUpperCase()
-                                        : '?',
-                                    style: const TextStyle(
-                                        fontSize: 32,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.white),
+                            child: _profilePhotoPath != null
+                                ? Image.network(
+                                    _profilePhotoPath!,
+                                    fit: BoxFit.cover,
+                                    width: 78,
+                                    height: 78,
+                                    errorBuilder: (_, __, ___) => Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        Image.network(_Imgs.avatarBg,
+                                            fit: BoxFit.cover),
+                                        Container(
+                                            color: accent.withOpacity(0.10)),
+                                        Center(
+                                          child: Text(
+                                            _userName.isNotEmpty
+                                                ? _userName[0].toUpperCase()
+                                                : '?',
+                                            style: const TextStyle(
+                                                fontSize: 32,
+                                                fontWeight: FontWeight.w900,
+                                                color: Colors.white),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      Image.network(
+                                        _Imgs.avatarBg,
+                                        fit: BoxFit.cover,
+                                        alignment: Alignment.center,
+                                        errorBuilder: (_, __, ___) =>
+                                            Container(
+                                                color:
+                                                    accent.withOpacity(0.2)),
+                                      ),
+                                      Container(
+                                          color: accent.withOpacity(0.10)),
+                                      Center(
+                                        child: Text(
+                                          _userName.isNotEmpty
+                                              ? _userName[0].toUpperCase()
+                                              : '?',
+                                          style: const TextStyle(
+                                              fontSize: 32,
+                                              fontWeight: FontWeight.w900,
+                                              color: Colors.white),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ],
-                            ),
                           ),
                         ),
                         // Online dot
@@ -776,8 +1048,7 @@ class _WebProfileState extends State<WebProfile>
                       MouseRegion(
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
-                          onTap: () =>
-                              _showSnack('Edit profile coming soon!'),
+                          onTap: () => _showEditProfileDialog(),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 20, vertical: 12),

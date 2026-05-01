@@ -6,7 +6,8 @@ import '../../../core/utils/helpers.dart';
 import '../../../core/data/app_data.dart';
 import 'web_cursor_effects.dart';
 
-class WebDashboard extends StatelessWidget {
+class WebDashboard extends StatefulWidget {
+
   final bool isLoggedIn;
   final bool isLoadingData;
   final List<Map<String, dynamic>> todayWorkouts;
@@ -27,6 +28,13 @@ class WebDashboard extends StatelessWidget {
     required this.onShowTooltip,
   });
 
+ @override
+  State<WebDashboard> createState() => _WebDashboardState();
+}
+
+class _WebDashboardState extends State<WebDashboard> {
+  String? _homeBannerPath;
+
   String get userName => AppData.userName;
   double get userWeight => AppData.userWeight;
   double get userHeight => AppData.userHeight;
@@ -34,9 +42,20 @@ class WebDashboard extends StatelessWidget {
   String get userGoal => AppData.userGoal;
 
   int get completedWorkouts =>
-      todayWorkouts.where((w) => w['done'] == true).length;
+      widget.todayWorkouts.where((w) => w['done'] == true).length;
   int get totalCalories =>
-      todayMeals.fold(0, (sum, m) => sum + (m['calories'] as int));
+      widget.todayMeals.fold(0, (sum, m) => sum + (m['calories'] as int));
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBanner();
+  }
+
+  Future<void> _loadBanner() async {
+    final path = await StorageService.getHomeBanner();
+    if (mounted) setState(() => _homeBannerPath = path);
+  }
 
   @override
   Widget build(BuildContext context) {
