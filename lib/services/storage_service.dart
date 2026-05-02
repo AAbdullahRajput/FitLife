@@ -127,6 +127,8 @@ class StorageService {
       // Add cache-bust so image refreshes after re-upload
       return '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
     } catch (e) {
+      // ignore: avoid_print
+      print('Profile photo upload error: $e');
       return null;
     }
   }
@@ -166,6 +168,7 @@ class StorageService {
 
       return '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
     } catch (e) {
+      print('Banner upload error: $e');
       return null;
     }
   }

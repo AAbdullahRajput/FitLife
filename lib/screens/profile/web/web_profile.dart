@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/data/app_data.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../services/storage_service.dart';
+import 'package:image_picker/image_picker.dart';
 
 
 class _Imgs {
@@ -325,8 +326,23 @@ Future<void> _loadProfilePhoto() async {
                       cursor: SystemMouseCursors.click,
                       child: GestureDetector(
                         onTap: () async {
-                          // Web uses html input — show snack for now
-                          _showSnack('Photo upload coming soon for web!');
+                          final picker = ImagePicker();
+                          final picked = await picker.pickImage(
+                              source: ImageSource.gallery, imageQuality: 80);
+                          if (picked == null) return;
+                          _showSnack('Uploading...');
+                          final url = await StorageService
+                              .uploadProfilePhotoAndGetUrl(picked);
+                          if (url != null) {
+                            await StorageService.saveProfilePhoto(url);
+                            if (mounted) {
+                              setState(() => _profilePhotoPath = url);
+                            }
+                            _showSnack('Photo updated!');
+                          } else {
+                            _showSnack('Upload failed. Try again.',
+                                isError: true);
+                          }
                         },
                         child: Stack(
                           children: [
@@ -338,20 +354,41 @@ Future<void> _loadProfilePhoto() async {
                                 border: Border.all(color: accent, width: 2.5),
                               ),
                               child: ClipOval(
-                                child: Container(
-                                  color: accent.withOpacity(0.15),
-                                  child: Center(
-                                    child: Text(
-                                      AppData.userName.isNotEmpty
-                                          ? AppData.userName[0].toUpperCase()
-                                          : '?',
-                                      style: TextStyle(
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.w900,
-                                          color: accent),
-                                    ),
-                                  ),
-                                ),
+                                child: _profilePhotoPath != null
+                                    ? Image.network(
+                                        _profilePhotoPath!,
+                                        fit: BoxFit.cover,
+                                        width: 80,
+                                        height: 80,
+                                        errorBuilder: (_, __, ___) => Container(
+                                          color: accent.withOpacity(0.15),
+                                          child: Center(
+                                            child: Text(
+                                              AppData.userName.isNotEmpty
+                                                  ? AppData.userName[0].toUpperCase()
+                                                  : '?',
+                                              style: TextStyle(
+                                                  fontSize: 28,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: accent),
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    : Container(
+                                        color: accent.withOpacity(0.15),
+                                        child: Center(
+                                          child: Text(
+                                            AppData.userName.isNotEmpty
+                                                ? AppData.userName[0].toUpperCase()
+                                                : '?',
+                                            style: TextStyle(
+                                                fontSize: 28,
+                                                fontWeight: FontWeight.w900,
+                                                color: accent),
+                                          ),
+                                        ),
+                                      ),
                               ),
                             ),
                             Positioned(

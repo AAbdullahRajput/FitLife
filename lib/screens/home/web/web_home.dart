@@ -68,8 +68,10 @@ class _WebHomeState extends State<WebHome>
   }
 
   Future<void> _loadProfilePhoto() async {
-    final url = await StorageService.getProfilePhoto();
-    if (mounted) setState(() => _profilePhotoUrl = url);
+    try {
+      final url = await StorageService.getProfilePhoto();
+      if (mounted) setState(() => _profilePhotoUrl = url);
+    } catch (_) {}
   }
 
   Future<void> _checkLoginStatus() async {
@@ -312,7 +314,7 @@ class _WebHomeState extends State<WebHome>
                           onTap: () async {
                             entry?.remove();
                             await Supabase.instance.client.auth.signOut();
-                            if (mounted) {
+                            if (context.mounted) {
                               Navigator.pushReplacementNamed(
                                   context, '/login');
                             }
