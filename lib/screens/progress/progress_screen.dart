@@ -535,8 +535,13 @@ class _ProgressScreenState extends State<ProgressScreen>
   }
 
   Widget _buildMobileOverviewTab(bool isDark, Color textPrimary,
-      Color textSecondary, Color cardColor, Color borderColor) {
-    return SingleChildScrollView(
+    Color textSecondary, Color cardColor, Color borderColor) {
+  return RefreshIndicator(
+    onRefresh: _loadAllData,
+    color: AppColors.primary,
+    backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+    child: SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
@@ -552,6 +557,7 @@ class _ProgressScreenState extends State<ProgressScreen>
           _buildWeightCard(
               isDark, textPrimary, textSecondary, cardColor, borderColor),
         ],
+      ),
       ),
     );
   }

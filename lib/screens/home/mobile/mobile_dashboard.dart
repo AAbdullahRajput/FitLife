@@ -272,8 +272,9 @@ class _MobileDashboardState extends State<MobileDashboard>
         isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppConstants.paddingLG),
-      child: Column(
+  physics: const AlwaysScrollableScrollPhysics(),
+  padding: const EdgeInsets.all(AppConstants.paddingLG),
+  child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Header ──────────────────────────────────────────────────

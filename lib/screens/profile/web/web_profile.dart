@@ -112,6 +112,7 @@ class _WebProfileState extends State<WebProfile>
 
   bool _isLoggingOut = false;
   String? _profilePhotoPath;
+  String? _pendingPhotoUrl;
 
   // ── Profile completion ─────────────────────────────────────────────────────
   double get _profileCompletion {
@@ -332,7 +333,10 @@ Future<void> _loadProfilePhoto() async {
                     MouseRegion(
                       cursor: SystemMouseCursors.click,
                       child: GestureDetector(
-                        onTap: () => Navigator.pop(ctx),
+  onTap: () {
+    _pendingPhotoUrl = null; // discard unsaved photo
+    Navigator.pop(ctx);
+  },
                         child: Icon(Icons.close_rounded, color: textPrimary),
                       ),
                     ),
@@ -356,18 +360,11 @@ Future<void> _loadProfilePhoto() async {
                           final url = await StorageService
                               .uploadProfilePhotoAndGetUrl(picked);
                           if (url != null) {
-                            await StorageService.saveProfilePhoto(url);
-                            await StorageService.saveProfilePhotoToSupabase(url);
-                            PaintingBinding.instance.imageCache.clear();
-                            PaintingBinding.instance.imageCache.clearLiveImages();
-                            if (mounted) {
-                              setState(() => _profilePhotoPath = url);
-                            }
-                            _showSnack('Photo updated!');
-                          } else {
-                            _showSnack('Upload failed. Try again.',
-                                isError: true);
-                          }
+  // Only update dialog preview — do NOT save yet
+  setDialogState(() => _pendingPhotoUrl = url);
+} else {
+  _showSnack('Upload failed. Try again.', isError: true);
+}
                         },
                         child: Stack(
                           children: [
@@ -379,12 +376,12 @@ Future<void> _loadProfilePhoto() async {
                                 border: Border.all(color: accent, width: 2.5),
                               ),
                               child: ClipOval(
-                                child: _profilePhotoPath != null
-                                    ? Image.network(
-                                        _profilePhotoPath!,
-                                        fit: BoxFit.cover,
-                                        width: 80,
-                                        height: 80,
+                                child: (_pendingPhotoUrl ?? _profilePhotoPath) != null
+    ? Image.network(
+        _pendingPhotoUrl ?? _profilePhotoPath!,
+        fit: BoxFit.cover,
+        width: 80,
+        height: 80,
                                         errorBuilder: (_, __, ___) => Container(
                                           color: accent.withOpacity(0.15),
                                           child: Center(
@@ -472,36 +469,50 @@ Future<void> _loadProfilePhoto() async {
                 MouseRegion(
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
+                    
                     onTap: () async {
-                      final name = nameCtrl.text.trim();
-                      final weight = double.tryParse(weightCtrl.text) ?? AppData.userWeight;
-                      final height = double.tryParse(heightCtrl.text) ?? AppData.userHeight;
-                      final age = int.tryParse(ageCtrl.text) ?? AppData.userAge;
+  // Save pending photo if user selected one
+  if (_pendingPhotoUrl != null) {
+    await StorageService.saveProfilePhoto(_pendingPhotoUrl!);
+    await StorageService.saveProfilePhotoToSupabase(_pendingPhotoUrl!);
+    await SupabaseService.updateProfileField('avatar_url', _pendingPhotoUrl!);
+    PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
+    if (mounted) setState(() {
+      _profilePhotoPath = _pendingPhotoUrl;
+      _pendingPhotoUrl = null;
+    });
+  }
 
-                      // Save to SharedPreferences (local fallback)
-                      await StorageService.updateUserField('name', name);
-                      await StorageService.updateUserField('weight', weight);
-                      await StorageService.updateUserField('height', height);
-                      await StorageService.updateUserField('age', age);
+  final name = nameCtrl.text.trim();
+  final weight = double.tryParse(weightCtrl.text) ?? AppData.userWeight;
+  final height = double.tryParse(heightCtrl.text) ?? AppData.userHeight;
+  final age = int.tryParse(ageCtrl.text) ?? AppData.userAge;
 
-                      // Save to Supabase (syncs to mobile)
-                      await SupabaseService.updateProfileField('name', name);
-                      await SupabaseService.updateProfileField('weight', weight);
-                      await SupabaseService.updateProfileField('height', height);
-                      await SupabaseService.updateProfileField('age', age);
+  // Save to SharedPreferences (local fallback)
+  await StorageService.updateUserField('name', name);
+  await StorageService.updateUserField('weight', weight);
+  await StorageService.updateUserField('height', height);
+  await StorageService.updateUserField('age', age);
 
-                      // Update in-memory AppData
-                      AppData.userName = name;
-                      AppData.userWeight = weight;
-                      AppData.userHeight = height;
-                      AppData.userAge = age;
+  // Save to Supabase (syncs to mobile)
+  await SupabaseService.updateProfileField('name', name);
+  await SupabaseService.updateProfileField('weight', weight);
+  await SupabaseService.updateProfileField('height', height);
+  await SupabaseService.updateProfileField('age', age);
 
-                      if (mounted) {
-                        Navigator.pop(ctx);
-                        setState(() {});
-                        _showSnack('Profile updated!');
-                      }
-                    },
+  // Update in-memory AppData
+  AppData.userName = name;
+  AppData.userWeight = weight;
+  AppData.userHeight = height;
+  AppData.userAge = age;
+
+  if (mounted) {
+    Navigator.pop(ctx);
+    setState(() {});
+    _showSnack('Profile updated!');
+  }
+},
                     child: Container(
                       width: double.infinity,
                       height: 50,

@@ -1213,8 +1213,13 @@ class _WorkoutScreenState extends State<WorkoutScreen>
               ),
               // ── List ──────────────────────────────────────────────────────────
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+  child: RefreshIndicator(
+    onRefresh: _loadFromDB,
+    color: AppColors.primary,
+    backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+    child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                   children: [
                     if (isCurrentLocked)
                       _buildTierUnlockBanner(difficulty: _selectedDifficulty, isDark: isDark),
@@ -1244,6 +1249,7 @@ class _WorkoutScreenState extends State<WorkoutScreen>
                       ),
                   ],
                 ),
+              ),
               ),
             ],
           ),

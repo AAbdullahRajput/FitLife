@@ -236,11 +236,10 @@ class _MobileProfileState extends State<MobileProfile>
       if (mounted) setState(() => _profilePhotoPath = url);
       _showSnack('Photo updated!');
     } else {
-      // Fallback: local path works on mobile only
-      await StorageService.saveProfilePhoto(picked.path);
-      if (mounted) setState(() => _profilePhotoPath = picked.path);
-      _showSnack('Saved locally — upload failed');
-    }
+  // Upload failed — do NOT save local path to Supabase or prefs
+  // Just show error, don't corrupt cross-device sync
+  _showSnack('Photo upload failed. Please check your connection.', isError: true);
+}
   }
 
   // ── Edit Profile Bottom Sheet ─────────────────────────────────────────────
@@ -306,20 +305,19 @@ class _MobileProfileState extends State<MobileProfile>
                       if (picked == null) return;
                       final url = await StorageService
                           .uploadProfilePhotoAndGetUrl(picked);
-                      final toSave = url ?? picked.path;
-                      await StorageService.saveProfilePhoto(toSave);
                       if (url != null) {
-                        await StorageService.saveProfilePhotoToSupabase(url);
-                      }
-      PaintingBinding.instance.imageCache.clear();
-      PaintingBinding.instance.imageCache.clearLiveImages();
-      if (_profilePhotoPath != null) {
-        await NetworkImage(_profilePhotoPath!).evict();
-      }
-      if (mounted) {
-        setState(() => _profilePhotoPath = toSave);
-        setSheetState(() {});
-      }
+  await StorageService.saveProfilePhoto(url);
+  await StorageService.saveProfilePhotoToSupabase(url);
+  PaintingBinding.instance.imageCache.clear();
+  PaintingBinding.instance.imageCache.clearLiveImages();
+  if (mounted) {
+    setState(() => _profilePhotoPath = url);
+    setSheetState(() {});
+  }
+  _showSnack('Photo updated!');
+} else {
+  _showSnack('Photo upload failed. Please check your connection.', isError: true);
+}     
                     },
                     child: Stack(
                       children: [
@@ -755,9 +753,17 @@ class _MobileProfileState extends State<MobileProfile>
         ),
       ),
       body: FadeTransition(
-        opacity: _fadeAnim,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+  opacity: _fadeAnim,
+  child: RefreshIndicator(
+    onRefresh: _loadProfilePhoto,
+    color: AppColors.of(context),
+    backgroundColor:
+        Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF1A1A1A)
+            : Colors.white,
+    child: SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -810,6 +816,7 @@ class _MobileProfileState extends State<MobileProfile>
             ],
           ),
         ),
+      ),
       ),
     );
   }

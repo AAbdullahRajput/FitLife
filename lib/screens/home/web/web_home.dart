@@ -62,22 +62,60 @@ class _WebHomeState extends State<WebHome>
       CurvedAnimation(parent: _animController, curve: Curves.easeIn),
     );
     _animController.forward();
-    _checkLoginStatus();
-    _loadFromSupabase();
-    _loadProfilePhoto();
+_initializeApp();
   }
+
+  Future<void> _syncProfileFromSupabase() async {
+  final profile = await SupabaseService.getProfile();
+  if (profile != null && mounted) {
+    AppData.loadFromMap(profile);
+    await StorageService.updateUserField('name', AppData.userName);
+    await StorageService.updateUserField('weight', AppData.userWeight);
+    await StorageService.updateUserField('height', AppData.userHeight);
+    await StorageService.updateUserField('age', AppData.userAge);
+    setState(() {});
+  }
+}
+
+Future<void> _refreshProfilePhoto() async {
+  final remoteUrl = await StorageService.getProfilePhotoFromSupabase();
+  if (remoteUrl != null && remoteUrl != _profilePhotoUrl && mounted) {
+    await StorageService.saveProfilePhoto(remoteUrl);
+    setState(() => _profilePhotoUrl = remoteUrl);
+  }
+}
+
+Future<void> _initializeApp() async {
+  // Wait for Supabase session to be ready
+  await Future.delayed(const Duration(milliseconds: 300));
+  
+  final session = Supabase.instance.client.auth.currentSession;
+  if (mounted) setState(() => _isLoggedIn = session != null);
+
+  // Run data loading in parallel after session confirmed
+  await Future.wait([
+    _loadFromSupabase(),
+    _loadProfilePhoto(),
+    _syncProfileFromSupabase(),
+  ]);
+}
 
   Future<void> _loadProfilePhoto() async {
-    try {
-      final url = await StorageService.getProfilePhoto();
-      if (mounted) setState(() => _profilePhotoUrl = url);
-    } catch (_) {}
-  }
+  try {
+    // First try local cache (works on mobile, empty on web)
+    final localUrl = await StorageService.getProfilePhoto();
+    if (localUrl != null && mounted) {
+      setState(() => _profilePhotoUrl = localUrl);
+    }
 
-  Future<void> _checkLoginStatus() async {
-    final session = Supabase.instance.client.auth.currentSession;
-    setState(() => _isLoggedIn = session != null);
-  }
+    // Always fetch from Supabase — this is the cross-device source of truth
+    final remoteUrl = await StorageService.getProfilePhotoFromSupabase();
+    if (remoteUrl != null && remoteUrl != localUrl) {
+      await StorageService.saveProfilePhoto(remoteUrl);
+      if (mounted) setState(() => _profilePhotoUrl = remoteUrl);
+    }
+  } catch (_) {}
+}
 
   Future<void> _loadFromSupabase() async {
     setState(() => _isLoadingData = true);
@@ -525,7 +563,10 @@ class _WebHomeState extends State<WebHome>
                       profilePhotoUrl: _profilePhotoUrl,
                       sidebarExpanded: _sidebarExpanded,
                       webSection: _webSection,
-                      onNavigate: (s) => setState(() => _webSection = s),
+                      onNavigate: (s) {
+  setState(() => _webSection = s);
+  if (s != 'Profile') _refreshProfilePhoto();
+},
                       onToggleSidebar: () => setState(
                           () => _sidebarExpanded = !_sidebarExpanded),
                       onToggleTheme: () {
@@ -549,8 +590,10 @@ class _WebHomeState extends State<WebHome>
                             webSection: _webSection,
                             userName: userName,
                             profilePhotoUrl: _profilePhotoUrl,
-                            onSectionTap: (s) =>
-                                setState(() => _webSection = s),
+                            onSectionTap: (s) {
+  setState(() => _webSection = s);
+  if (s != 'Profile') _refreshProfilePhoto();
+},
                             onJoinFreeTap: () => Navigator.pushNamed(
                                 context, '/register'),
                           ),

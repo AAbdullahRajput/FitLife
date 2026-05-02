@@ -121,11 +121,12 @@ class StorageService {
       }
 
       final publicUrl = supabase.storage
-          .from('fitlife-images')
-          .getPublicUrl(filePath);
+    .from('fitlife-images')
+    .getPublicUrl(filePath);
 
-      // Add cache-bust so image refreshes after re-upload
-      return publicUrl;
+// Add cache-bust timestamp so browsers/Flutter don't serve stale images
+final cacheBusted = '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+return cacheBusted;
     } catch (e) {
       // ignore: avoid_print
       print('Profile photo upload error: $e');

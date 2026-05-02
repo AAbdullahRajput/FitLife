@@ -43,6 +43,11 @@ class _MobileHomeState extends State<MobileHome>
     return 'free';
   }
 
+  Future<void> _onRefresh() async {
+  await _checkLoginStatus();
+  await _loadFromSupabase();
+}
+
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   @override
   void initState() {
@@ -371,23 +376,32 @@ class _MobileHomeState extends State<MobileHome>
                 children: [
                   // ── Content area ────────────────────────────────────
                   Expanded(
-                    child: IndexedStack(
-                      index: _selectedTab,
-                      children: [
-                        MobileDashboard(
-                          isLoggedIn: _isLoggedIn,
-                          isLoadingData: _isLoadingData,
-                          todayWorkouts: _todayWorkouts,
-                          todayMeals: _todayMeals,
-                          onToggleWorkout: _onToggleWorkout,
-                        ),
-                        WorkoutScreen(userTier: _userTier),
-                        MealsScreen(userTier: _userTier),
-                        const ProgressScreen(),
-                        const ProfileScreen(),
-                      ],
-                    ),
-                  ),
+  child: RefreshIndicator(
+    onRefresh: _onRefresh,
+    color: AppColors.of(context),
+    backgroundColor:
+        Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF1A1A1A)
+            : Colors.white,
+    displacement: 40,
+    child: IndexedStack(
+      index: _selectedTab,
+      children: [
+        MobileDashboard(
+          isLoggedIn: _isLoggedIn,
+          isLoadingData: _isLoadingData,
+          todayWorkouts: _todayWorkouts,
+          todayMeals: _todayMeals,
+          onToggleWorkout: _onToggleWorkout,
+        ),
+        WorkoutScreen(userTier: _userTier),
+        MealsScreen(userTier: _userTier),
+        const ProgressScreen(),
+        const ProfileScreen(),
+      ],
+    ),
+  ),
+),
 
                   // ── Bottom nav ───────────────────────────────────────
                   MobileBottomNav(
