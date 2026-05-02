@@ -23,18 +23,18 @@ class SupabaseService {
   }
 
   static Future<String?> getUserGoal() async {
-  if (!isLoggedIn) return null;
-  try {
-    final res = await _client
-        .from('profiles')
-        .select('goal')
-        .eq('id', currentUser!.id)
-        .single();
-    return res['goal'] as String?;
-  } catch (_) {
-    return null;
+    if (!isLoggedIn) return null;
+    try {
+      final res = await _client
+          .from('profiles')
+          .select('goal')
+          .eq('id', currentUser!.id)
+          .single();
+      return res['goal'] as String?;
+    } catch (_) {
+      return null;
+    }
   }
-}
 
   static List<String> getAllowedTiers(String tier) {
     if (tier == 'premium') return ['guest', 'free', 'premium'];
@@ -90,8 +90,7 @@ class SupabaseService {
     try {
       await _client
           .from('profiles')
-          .update({field: value})
-          .eq('id', currentUser!.id);
+          .update({field: value}).eq('id', currentUser!.id);
       return true;
     } catch (_) {
       return false;
@@ -108,7 +107,8 @@ class SupabaseService {
       final allowed = getAllowedTiers(tier);
       var query = _client
           .from('exercises')
-          .select('id, name, muscle, category, difficulty, tier_required, created_at')
+          .select(
+              'id, name, muscle, category, difficulty, tier_required, created_at')
           .inFilter('tier_required', allowed);
 
       if (muscle != null && muscle != 'All') query = query.eq('muscle', muscle);
@@ -126,15 +126,13 @@ class SupabaseService {
     String tier = 'guest',
   }) async {
     try {
-      // Load all variations for the exercise regardless of tier
-      // (locked ones are shown blurred — UI handles the gate)
       final res = await _client
           .from('exercise_variations')
           .select(
             'id, exercise_id, name, description, steps, sets, reps, rest_seconds, tier_required, created_at',
           )
           .eq('exercise_id', exerciseId)
-          .order('tier_required'); // guest → free → premium order
+          .order('tier_required');
       return List<Map<String, dynamic>>.from(res);
     } catch (_) {
       return [];
@@ -148,15 +146,19 @@ class SupabaseService {
   }) async {
     try {
       final allowed = getAllowedTiers(tier);
-      var query = _client
-          .from('meals')
-          .select('id, name, type, calories, protein, carbs, fat, tier_required, image_url, created_at');
-          
+      var query = _client.from('meals').select(
+          'id, name, type, calories, protein, carbs, fat, tier_required, image_url, created_at');
 
       if (type != null) query = query.eq('type', type);
 
       final res = await query.order('name');
-      return List<Map<String, dynamic>>.from(res);
+      return List<Map<String, dynamic>>.from(res).map((m) => {
+            ...m,
+            'protein': ((m['protein'] ?? 0) as num).toDouble(),
+            'carbs': ((m['carbs'] ?? 0) as num).toDouble(),
+            'fat': ((m['fat'] ?? 0) as num).toDouble(),
+            'calories': ((m['calories'] ?? 0) as num).toInt(),
+          }).toList();
     } catch (_) {
       return [];
     }
@@ -194,7 +196,8 @@ class SupabaseService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getUserWorkouts({DateTime? date}) async {
+  static Future<List<Map<String, dynamic>>> getUserWorkouts(
+      {DateTime? date}) async {
     if (!isLoggedIn) return [];
     try {
       var query = _client
@@ -217,8 +220,7 @@ class SupabaseService {
     try {
       await _client
           .from('user_workouts')
-          .update({'completed': true})
-          .eq('id', workoutId);
+          .update({'completed': true}).eq('id', workoutId);
       return true;
     } catch (_) {
       return false;
@@ -241,71 +243,82 @@ class SupabaseService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getUserMeals({DateTime? date}) async {
+  static Future<List<Map<String, dynamic>>> getUserMeals(
+      {DateTime? date}) async {
     if (!isLoggedIn) return [];
     try {
       var query = _client
           .from('user_meals')
           .select(
-            'id, user_id, meal_id, date, completed, created_at, meals(id, name, type, calories, protein, carbs, fat, tier_required, image_url)'
-          )
+              'id, user_id, meal_id, date, completed, created_at, meals(id, name, type, calories, protein, carbs, fat, tier_required, image_url)')
           .eq('user_id', currentUser!.id);
 
       if (date != null) query = query.eq('date', _dateString(date));
 
       final res = await query.order('created_at', ascending: false);
-      return List<Map<String, dynamic>>.from(res);
+      return List<Map<String, dynamic>>.from(res).map((um) {
+        final meal = um['meals'] as Map<String, dynamic>?;
+        if (meal == null) return um;
+        return {
+          ...um,
+          'meals': {
+            ...meal,
+            'protein': ((meal['protein'] ?? 0) as num).toDouble(),
+            'carbs': ((meal['carbs'] ?? 0) as num).toDouble(),
+            'fat': ((meal['fat'] ?? 0) as num).toDouble(),
+            'calories': ((meal['calories'] ?? 0) as num).toInt(),
+          },
+        };
+      }).toList();
     } catch (_) {
       return [];
     }
   }
 
-  static Future<bool> toggleMealCompleted(int userMealId, bool completed) async {
-  try {
-    await _client
-        .from('user_meals')
-        .update({'completed': completed})
-        .eq('id', userMealId);
-    return true;
-  } catch (_) {
-    return false;
+  static Future<bool> toggleMealCompleted(
+      int userMealId, bool completed) async {
+    try {
+      await _client
+          .from('user_meals')
+          .update({'completed': completed}).eq('id', userMealId);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
-}
 
-static Future<bool> removeMealFromPlan(int userMealId) async {
-  if (!isLoggedIn) return false;
-  try {
-    await _client
-        .from('user_meals')
-        .delete()
-        .eq('id', userMealId);
-    return true;
-  } catch (_) {
-    return false;
+  static Future<bool> removeMealFromPlan(int userMealId) async {
+    if (!isLoggedIn) return false;
+    try {
+      await _client.from('user_meals').delete().eq('id', userMealId);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
-}
 
-static Future<bool> isMealLoggedToday(int mealId) async {
-  if (!isLoggedIn) return false;
-  try {
-    final today = _todayString();
-    final res = await _client
-        .from('user_meals')
-        .select('id')
-        .eq('user_id', currentUser!.id)
-        .eq('meal_id', mealId)
-        .eq('date', today);
-    return (res as List).isNotEmpty;
-  } catch (_) {
-    return false;
+  static Future<bool> isMealLoggedToday(int mealId) async {
+    if (!isLoggedIn) return false;
+    try {
+      final today = _todayString();
+      final res = await _client
+          .from('user_meals')
+          .select('id')
+          .eq('user_id', currentUser!.id)
+          .eq('meal_id', mealId)
+          .eq('date', today);
+      return (res as List).isNotEmpty;
+    } catch (_) {
+      return false;
+    }
   }
-}
 
   // ── Stats ─────────────────────────────────────────────────────────────────────
   static Future<Map<String, int>> getWeeklyStats() async {
     if (!isLoggedIn) return {'workouts': 0, 'meals': 0};
     try {
-      final weekAgo = _dateString(DateTime.now().subtract(const Duration(days: 7)));
+      final weekAgo = _dateString(
+          DateTime.now().subtract(const Duration(days: 7)));
 
       final workoutsRes = await _client
           .from('user_workouts')
