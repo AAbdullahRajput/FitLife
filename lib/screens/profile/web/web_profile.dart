@@ -7,6 +7,7 @@ import '../../../core/data/app_data.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../services/storage_service.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/painting.dart';
 
 
 class _Imgs {
@@ -335,6 +336,8 @@ Future<void> _loadProfilePhoto() async {
                               .uploadProfilePhotoAndGetUrl(picked);
                           if (url != null) {
                             await StorageService.saveProfilePhoto(url);
+                            PaintingBinding.instance.imageCache.clear();
+                            PaintingBinding.instance.imageCache.clearLiveImages();
                             if (mounted) {
                               setState(() => _profilePhotoPath = url);
                             }

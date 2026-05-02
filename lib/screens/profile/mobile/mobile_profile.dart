@@ -7,6 +7,7 @@ import '../../../core/utils/helpers.dart';
 import '../../../services/storage_service.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/painting.dart';
 
 // ── Mobile-only image URLs (different from web_profile.dart) ──────────────
 class _MImgs {
@@ -200,9 +201,20 @@ class _MobileProfileState extends State<MobileProfile>
     final picker = ImagePicker();
     final picked = await picker.pickImage(
         source: ImageSource.gallery, imageQuality: 80);
-    if (picked != null) {
+    if (picked == null) return;
+    _showSnack('Uploading...');
+    final url = await StorageService.uploadProfilePhotoAndGetUrl(picked);
+    if (url != null) {
+      await StorageService.saveProfilePhoto(url);
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+      if (mounted) setState(() => _profilePhotoPath = url);
+      _showSnack('Photo updated!');
+    } else {
+      // Fallback: local path works on mobile only
       await StorageService.saveProfilePhoto(picked.path);
       if (mounted) setState(() => _profilePhotoPath = picked.path);
+      _showSnack('Saved locally — upload failed');
     }
   }
 
@@ -266,12 +278,16 @@ class _MobileProfileState extends State<MobileProfile>
                       final picker = ImagePicker();
                       final picked = await picker.pickImage(
                           source: ImageSource.gallery, imageQuality: 80);
-                      if (picked != null) {
-                        await StorageService.saveProfilePhoto(picked.path);
-                        if (mounted) {
-                          setState(() => _profilePhotoPath = picked.path);
-                          setSheetState(() {});
-                        }
+                      if (picked == null) return;
+                      final url = await StorageService
+                          .uploadProfilePhotoAndGetUrl(picked);
+                      final toSave = url ?? picked.path;
+                      await StorageService.saveProfilePhoto(toSave);
+                      PaintingBinding.instance.imageCache.clear();
+                      PaintingBinding.instance.imageCache.clearLiveImages();
+                      if (mounted) {
+                        setState(() => _profilePhotoPath = toSave);
+                        setSheetState(() {});
                       }
                     },
                     child: Stack(
@@ -286,10 +302,11 @@ class _MobileProfileState extends State<MobileProfile>
                           ),
                           child: ClipOval(
                             child: _profilePhotoPath != null
-                                ? Image.file(
-                                    File(_profilePhotoPath!),
-                                    fit: BoxFit.cover,
-                                  )
+                                ? (_profilePhotoPath!.startsWith('http')
+                                    ? Image.network(_profilePhotoPath!,
+                                        fit: BoxFit.cover)
+                                    : Image.file(File(_profilePhotoPath!),
+                                        fit: BoxFit.cover))
                                 : Container(
                                     color: accent.withOpacity(0.15),
                                     child: Center(
@@ -836,12 +853,23 @@ class _MobileProfileState extends State<MobileProfile>
                         ),
                         child: ClipOval(
                           child: _profilePhotoPath != null
-                              ? Image.file(
-                                  File(_profilePhotoPath!),
-                                  fit: BoxFit.cover,
-                                  width: 64,
-                                  height: 64,
-                                )
+                              ? (_profilePhotoPath!.startsWith('http')
+                                  ? Image.network(
+                                      _profilePhotoPath!,
+                                      fit: BoxFit.cover,
+                                      width: 64,
+                                      height: 64,
+                                      errorBuilder: (_, __, ___) => Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          Container(decoration: BoxDecoration(gradient: LinearGradient(colors: gradient))),
+                                          Center(child: Text(_userName.isNotEmpty ? _userName[0].toUpperCase() : '?',
+                                              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: onAccent))),
+                                        ],
+                                      ),
+                                    )
+                                  : Image.file(File(_profilePhotoPath!),
+                                      fit: BoxFit.cover, width: 64, height: 64))
                               : Stack(
                                   fit: StackFit.expand,
                                   children: [

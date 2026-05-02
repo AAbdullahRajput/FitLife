@@ -95,8 +95,8 @@ class StorageService {
     try {
       final supabase = Supabase.instance.client;
       final userId = supabase.auth.currentUser?.id ?? 'guest';
-      final fileName = 'profile_$userId.jpg';
-      final filePath = 'profiles/$fileName';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final filePath = 'profiles/profile_${userId}_$timestamp.jpg';
 
       if (kIsWeb) {
         final bytes = await picked.readAsBytes();
@@ -125,7 +125,7 @@ class StorageService {
           .getPublicUrl(filePath);
 
       // Add cache-bust so image refreshes after re-upload
-      return '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+      return publicUrl;
     } catch (e) {
       // ignore: avoid_print
       print('Profile photo upload error: $e');
@@ -137,8 +137,8 @@ class StorageService {
     try {
       final supabase = Supabase.instance.client;
       final userId = supabase.auth.currentUser?.id ?? 'guest';
-      final fileName = 'banner_$userId.jpg';
-      final filePath = 'banners/$fileName';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final filePath = 'banners/banner_${userId}_$timestamp.jpg';
 
       if (kIsWeb) {
         final bytes = await picked.readAsBytes();
@@ -166,7 +166,7 @@ class StorageService {
           .from('fitlife-images')
           .getPublicUrl(filePath);
 
-      return '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+      return publicUrl;
     } catch (e) {
       print('Banner upload error: $e');
       return null;
