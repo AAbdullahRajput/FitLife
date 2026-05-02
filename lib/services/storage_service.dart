@@ -1,6 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 
 class StorageService {
   static Future<void> saveUserInfo({
@@ -84,6 +88,86 @@ class StorageService {
   static Future<String?> getHomeBanner() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('home_banner');
+  }
+
+  // ── Upload image to Supabase and return public URL ────────────────────────
+  static Future<String?> uploadProfilePhotoAndGetUrl(XFile picked) async {
+    try {
+      final supabase = Supabase.instance.client;
+      final userId = supabase.auth.currentUser?.id ?? 'guest';
+      final fileName = 'profile_$userId.jpg';
+      final filePath = 'profiles/$fileName';
+
+      if (kIsWeb) {
+        final bytes = await picked.readAsBytes();
+        await supabase.storage.from('fitlife-images').uploadBinary(
+          filePath,
+          bytes,
+          fileOptions: const FileOptions(
+            contentType: 'image/jpeg',
+            upsert: true,
+          ),
+        );
+      } else {
+        final file = File(picked.path);
+        await supabase.storage.from('fitlife-images').upload(
+          filePath,
+          file,
+          fileOptions: const FileOptions(
+            contentType: 'image/jpeg',
+            upsert: true,
+          ),
+        );
+      }
+
+      final publicUrl = supabase.storage
+          .from('fitlife-images')
+          .getPublicUrl(filePath);
+
+      // Add cache-bust so image refreshes after re-upload
+      return '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<String?> uploadHomeBannerAndGetUrl(XFile picked) async {
+    try {
+      final supabase = Supabase.instance.client;
+      final userId = supabase.auth.currentUser?.id ?? 'guest';
+      final fileName = 'banner_$userId.jpg';
+      final filePath = 'banners/$fileName';
+
+      if (kIsWeb) {
+        final bytes = await picked.readAsBytes();
+        await supabase.storage.from('fitlife-images').uploadBinary(
+          filePath,
+          bytes,
+          fileOptions: const FileOptions(
+            contentType: 'image/jpeg',
+            upsert: true,
+          ),
+        );
+      } else {
+        final file = File(picked.path);
+        await supabase.storage.from('fitlife-images').upload(
+          filePath,
+          file,
+          fileOptions: const FileOptions(
+            contentType: 'image/jpeg',
+            upsert: true,
+          ),
+        );
+      }
+
+      final publicUrl = supabase.storage
+          .from('fitlife-images')
+          .getPublicUrl(filePath);
+
+      return '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+    } catch (e) {
+      return null;
+    }
   }
 
   // ── Update Single Profile Field ───────────────────────────────────────────

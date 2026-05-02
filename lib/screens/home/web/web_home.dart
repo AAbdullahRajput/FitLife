@@ -14,6 +14,7 @@ import 'web_sidebar.dart';
 import 'web_dashboard.dart';
 import 'web_background.dart';
 import 'web_cursor_effects.dart';
+import '../../../services/storage_service.dart';
 
 class WebHome extends StatefulWidget {
   const WebHome({super.key});
@@ -40,6 +41,7 @@ class _WebHomeState extends State<WebHome>
   late List<Map<String, dynamic>> _todayMeals;
 
   String get userName => AppData.userName;
+  String? _profilePhotoUrl;
 
   String get _userTier {
     final session = Supabase.instance.client.auth.currentSession;
@@ -62,6 +64,12 @@ class _WebHomeState extends State<WebHome>
     _animController.forward();
     _checkLoginStatus();
     _loadFromSupabase();
+    _loadProfilePhoto();
+  }
+
+  Future<void> _loadProfilePhoto() async {
+    final url = await StorageService.getProfilePhoto();
+    if (mounted) setState(() => _profilePhotoUrl = url);
   }
 
   Future<void> _checkLoginStatus() async {
@@ -499,6 +507,7 @@ class _WebHomeState extends State<WebHome>
                     // ── Top nav ──────────────────────────────────────
                     WebTopNav(
                       isLoggedIn: _isLoggedIn,
+                      profilePhotoUrl: _profilePhotoUrl,
                       sidebarExpanded: _sidebarExpanded,
                       webSection: _webSection,
                       onNavigate: (s) => setState(() => _webSection = s),
@@ -521,14 +530,15 @@ class _WebHomeState extends State<WebHome>
                           // ── Sidebar ──────────────────────────────
                           if (_sidebarExpanded)
                             WebSidebar(
-                              isLoggedIn: _isLoggedIn,
-                              webSection: _webSection,
-                              userName: userName,
-                              onSectionTap: (s) =>
-                                  setState(() => _webSection = s),
-                              onJoinFreeTap: () => Navigator.pushNamed(
-                                  context, '/register'),
-                            ),
+                            isLoggedIn: _isLoggedIn,
+                            webSection: _webSection,
+                            userName: userName,
+                            profilePhotoUrl: _profilePhotoUrl,
+                            onSectionTap: (s) =>
+                                setState(() => _webSection = s),
+                            onJoinFreeTap: () => Navigator.pushNamed(
+                                context, '/register'),
+                          ),
 
                           // ── Main content ─────────────────────────
                           Expanded(child: _buildContent()),

@@ -7,6 +7,7 @@ class WebSidebar extends StatefulWidget {
   final bool isLoggedIn;
   final String webSection;
   final String userName;
+  final String? profilePhotoUrl;
   final void Function(String section) onSectionTap;
   final VoidCallback onJoinFreeTap;
 
@@ -17,6 +18,7 @@ class WebSidebar extends StatefulWidget {
     required this.userName,
     required this.onSectionTap,
     required this.onJoinFreeTap,
+    this.profilePhotoUrl,
   });
 
   @override
@@ -224,7 +226,7 @@ class _WebSidebarState extends State<WebSidebar>
                       ),
                       child: ClipOval(
                         child: Image.network(
-                          _avatarImageUrl,
+                          widget.profilePhotoUrl ?? _avatarImageUrl,
                           width: 38,
                           height: 38,
                           fit: BoxFit.cover,

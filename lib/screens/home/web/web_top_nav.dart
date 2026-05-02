@@ -12,6 +12,7 @@ class WebTopNav extends StatefulWidget {
   final VoidCallback onToggleTheme;
   final VoidCallback onLogin;
   final VoidCallback onLogout;
+  final String? profilePhotoUrl;
 
   const WebTopNav({
     super.key,
@@ -23,6 +24,7 @@ class WebTopNav extends StatefulWidget {
     required this.onToggleTheme,
     required this.onLogin,
     required this.onLogout,
+    this.profilePhotoUrl,
   });
 
   @override
@@ -190,7 +192,7 @@ class _WebTopNavState extends State<WebTopNav> {
 
                 // ── Profile avatar ───────────────────────────────────
                 _ProfileAvatar(
-                  avatarImg: _avatarImg,
+                  avatarImg: widget.profilePhotoUrl ?? _avatarImg,
                   isLoggedIn: widget.isLoggedIn,
                   accent: accent,
                   theme: theme,

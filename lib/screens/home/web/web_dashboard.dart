@@ -73,6 +73,7 @@ class _WebDashboardState extends State<WebDashboard> {
             children: [
               // ── Welcome hero banner ──────────────────────────────────
               _WelcomeBanner(
+                homeBannerPath: _homeBannerPath,
                 userName: userName,
                 userGoal: userGoal,
                 userWeight: userWeight,
