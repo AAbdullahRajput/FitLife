@@ -376,6 +376,5 @@ class SupabaseService {
   static String _todayString() => _dateString(DateTime.now());
 
   static String _dateString(DateTime date) =>
-      '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '')}';
 }
-123456789
