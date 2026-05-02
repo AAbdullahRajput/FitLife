@@ -404,38 +404,49 @@ class _ProfileAvatarState extends State<_ProfileAvatar> {
                 : null,
           ),
           child: ClipOval(
-            child: widget.isLoggedIn
+            child: widget.avatarImg.startsWith('http') &&
+                    widget.avatarImg != 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&q=80&auto=format&fit=crop'
                 ? Image.network(
                     widget.avatarImg,
                     fit: BoxFit.cover,
-                    alignment: Alignment.topCenter,
+                    width: 36,
+                    height: 36,
                     errorBuilder: (_, __, ___) => Container(
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: widget.theme.accentGradient,
-                        ),
+                        color: widget.accent.withOpacity(0.1),
                       ),
                       child: Center(
-                        child: Icon(
-                          Icons.person_rounded,
-                          size: 18,
-                          color: widget.theme.onAccent,
-                        ),
+                        child: Icon(Icons.person_rounded,
+                            size: 18, color: widget.accent),
                       ),
                     ),
                   )
-                : Container(
-                    decoration: BoxDecoration(
-                      color: widget.accent.withOpacity(0.1),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.person_rounded,
-                        size: 18,
-                        color: widget.accent,
+                : widget.isLoggedIn
+                    ? Image.network(
+                        widget.avatarImg,
+                        fit: BoxFit.cover,
+                        alignment: Alignment.topCenter,
+                        errorBuilder: (_, __, ___) => Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: widget.theme.accentGradient,
+                            ),
+                          ),
+                          child: Center(
+                            child: Icon(Icons.person_rounded,
+                                size: 18, color: widget.theme.onAccent),
+                          ),
+                        ),
+                      )
+                    : Container(
+                        decoration: BoxDecoration(
+                          color: widget.accent.withOpacity(0.1),
+                        ),
+                        child: Center(
+                          child: Icon(Icons.person_rounded,
+                              size: 18, color: widget.accent),
+                        ),
                       ),
-                    ),
-                  ),
           ),
         ),
       ),

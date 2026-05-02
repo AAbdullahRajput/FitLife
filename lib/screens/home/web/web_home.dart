@@ -250,9 +250,22 @@ class _WebHomeState extends State<WebHome>
                                   border: Border.all(
                                       color: accent.withOpacity(0.4)),
                                 ),
-                                child: Center(
-                                  child: Icon(Icons.person_rounded,
-                                      size: 20, color: accent),
+                                child: ClipOval(
+                                  child: _profilePhotoUrl != null
+                                      ? Image.network(
+                                          _profilePhotoUrl!,
+                                          fit: BoxFit.cover,
+                                          width: 38,
+                                          height: 38,
+                                          errorBuilder: (_, __, ___) => Center(
+                                            child: Icon(Icons.person_rounded,
+                                                size: 20, color: accent),
+                                          ),
+                                        )
+                                      : Center(
+                                          child: Icon(Icons.person_rounded,
+                                              size: 20, color: accent),
+                                        ),
                                 ),
                               ),
                               const SizedBox(width: 10),
