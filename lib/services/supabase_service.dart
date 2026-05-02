@@ -22,6 +22,20 @@ class SupabaseService {
     }
   }
 
+  static Future<String?> getUserGoal() async {
+  if (!isLoggedIn) return null;
+  try {
+    final res = await _client
+        .from('profiles')
+        .select('goal')
+        .eq('id', currentUser!.id)
+        .single();
+    return res['goal'] as String?;
+  } catch (_) {
+    return null;
+  }
+}
+
   static List<String> getAllowedTiers(String tier) {
     if (tier == 'premium') return ['guest', 'free', 'premium'];
     if (tier == 'free') return ['guest', 'free'];
@@ -136,8 +150,8 @@ class SupabaseService {
       final allowed = getAllowedTiers(tier);
       var query = _client
           .from('meals')
-          .select('id, name, type, calories, protein, carbs, fat, tier_required, created_at')
-          .inFilter('tier_required', allowed);
+          .select('id, name, type, calories, protein, carbs, fat, tier_required, image_url, created_at');
+          
 
       if (type != null) query = query.eq('type', type);
 
@@ -233,7 +247,7 @@ class SupabaseService {
       var query = _client
           .from('user_meals')
           .select(
-            'id, user_id, meal_id, date, created_at, meals(name, type, calories, protein, carbs, fat)',
+            'id, user_id, meal_id, date, completed, created_at, meals(id, name, type, calories, protein, carbs, fat, tier_required, image_url)'
           )
           .eq('user_id', currentUser!.id);
 
@@ -245,6 +259,47 @@ class SupabaseService {
       return [];
     }
   }
+
+  static Future<bool> toggleMealCompleted(int userMealId, bool completed) async {
+  try {
+    await _client
+        .from('user_meals')
+        .update({'completed': completed})
+        .eq('id', userMealId);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+static Future<bool> removeMealFromPlan(int userMealId) async {
+  if (!isLoggedIn) return false;
+  try {
+    await _client
+        .from('user_meals')
+        .delete()
+        .eq('id', userMealId);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+static Future<bool> isMealLoggedToday(int mealId) async {
+  if (!isLoggedIn) return false;
+  try {
+    final today = _todayString();
+    final res = await _client
+        .from('user_meals')
+        .select('id')
+        .eq('user_id', currentUser!.id)
+        .eq('meal_id', mealId)
+        .eq('date', today);
+    return (res as List).isNotEmpty;
+  } catch (_) {
+    return false;
+  }
+}
 
   // ── Stats ─────────────────────────────────────────────────────────────────────
   static Future<Map<String, int>> getWeeklyStats() async {

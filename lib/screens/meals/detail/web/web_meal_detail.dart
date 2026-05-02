@@ -1,313 +1,445 @@
 import 'package:flutter/material.dart';
 import '../../../../../core/theme/app_colors.dart';
- 
+import '../../../../../services/supabase_service.dart';
+
 class WebMealDetail extends StatefulWidget {
   final Map<String, dynamic> meal;
   final String userTier;
- 
+
   const WebMealDetail({super.key, required this.meal, required this.userTier});
- 
+
   @override
   State<WebMealDetail> createState() => _WebMealDetailState();
 }
- 
+
 class _WebMealDetailState extends State<WebMealDetail>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
- 
-  final Map<String, Map<String, dynamic>> _extendedData = {
-    'Breakfast': {
-      'fullItems': ['Rolled oats (80g)', 'Whole eggs (2)', 'Full-fat milk (200ml)', 'Banana (1 medium)', 'Honey (1 tsp)'],
-      'steps': [
-        'Cook oats in milk over medium heat for 5 minutes, stirring constantly.',
-        'Scramble or fry eggs separately with a pinch of salt.',
-        'Slice banana and place on top of oats.',
-        'Drizzle honey over the oats for natural sweetness.',
-        'Serve eggs alongside the oat bowl.',
-      ],
-      'prepTime': '10 min', 'goal': 'Muscle Gain',
-      'tags': ['High Protein', 'Complex Carbs', 'Morning Fuel'],
-      'protein': 28, 'carbs': 52, 'fat': 12,
-    },
-    'Lunch': {
-      'fullItems': ['Chicken breast (180g)', 'White rice (150g cooked)', 'Broccoli (100g)', 'Olive oil (1 tbsp)', 'Garlic (2 cloves)'],
-      'steps': [
-        'Season chicken breast with salt, pepper and garlic.',
-        'Grill or pan-fry chicken for 6–7 minutes each side.',
-        'Steam broccoli for 5 minutes until tender-crisp.',
-        'Cook rice as per packet instructions.',
-        'Plate everything and drizzle olive oil over broccoli.',
-      ],
-      'prepTime': '25 min', 'goal': 'Muscle Gain',
-      'tags': ['Lean Protein', 'Complex Carbs', 'Meal Prep'],
-      'protein': 45, 'carbs': 70, 'fat': 15,
-    },
-    'Snack': {
-      'fullItems': ['Whey protein (1 scoop)', 'Almond milk (300ml)', 'Banana (½)', 'Ice cubes'],
-      'steps': [
-        'Add almond milk to a blender.',
-        'Add protein scoop and banana.',
-        'Add a handful of ice cubes.',
-        'Blend for 30 seconds until smooth.',
-        'Drink within 30 minutes post-workout.',
-      ],
-      'prepTime': '3 min', 'goal': 'Recovery',
-      'tags': ['Post-Workout', 'Fast Absorbing', 'Simple'],
-      'protein': 25, 'carbs': 35, 'fat': 4,
-    },
-    'Dinner': {
-      'fullItems': ['Salmon fillet (180g)', 'Sweet potato (150g)', 'Broccoli (100g)', 'Lemon (½)', 'Olive oil (1 tbsp)'],
-      'steps': [
-        'Preheat oven to 200°C. Cube sweet potato and roast for 25 min.',
-        'Season salmon with lemon juice, salt and olive oil.',
-        'Pan-sear salmon skin-down for 4 minutes, flip for 2 more.',
-        'Steam broccoli while salmon cooks.',
-        'Plate sweet potato, broccoli and salmon together.',
-      ],
-      'prepTime': '30 min', 'goal': 'Recovery',
-      'tags': ['Omega-3', 'Anti-Inflammatory', 'Light'],
-      'protein': 38, 'carbs': 48, 'fat': 14,
-    },
-    'Oatmeal Bowl': {
-      'fullItems': ['Rolled oats (80g)', 'Whole milk (200ml)', 'Banana (1)', 'Honey (1 tsp)'],
-      'steps': [
-        'Bring milk to a gentle simmer in a saucepan.',
-        'Add rolled oats and stir continuously for 4–5 minutes.',
-        'Remove from heat and let stand for 1 minute to thicken.',
-        'Top with sliced banana and drizzle honey.',
-      ],
-      'prepTime': '8 min', 'goal': 'General Health',
-      'tags': ['High Carbs', 'Slow Release', 'Vegetarian'],
-      'protein': 12, 'carbs': 58, 'fat': 6,
-    },
-    'Egg White Omelette': {
-      'fullItems': ['Egg whites (4)', 'Spinach (handful)', 'Bell pepper (½)', 'Feta cheese (30g)', 'Olive oil (1 tsp)'],
-      'steps': [
-        'Whisk egg whites with a pinch of salt and pepper.',
-        'Heat olive oil in a non-stick pan over medium heat.',
-        'Add spinach and bell pepper, sauté for 2 minutes.',
-        'Pour in egg whites and cook until edges set.',
-        'Add feta, fold omelette, cook 1 more minute.',
-      ],
-      'prepTime': '12 min', 'goal': 'Fat Loss',
-      'tags': ['Low Fat', 'High Protein', 'Cutting'],
-      'protein': 30, 'carbs': 5, 'fat': 8,
-    },
-    'Avocado Toast': {
-      'fullItems': ['Sourdough bread (2 slices)', 'Ripe avocado (1)', 'Eggs (2 poached)', 'Chilli flakes', 'Lemon juice (½)'],
-      'steps': [
-        'Toast sourdough slices until golden and firm.',
-        'Mash avocado with lemon juice, salt and pepper.',
-        'Spread avocado generously on each toast slice.',
-        'Poach eggs for 3 minutes in simmering water.',
-        'Place poached eggs on top, sprinkle chilli flakes.',
-      ],
-      'prepTime': '15 min', 'goal': 'General Health',
-      'tags': ['Healthy Fats', 'Complex Carbs', 'Brunch'],
-      'protein': 18, 'carbs': 38, 'fat': 22,
-    },
-    'Chicken Rice Bowl': {
-      'fullItems': ['Chicken breast (180g)', 'White rice (150g)', 'Broccoli (100g)', 'Olive oil (1 tbsp)', 'Garlic (2 cloves)'],
-      'steps': [
-        'Season chicken with salt, pepper and garlic powder.',
-        'Grill chicken for 6–7 min each side until cooked through.',
-        'Steam broccoli for 5 minutes.',
-        'Cook rice and fluff with a fork.',
-        'Combine in a bowl and drizzle olive oil.',
-      ],
-      'prepTime': '25 min', 'goal': 'Muscle Gain',
-      'tags': ['Lean Protein', 'Complex Carbs', 'Classic'],
-      'protein': 45, 'carbs': 70, 'fat': 15,
-    },
-    'Tuna Pasta': {
-      'fullItems': ['Whole wheat pasta (120g)', 'Canned tuna (1 tin)', 'Cherry tomatoes (100g)', 'Fresh basil', 'Olive oil (1 tbsp)'],
-      'steps': [
-        'Cook pasta in salted boiling water per packet instructions.',
-        'Halve cherry tomatoes and sauté in olive oil for 3 minutes.',
-        'Drain pasta and add to the pan with tomatoes.',
-        'Flake in tuna and toss everything together.',
-        'Tear in fresh basil and serve.',
-      ],
-      'prepTime': '20 min', 'goal': 'Lean Bulk',
-      'tags': ['Omega-3', 'Whole Wheat', 'Quick'],
-      'protein': 40, 'carbs': 65, 'fat': 10,
-    },
-    'Steak Salad': {
-      'fullItems': ['Sirloin steak (200g)', 'Mixed greens (80g)', 'Cherry tomatoes (80g)', 'Blue cheese dressing (2 tbsp)', 'Red onion (¼)'],
-      'steps': [
-        'Season steak with salt, pepper and garlic.',
-        'Sear on high heat 3 min each side for medium-rare.',
-        'Rest steak for 5 minutes, then slice thinly.',
-        'Arrange greens, tomatoes and onion in a bowl.',
-        'Top with steak slices and drizzle dressing.',
-      ],
-      'prepTime': '20 min', 'goal': 'Fat Loss / Keto',
-      'tags': ['Keto-Friendly', 'High Protein', 'Low Carb'],
-      'protein': 48, 'carbs': 8, 'fat': 28,
-    },
-    'Protein Shake': {
-      'fullItems': ['Whey protein (1 scoop)', 'Almond milk (300ml)', 'Banana (½)', 'Ice cubes'],
-      'steps': [
-        'Pour almond milk into blender.',
-        'Add protein powder and banana.',
-        'Drop in ice cubes.',
-        'Blend 30 seconds until smooth and frothy.',
-      ],
-      'prepTime': '3 min', 'goal': 'Recovery',
-      'tags': ['Post-Workout', 'Fast Absorbing'],
-      'protein': 25, 'carbs': 20, 'fat': 3,
-    },
-    'Greek Yogurt + Nuts': {
-      'fullItems': ['Greek yogurt (200g)', 'Mixed nuts (30g)', 'Honey (1 tsp)', 'Mixed berries (50g)'],
-      'steps': [
-        'Spoon Greek yogurt into a bowl.',
-        'Scatter mixed nuts over the top.',
-        'Add fresh or frozen berries.',
-        'Drizzle honey to finish.',
-      ],
-      'prepTime': '3 min', 'goal': 'General Health',
-      'tags': ['Probiotics', 'Healthy Fats', 'No Cook'],
-      'protein': 18, 'carbs': 22, 'fat': 14,
-    },
-    'Rice Cake + Peanut Butter': {
-      'fullItems': ['Rice cakes (3)', 'Natural peanut butter (2 tbsp)', 'Banana slices'],
-      'steps': [
-        'Lay rice cakes flat on a plate.',
-        'Spread peanut butter evenly on each cake.',
-        'Slice banana and layer on top.',
-        'Optionally sprinkle with cinnamon.',
-      ],
-      'prepTime': '4 min', 'goal': 'Pre-Workout',
-      'tags': ['Pre-Workout', 'Quick Energy', 'Simple'],
-      'protein': 10, 'carbs': 42, 'fat': 12,
-    },
-    'Grilled Fish + Veg': {
-      'fullItems': ['Salmon fillet (180g)', 'Sweet potato (150g)', 'Broccoli (100g)', 'Lemon (½)', 'Olive oil'],
-      'steps': [
-        'Roast sweet potato cubes at 200°C for 25 minutes.',
-        'Season salmon with lemon, salt and olive oil.',
-        'Pan-sear salmon 4 min skin-side down, flip 2 min.',
-        'Steam broccoli for 5 minutes.',
-        'Plate and squeeze remaining lemon over fish.',
-      ],
-      'prepTime': '30 min', 'goal': 'Recovery',
-      'tags': ['Omega-3', 'Light', 'Anti-Inflammatory'],
-      'protein': 38, 'carbs': 48, 'fat': 14,
-    },
-    'Chicken Stir-fry': {
-      'fullItems': ['Chicken breast (180g)', 'Egg noodles (100g)', 'Mixed veg (150g)', 'Soy sauce (2 tbsp)', 'Sesame oil (1 tsp)'],
-      'steps': [
-        'Cook noodles as per packet, drain and set aside.',
-        'Slice chicken into strips and stir-fry 5–6 minutes.',
-        'Add mixed vegetables and cook 3 more minutes.',
-        'Add noodles, soy sauce and sesame oil.',
-        'Toss everything together on high heat for 1 minute.',
-      ],
-      'prepTime': '20 min', 'goal': 'Muscle Gain',
-      'tags': ['High Protein', 'Asian Style', 'Quick'],
-      'protein': 42, 'carbs': 55, 'fat': 12,
-    },
-    'Beef & Sweet Potato': {
-      'fullItems': ['Lean beef mince (200g)', 'Sweet potato (180g)', 'Spinach (80g)', 'Garlic (3 cloves)', 'Olive oil'],
-      'steps': [
-        'Dice sweet potato and roast at 200°C for 25 minutes.',
-        'Brown beef mince with garlic in olive oil, 8 minutes.',
-        'Add spinach to the pan, wilt for 2 minutes.',
-        'Combine mince mix with roasted sweet potato.',
-        'Season and serve hot.',
-      ],
-      'prepTime': '30 min', 'goal': 'Muscle Gain',
-      'tags': ['High Protein', 'Complex Carbs', 'Bulking'],
-      'protein': 44, 'carbs': 52, 'fat': 18,
-    },
-  };
- 
-  Map<String, dynamic> get _extra {
-    final name = (widget.meal['meal'] ?? widget.meal['name']) as String? ?? '';
-    return _extendedData[name] ?? {
-      'fullItems': [widget.meal['items'] ?? 'See ingredients list'],
-      'steps': ['Prepare ingredients as listed.', 'Cook and serve.'],
-      'prepTime': (widget.meal['prepTime'] as String?) ?? '20 min',
-      'goal': (widget.meal['goal'] as String?) ?? 'General Health',
-      'tags': ['Balanced'],
-      'protein': (widget.meal['protein'] as int?) ?? 0,
-      'carbs': (widget.meal['carbs'] as int?) ?? 0,
-      'fat': (widget.meal['fat'] as int?) ?? 0,
-    };
-  }
- 
+  late Animation<Offset> _slideAnim;
+
+  Map<String, dynamic>? _detail;
+  bool _loading = true;
+  String _userTier = 'guest';
+  bool _addedToPlan = false;
+
+  // ── Getters ──────────────────────────────────────────────────────────────
+  String get _mealName => (widget.meal['name'] as String?) ?? '';
+  String get _mealType => (widget.meal['type'] as String?) ?? '';
+  String get _imageUrl => (widget.meal['image_url'] as String?) ?? '';
   int get _calories => (widget.meal['calories'] as int?) ?? 0;
-  int get _protein => (widget.meal['protein'] as int?) ?? (_extra['protein'] as int? ?? 0);
-  int get _carbs => (widget.meal['carbs'] as int?) ?? (_extra['carbs'] as int? ?? 0);
-  int get _fat => (widget.meal['fat'] as int?) ?? (_extra['fat'] as int? ?? 0);
- 
+  int get _protein => ((widget.meal['protein'] as double?) ?? 0).round();
+  int get _carbs => ((widget.meal['carbs'] as double?) ?? 0).round();
+  int get _fat => ((widget.meal['fat'] as double?) ?? 0).round();
+  String get _tierRequired =>
+      (widget.meal['tier_required'] as String?) ?? 'guest';
+
+  bool get _isUnlocked {
+    const order = {'guest': 0, 'free': 1, 'premium': 2};
+    return (order[_userTier] ?? 0) >= (order[_tierRequired] ?? 0);
+  }
+
+  int get _prepTime => (_detail?['prep_time_minutes'] as int?) ?? 0;
+
+  List<String> get _recipeSteps {
+    final recipe = (_detail?['recipe'] as String?) ?? '';
+    if (recipe.isEmpty) return [];
+    return recipe
+        .split('\n')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
+
+  List<String> get _ingredients {
+    final raw = _detail?['ingredients'];
+    if (raw == null) return [];
+    if (raw is List) return raw.map((e) => e.toString()).toList();
+    return [];
+  }
+
+  final Map<String, String> _typeLabels = {
+    'breakfast': 'Breakfast',
+    'lunch': 'Lunch',
+    'snack': 'Snack',
+    'dinner': 'Dinner',
+  };
+
+  Color get _typeColor {
+    const colors = {
+      'breakfast': Color(0xFFFFD600),
+      'lunch': Color(0xFF00C853),
+      'snack': Color(0xFFAA00FF),
+      'dinner': Color(0xFF2979FF),
+    };
+    return colors[_mealType] ?? AppColors.primary;
+  }
+
+  Color _tierColor(String tier) {
+    if (tier == 'premium') return const Color(0xFFFFD600);
+    if (tier == 'free') return AppColors.primary;
+    return Colors.grey;
+  }
+
+  String _tierLabel(String tier) {
+    if (tier == 'premium') return '⭐ PREMIUM';
+    if (tier == 'free') return 'MEMBER';
+    return 'FREE';
+  }
+
+  // ── Lifecycle ────────────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
     _animController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 600));
     _fadeAnim = Tween<double>(begin: 0, end: 1).animate(
-        CurvedAnimation(parent: _animController, curve: Curves.easeIn));
-    _animController.forward();
+        CurvedAnimation(parent: _animController, curve: Curves.easeOut));
+    _slideAnim = Tween<Offset>(
+            begin: const Offset(0, 0.04), end: Offset.zero)
+        .animate(CurvedAnimation(
+            parent: _animController, curve: Curves.easeOut));
+    _userTier = widget.userTier;
+    _loadDetail();
   }
- 
+
   @override
   void dispose() {
     _animController.dispose();
     super.dispose();
   }
- 
+
+  Future<void> _loadDetail() async {
+    setState(() => _loading = true);
+    try {
+      final tier = await SupabaseService.getUserTier();
+      final mealId = widget.meal['id'] as int?;
+      Map<String, dynamic>? detail;
+      if (mealId != null) {
+        detail = await SupabaseService.getMealDetail(mealId);
+      }
+      if (mounted) {
+        setState(() {
+          _userTier = tier;
+          _detail = detail;
+          _loading = false;
+        });
+        _animController.forward();
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _onAddToPlan() async {
+    final mealId = widget.meal['id'] as int?;
+    if (mealId == null) return;
+    final already = await SupabaseService.isMealLoggedToday(mealId);
+    if (already) {
+      _showSnack('Already in today\'s plan', isError: true);
+      return;
+    }
+    final ok = await SupabaseService.logMeal(mealId);
+    if (ok && mounted) {
+      setState(() => _addedToPlan = true);
+      _showSnack('Added to today\'s plan ✓');
+    }
+  }
+
+  void _showSnack(String msg, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg,
+          style: const TextStyle(
+              color: Colors.white, fontWeight: FontWeight.w600)),
+      backgroundColor:
+          isError ? const Color(0xFFFF1744) : AppColors.primary,
+      behavior: SnackBarBehavior.floating,
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      duration: const Duration(seconds: 2),
+    ));
+  }
+
+  // ── Build ────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0A0A0A);
-    final textSecondary = isDark ? const Color(0xFFB0B0B0) : const Color(0xFF555555);
-    final bgColor = isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF0F2F5);
-    final cardColor = isDark ? const Color(0xFF141414) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
- 
+    final textPrimary =
+        isDark ? Colors.white : const Color(0xFF0A0A0A);
+    final textSecondary =
+        isDark ? const Color(0xFFB0B0B0) : const Color(0xFF555555);
+    final bgColor =
+        isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF0F2F5);
+    final cardColor =
+        isDark ? const Color(0xFF141414) : Colors.white;
+    final borderColor =
+        isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
+
     return Scaffold(
       backgroundColor: bgColor,
-      body: FadeTransition(
-        opacity: _fadeAnim,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(28),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Back button ────────────────────────────────────
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: textSecondary),
-                        const SizedBox(width: 6),
-                        Text('Back', style: TextStyle(fontSize: 13, color: textSecondary)),
-                      ],
+      body: _loading
+          ? Center(
+              child: CircularProgressIndicator(
+                  color: AppColors.primary, strokeWidth: 2))
+          : FadeTransition(
+              opacity: _fadeAnim,
+              child: SlideTransition(
+                position: _slideAnim,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ── Full-bleed hero ────────────────────────
+                      _buildHero(isDark, bgColor),
+
+                      // ── Content body ───────────────────────────
+                      Center(
+                        child: ConstrainedBox(
+                          constraints:
+                              const BoxConstraints(maxWidth: 960),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                                40, 32, 40, 60),
+                            child: _buildBody(
+                              isDark: isDark,
+                              textPrimary: textPrimary,
+                              textSecondary: textSecondary,
+                              cardColor: cardColor,
+                              borderColor: borderColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+    );
+  }
+
+  // ── Hero ─────────────────────────────────────────────────────────────────
+  Widget _buildHero(bool isDark, Color bgColor) {
+    return SizedBox(
+      height: 420,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background image
+          _imageUrl.isNotEmpty
+              ? Image.network(
+                  _imageUrl,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  errorBuilder: (_, __, ___) => _imageFallback(),
+                )
+              : _imageFallback(),
+
+          // Lock overlay
+          if (!_isUnlocked)
+            Container(
+              color: Colors.black.withOpacity(0.7),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.lock_rounded,
+                        size: 56, color: _tierColor(_tierRequired)),
+                    const SizedBox(height: 12),
+                    Text(
+                      _tierRequired == 'premium'
+                          ? 'Premium Content'
+                          : 'Members Only',
+                      style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: _tierColor(_tierRequired)),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildBody(
-                    isDark: isDark,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    cardColor: cardColor,
-                    borderColor: borderColor,
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      _tierRequired == 'premium'
+                          ? 'Upgrade to Premium to unlock this recipe'
+                          : 'Create a free account to access this recipe',
+                      style: const TextStyle(
+                          fontSize: 14, color: Colors.white54),
+                    ),
+                    const SizedBox(height: 20),
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () => Navigator.pushNamed(
+                            context,
+                            _tierRequired == 'premium'
+                                ? '/premium'
+                                : '/register'),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 28, vertical: 14),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            color: _tierColor(_tierRequired),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _tierColor(_tierRequired)
+                                    .withOpacity(0.4),
+                                blurRadius: 20,
+                                offset: const Offset(0, 6),
+                              )
+                            ],
+                          ),
+                          child: Text(
+                            _tierRequired == 'premium'
+                                ? 'Go Premium'
+                                : 'Sign Up Free',
+                            style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.black,
+                                fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Bottom gradient fade into bg
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 160,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    bgColor,
+                  ],
+                ),
               ),
             ),
           ),
-        ),
+
+          // Top bar — back button + action
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 28, vertical: 16),
+                child: Row(
+                  children: [
+                    // Back button
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            color: Colors.black.withOpacity(0.5),
+                            border: Border.all(
+                                color: Colors.white24, width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.arrow_back_ios_new_rounded,
+                                  size: 12, color: Colors.white),
+                              SizedBox(width: 6),
+                              Text('Back',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+
+                    // Add to Plan button
+                    if (SupabaseService.isLoggedIn && _isUnlocked)
+                      MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          onTap: _onAddToPlan,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 18, vertical: 10),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              color: _addedToPlan
+                                  ? Colors.black.withOpacity(0.6)
+                                  : AppColors.primary,
+                              border: _addedToPlan
+                                  ? Border.all(
+                                      color: AppColors.primary
+                                          .withOpacity(0.5))
+                                  : null,
+                              boxShadow: _addedToPlan
+                                  ? null
+                                  : [
+                                      BoxShadow(
+                                        color: AppColors.primary
+                                            .withOpacity(0.4),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      )
+                                    ],
+                            ),
+                            child: Text(
+                              _addedToPlan ? '✓ Added to Plan' : '+ Add to Plan',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: _addedToPlan
+                                      ? AppColors.primary
+                                      : Colors.black,
+                                  fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Badges bottom left (only if unlocked)
+          if (_isUnlocked)
+            Positioned(
+              bottom: 24,
+              left: 40,
+              child: Row(children: [
+                _heroBadge(
+                    _typeLabels[_mealType] ?? _mealType, _typeColor),
+                const SizedBox(width: 10),
+                _heroBadge(
+                    _tierLabel(_tierRequired), _tierColor(_tierRequired)),
+                if (_prepTime > 0) ...[
+                  const SizedBox(width: 10),
+                  _heroBadge('⏱ ${_prepTime} min', Colors.white70),
+                ],
+              ]),
+            ),
+        ],
       ),
     );
   }
- 
+
+  // ── Body ─────────────────────────────────────────────────────────────────
   Widget _buildBody({
     required bool isDark,
     required Color textPrimary,
@@ -315,223 +447,475 @@ class _WebMealDetailState extends State<WebMealDetail>
     required Color cardColor,
     required Color borderColor,
   }) {
-    final meal = widget.meal;
-    final color = meal['color'] as Color;
-    final extra = _extra;
-    final tags = extra['tags'] as List<dynamic>;
-    final steps = extra['steps'] as List<dynamic>;
-    final fullItems = extra['fullItems'] as List<dynamic>;
- 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Hero card ──────────────────────────────────────────────
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: color.withOpacity(isDark ? 0.12 : 0.07),
-            border: Border.all(color: color.withOpacity(0.3), width: 1.5),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 64, height: 64,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: color.withOpacity(0.15),
-                  border: Border.all(color: color.withOpacity(0.4), width: 2),
-                ),
-                child: Center(
-                  child: Text(meal['emoji'] as String, style: const TextStyle(fontSize: 30)),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      (meal['meal'] ?? meal['name']) as String? ?? '',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: textPrimary),
-                    ),
-                    const SizedBox(height: 4),
-                    if ((meal['desc'] as String?) != null)
-                      Text(meal['desc'] as String,
-                          style: TextStyle(fontSize: 12, color: textSecondary)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 6, runSpacing: 4,
-                      children: [
-                        _buildTag('🎯 ${extra['goal']}', color),
-                        _buildTag('⏱ ${extra['prepTime']}', AppColors.primary),
-                        if ((meal['time'] as String?) != null)
-                          _buildTag('🕐 ${meal['time']}', textSecondary),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
- 
-        // ── Macros ─────────────────────────────────────────────────
+        // ── Two-column layout ──────────────────────────────────
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildMacroCard('Calories', '$_calories', 'kcal', color, textPrimary, textSecondary),
-            const SizedBox(width: 8),
-            _buildMacroCard('Protein', '$_protein', 'g', const Color(0xFF2979FF), textPrimary, textSecondary),
-            const SizedBox(width: 8),
-            _buildMacroCard('Carbs', '$_carbs', 'g', const Color(0xFFFF6D00), textPrimary, textSecondary),
-            const SizedBox(width: 8),
-            _buildMacroCard('Fat', '$_fat', 'g', const Color(0xFFFFD600), textPrimary, textSecondary),
-          ],
-        ),
-        const SizedBox(height: 16),
- 
-        // ── Tags ───────────────────────────────────────────────────
-        Wrap(
-          spacing: 8, runSpacing: 6,
-          children: tags.map((t) => _buildTag(t as String, AppColors.primary)).toList(),
-        ),
-        const SizedBox(height: 20),
- 
-        // ── Ingredients ────────────────────────────────────────────
-        _buildSectionHeader('🛒 Ingredients', textPrimary),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            color: cardColor,
-            border: Border.all(color: borderColor),
-          ),
-          child: Column(
-            children: fullItems.map((item) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
+            // Left column — title + macros + ingredients
+            Expanded(
+              flex: 5,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(width: 8, height: 8,
-                      decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(item as String,
-                      style: TextStyle(fontSize: 13, color: textPrimary))),
+                  // Meal name
+                  Text(
+                    _mealName,
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      color: textPrimary,
+                      letterSpacing: -0.8,
+                      height: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Macro grid
+                  _buildMacroGrid(isDark, textSecondary),
+                  const SizedBox(height: 28),
+
+                  // Ingredients
+                  if (_isUnlocked) ...[
+                    if (_ingredients.isNotEmpty) ...[
+                      _sectionHeader('🛒  Ingredients', textPrimary),
+                      const SizedBox(height: 14),
+                      _buildIngredients(
+                          isDark, textPrimary, cardColor, borderColor),
+                    ] else
+                      _buildNoDetail(textSecondary),
+                  ] else
+                    _buildLockedIngredients(
+                        isDark, textPrimary, textSecondary),
                 ],
               ),
-            )).toList(),
-          ),
-        ),
-        const SizedBox(height: 20),
- 
-        // ── Steps ──────────────────────────────────────────────────
-        _buildSectionHeader('👨‍🍳 How to Prepare', textPrimary),
-        const SizedBox(height: 10),
-        ...steps.asMap().entries.map((entry) => Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: cardColor,
-            border: Border.all(color: borderColor),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 26, height: 26,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: color.withOpacity(0.15),
-                  border: Border.all(color: color.withOpacity(0.4)),
-                ),
-                child: Center(
-                  child: Text('${entry.key + 1}',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: color)),
-                ),
+            ),
+
+            const SizedBox(width: 40),
+
+            // Right column — recipe steps + tip
+            Expanded(
+              flex: 4,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_isUnlocked) ...[
+                    if (_recipeSteps.isNotEmpty) ...[
+                      _sectionHeader('👨‍🍳  How to Prepare', textPrimary),
+                      const SizedBox(height: 14),
+                      _buildSteps(isDark, textPrimary, textSecondary,
+                          cardColor, borderColor),
+                      const SizedBox(height: 24),
+                    ],
+                    _buildNutritionTip(isDark, textSecondary),
+                  ] else
+                    _buildLockedRecipe(
+                        isDark, textPrimary, textSecondary),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(child: Text(entry.value as String,
-                  style: TextStyle(fontSize: 13, color: textSecondary))),
-            ],
-          ),
-        )),
- 
-        // ── Nutrition tip ──────────────────────────────────────────
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: AppColors.primary.withOpacity(isDark ? 0.1 : 0.06),
-            border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('💡', style: TextStyle(fontSize: 18)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Nutrition Tip',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
-                            color: AppColors.primary)),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Meal prep this on Sundays to stay consistent with your nutrition goals throughout the week.',
-                      style: TextStyle(fontSize: 12, color: textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-        const SizedBox(height: 30),
       ],
     );
   }
- 
-  Widget _buildMacroCard(String label, String value, String unit, Color color,
-      Color textPrimary, Color textSecondary) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: color.withOpacity(0.08),
-          border: Border.all(color: color.withOpacity(0.2)),
-        ),
-        child: Column(
-          children: [
-            Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: color)),
-            const SizedBox(height: 2),
-            Text(unit, style: TextStyle(fontSize: 9, color: textSecondary)),
-            Text(label, style: TextStyle(fontSize: 9, color: textSecondary)),
-          ],
-        ),
+
+  // ── Macro grid ────────────────────────────────────────────────────────────
+  Widget _buildMacroGrid(bool isDark, Color textSecondary) {
+    final macros = [
+      {
+        'label': 'Calories',
+        'value': '$_calories',
+        'unit': 'kcal',
+        'color': _typeColor,
+        'icon': Icons.local_fire_department_rounded,
+      },
+      {
+        'label': 'Protein',
+        'value': '$_protein',
+        'unit': 'g',
+        'color': const Color(0xFF2979FF),
+        'icon': Icons.fitness_center_rounded,
+      },
+      {
+        'label': 'Carbs',
+        'value': '$_carbs',
+        'unit': 'g',
+        'color': const Color(0xFFFF6D00),
+        'icon': Icons.grain_rounded,
+      },
+      {
+        'label': 'Fat',
+        'value': '$_fat',
+        'unit': 'g',
+        'color': const Color(0xFFFFD600),
+        'icon': Icons.water_drop_rounded,
+      },
+    ];
+
+    return Row(
+      children: macros.asMap().entries.map((e) {
+        final i = e.key;
+        final m = e.value;
+        final color = m['color'] as Color;
+        final icon = m['icon'] as IconData;
+        return Expanded(
+          child: Container(
+            margin: EdgeInsets.only(right: i < 3 ? 10 : 0),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: color.withOpacity(0.07),
+              border: Border.all(color: color.withOpacity(0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, size: 18, color: color.withOpacity(0.7)),
+                const SizedBox(height: 10),
+                Text(m['value'] as String,
+                    style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: color)),
+                Text('${m['unit']}',
+                    style: TextStyle(
+                        fontSize: 10,
+                        color: color.withOpacity(0.6))),
+                Text(m['label'] as String,
+                    style: TextStyle(
+                        fontSize: 10,
+                        color: color.withOpacity(0.6))),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // ── Ingredients ──────────────────────────────────────────────────────────
+  Widget _buildIngredients(bool isDark, Color textPrimary,
+      Color cardColor, Color borderColor) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: cardColor,
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: _ingredients.asMap().entries.map((e) {
+          final i = e.key;
+          final item = e.value;
+          final isLast = i == _ingredients.length - 1;
+          return Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.only(top: 5),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _typeColor,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(item,
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: textPrimary,
+                            height: 1.4)),
+                  ),
+                ],
+              ),
+              if (!isLast)
+                Divider(
+                  height: 16,
+                  color: _typeColor.withOpacity(0.1),
+                ),
+            ],
+          );
+        }).toList(),
       ),
     );
   }
- 
-  Widget _buildTag(String label, Color color) {
+
+  // ── Recipe Steps ─────────────────────────────────────────────────────────
+  Widget _buildSteps(bool isDark, Color textPrimary,
+      Color textSecondary, Color cardColor, Color borderColor) {
+    return Column(
+      children: _recipeSteps.asMap().entries.map((e) {
+        final num = e.key + 1;
+        final step = e.value;
+        final isLast = num == _recipeSteps.length;
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Step number + line
+            Column(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _typeColor.withOpacity(0.12),
+                    border: Border.all(
+                        color: _typeColor.withOpacity(0.4), width: 1.5),
+                  ),
+                  child: Center(
+                    child: Text('$num',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            color: _typeColor)),
+                  ),
+                ),
+                if (!isLast)
+                  Container(
+                    width: 1.5,
+                    height: 28,
+                    color: _typeColor.withOpacity(0.2),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: cardColor,
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Text(step,
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: textSecondary,
+                          height: 1.5)),
+                ),
+              ),
+            ),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  // ── Nutrition tip ─────────────────────────────────────────────────────────
+  Widget _buildNutritionTip(bool isDark, Color textSecondary) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: AppColors.primary.withOpacity(isDark ? 0.08 : 0.05),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primary.withOpacity(0.12),
+            ),
+            child: const Center(
+              child: Text('💡', style: TextStyle(fontSize: 16)),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Nutrition Tip',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary)),
+                const SizedBox(height: 6),
+                Text(
+                  'Meal prep this on Sundays to stay consistent with your nutrition goals throughout the week. Portion into containers for easy grab-and-go access.',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: textSecondary,
+                      height: 1.6),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Locked states ─────────────────────────────────────────────────────────
+  Widget _buildLockedIngredients(
+      bool isDark, Color textPrimary, Color textSecondary) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: _tierColor(_tierRequired).withOpacity(0.06),
+        border: Border.all(
+            color: _tierColor(_tierRequired).withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.lock_rounded,
+                size: 18, color: _tierColor(_tierRequired)),
+            const SizedBox(width: 8),
+            Text('Ingredients locked',
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: textPrimary)),
+          ]),
+          const SizedBox(height: 8),
+          Text(
+            _tierRequired == 'premium'
+                ? 'Upgrade to Premium to see the full ingredients list.'
+                : 'Create a free account to access all recipes.',
+            style: TextStyle(fontSize: 12, color: textSecondary),
+          ),
+          const SizedBox(height: 16),
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context,
+                  _tierRequired == 'premium' ? '/premium' : '/register'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: _tierColor(_tierRequired),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _tierColor(_tierRequired).withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    )
+                  ],
+                ),
+                child: Text(
+                  _tierRequired == 'premium'
+                      ? 'Upgrade to Premium'
+                      : 'Sign Up Free',
+                  style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.black,
+                      fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLockedRecipe(
+      bool isDark, Color textPrimary, Color textSecondary) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: _tierColor(_tierRequired).withOpacity(0.06),
+        border: Border.all(
+            color: _tierColor(_tierRequired).withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.menu_book_rounded,
+              size: 40, color: _tierColor(_tierRequired).withOpacity(0.5)),
+          const SizedBox(height: 16),
+          Text(
+            _tierRequired == 'premium'
+                ? 'Full Recipe — Premium Only'
+                : 'Full Recipe — Members Only',
+            style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: textPrimary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _tierRequired == 'premium'
+                ? 'Step-by-step preparation instructions are exclusive to Premium members.'
+                : 'Sign up for free to unlock full recipe steps.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: textSecondary, height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoDetail(Color textSecondary) {
+    return Text('No ingredient details available.',
+        style: TextStyle(fontSize: 13, color: textSecondary));
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  Widget _sectionHeader(String title, Color textPrimary) {
+    return Text(title,
+        style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: textPrimary));
+  }
+
+  Widget _heroBadge(String label, Color color) {
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: color.withOpacity(0.1),
-        border: Border.all(color: color.withOpacity(0.25)),
+        color: Colors.black.withOpacity(0.6),
+        border: Border.all(color: color.withOpacity(0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 8,
+          )
+        ],
       ),
       child: Text(label,
-          style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
+          style: TextStyle(
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w700)),
     );
   }
- 
-  Widget _buildSectionHeader(String title, Color textPrimary) {
-    return Text(title,
-        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textPrimary));
+
+  Widget _imageFallback() {
+    return Container(
+      color: _typeColor.withOpacity(0.15),
+      child: Center(
+          child: Icon(Icons.restaurant_rounded,
+              size: 80, color: _typeColor.withOpacity(0.5))),
+    );
   }
 }
