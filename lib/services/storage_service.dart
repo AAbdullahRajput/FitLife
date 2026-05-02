@@ -182,4 +182,36 @@ class StorageService {
     data[field] = value;
     await prefs.setString('fitlife_user', jsonEncode(data));
   }
+
+  // ── Save profile photo URL to Supabase profiles table ────────────────────
+  static Future<void> saveProfilePhotoToSupabase(String url) async {
+    try {
+      final supabase = Supabase.instance.client;
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) return;
+      await supabase
+          .from('profiles')
+          .update({'avatar_url': url})
+          .eq('id', userId);
+    } catch (e) {
+      print('Save avatar_url error: $e');
+    }
+  }
+
+  // ── Get profile photo URL from Supabase profiles table ───────────────────
+  static Future<String?> getProfilePhotoFromSupabase() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) return null;
+      final res = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', userId)
+          .single();
+      return res['avatar_url'] as String?;
+    } catch (e) {
+      return null;
+    }
+  }
 }

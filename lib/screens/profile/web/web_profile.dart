@@ -250,9 +250,15 @@ class _WebProfileState extends State<WebProfile>
 
 
 Future<void> _loadProfilePhoto() async {
-    final path = await StorageService.getProfilePhoto();
-    if (mounted) setState(() => _profilePhotoPath = path);
-    // Also sync profile fields from Supabase
+    final localPath = await StorageService.getProfilePhoto();
+    if (mounted) setState(() => _profilePhotoPath = localPath);
+
+    // Supabase avatar_url is the source of truth across all platforms
+    final remoteUrl = await StorageService.getProfilePhotoFromSupabase();
+    if (remoteUrl != null && remoteUrl != localPath) {
+      await StorageService.saveProfilePhoto(remoteUrl);
+      if (mounted) setState(() => _profilePhotoPath = remoteUrl);
+    }
     await _syncProfileFromSupabase();
   }
 
@@ -351,6 +357,7 @@ Future<void> _loadProfilePhoto() async {
                               .uploadProfilePhotoAndGetUrl(picked);
                           if (url != null) {
                             await StorageService.saveProfilePhoto(url);
+                            await StorageService.saveProfilePhotoToSupabase(url);
                             PaintingBinding.instance.imageCache.clear();
                             PaintingBinding.instance.imageCache.clearLiveImages();
                             if (mounted) {

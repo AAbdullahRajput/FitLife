@@ -8,6 +8,7 @@ import '../../../core/data/app_data.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../../services/storage_service.dart';
+import '../../../services/supabase_service.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // IMAGE URLS  (mirrors web _Imgs class)
@@ -154,14 +155,37 @@ class _MobileDashboardState extends State<MobileDashboard>
     _loadSavedImages();
   }
 
+  @override
+  void didUpdateWidget(MobileDashboard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _loadSavedImages();
+  }
+
   Future<void> _loadSavedImages() async {
     final banner = await StorageService.getHomeBanner();
-    final photo = await StorageService.getProfilePhoto();
-    if (mounted) {
-      setState(() {
-        _homeBannerPath = banner;
-        _profilePhotoPath = photo;
-      });
+
+    // Load local photo first for instant display
+    final localPhoto = await StorageService.getProfilePhoto();
+    if (mounted) setState(() {
+      _homeBannerPath = banner;
+      _profilePhotoPath = localPhoto;
+    });
+
+    // Sync profile data AND photo from Supabase
+    final profile = await SupabaseService.getProfile();
+    if (profile != null) {
+      AppData.loadFromMap(profile);
+      await StorageService.updateUserField('name', AppData.userName);
+      await StorageService.updateUserField('weight', AppData.userWeight);
+      await StorageService.updateUserField('height', AppData.userHeight);
+      await StorageService.updateUserField('age', AppData.userAge);
+    }
+
+    // Get photo from Supabase as source of truth
+    final remotePhoto = await StorageService.getProfilePhotoFromSupabase();
+    if (remotePhoto != null && remotePhoto != localPhoto) {
+      await StorageService.saveProfilePhoto(remotePhoto);
+      if (mounted) setState(() => _profilePhotoPath = remotePhoto);
     }
   }
 

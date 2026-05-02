@@ -186,8 +186,16 @@ class _MobileProfileState extends State<MobileProfile>
   }
 
   Future<void> _loadProfilePhoto() async {
-    final path = await StorageService.getProfilePhoto();
-    if (mounted) setState(() => _profilePhotoPath = path);
+    // First load local cache so UI shows something immediately
+    final localPath = await StorageService.getProfilePhoto();
+    if (mounted) setState(() => _profilePhotoPath = localPath);
+
+    // Then fetch from Supabase — this is the source of truth
+    final remoteUrl = await StorageService.getProfilePhotoFromSupabase();
+    if (remoteUrl != null && remoteUrl != localPath) {
+      await StorageService.saveProfilePhoto(remoteUrl);
+      if (mounted) setState(() => _profilePhotoPath = remoteUrl);
+    }
     await _syncProfileFromSupabase();
   }
 
@@ -219,9 +227,9 @@ class _MobileProfileState extends State<MobileProfile>
     final url = await StorageService.uploadProfilePhotoAndGetUrl(picked);
     if (url != null) {
       await StorageService.saveProfilePhoto(url);
+      await StorageService.saveProfilePhotoToSupabase(url); // sync to web
       PaintingBinding.instance.imageCache.clear();
       PaintingBinding.instance.imageCache.clearLiveImages();
-      // Evict the old URL from Flutter's image cache explicitly
       if (_profilePhotoPath != null) {
         await NetworkImage(_profilePhotoPath!).evict();
       }
@@ -300,6 +308,9 @@ class _MobileProfileState extends State<MobileProfile>
                           .uploadProfilePhotoAndGetUrl(picked);
                       final toSave = url ?? picked.path;
                       await StorageService.saveProfilePhoto(toSave);
+                      if (url != null) {
+                        await StorageService.saveProfilePhotoToSupabase(url);
+                      }
       PaintingBinding.instance.imageCache.clear();
       PaintingBinding.instance.imageCache.clearLiveImages();
       if (_profilePhotoPath != null) {
