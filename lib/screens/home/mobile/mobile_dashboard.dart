@@ -416,12 +416,23 @@ class _MobileDashboardState extends State<MobileDashboard>
             ),
             child: ClipOval(
               child: _profilePhotoPath != null
-                  ? Image.file(
-                      File(_profilePhotoPath!),
-                      fit: BoxFit.cover,
-                      width: 46,
-                      height: 46,
-                    )
+                  ? (_profilePhotoPath!.startsWith('http')
+                      ? Image.network(
+                          _profilePhotoPath!,
+                          key: ValueKey(_profilePhotoPath),
+                          fit: BoxFit.cover,
+                          width: 46,
+                          height: 46,
+                          errorBuilder: (_, __, ___) => Center(
+                            child: Icon(Icons.person_rounded,
+                                size: 22, color: accent)),
+                        )
+                      : Image.file(
+                          File(_profilePhotoPath!),
+                          fit: BoxFit.cover,
+                          width: 46,
+                          height: 46,
+                        ))
                   : Center(
                       child: Icon(Icons.person_rounded,
                           size: 22, color: accent)),

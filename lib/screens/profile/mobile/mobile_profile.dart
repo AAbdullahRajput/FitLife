@@ -8,6 +8,7 @@ import '../../../services/storage_service.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/painting.dart';
+import '../../../services/supabase_service.dart';
 
 // ── Mobile-only image URLs (different from web_profile.dart) ──────────────
 class _MImgs {
@@ -187,8 +188,20 @@ class _MobileProfileState extends State<MobileProfile>
   Future<void> _loadProfilePhoto() async {
     final path = await StorageService.getProfilePhoto();
     if (mounted) setState(() => _profilePhotoPath = path);
+    await _syncProfileFromSupabase();
   }
 
+  Future<void> _syncProfileFromSupabase() async {
+    final profile = await SupabaseService.getProfile();
+    if (profile != null && mounted) {
+      AppData.loadFromMap(profile);
+      await StorageService.updateUserField('name', AppData.userName);
+      await StorageService.updateUserField('weight', AppData.userWeight);
+      await StorageService.updateUserField('height', AppData.userHeight);
+      await StorageService.updateUserField('age', AppData.userAge);
+      setState(() {});
+    }
+  }
   @override
   void dispose() {
     _animController.dispose();
@@ -208,6 +221,10 @@ class _MobileProfileState extends State<MobileProfile>
       await StorageService.saveProfilePhoto(url);
       PaintingBinding.instance.imageCache.clear();
       PaintingBinding.instance.imageCache.clearLiveImages();
+      // Evict the old URL from Flutter's image cache explicitly
+      if (_profilePhotoPath != null) {
+        await NetworkImage(_profilePhotoPath!).evict();
+      }
       if (mounted) setState(() => _profilePhotoPath = url);
       _showSnack('Photo updated!');
     } else {
@@ -283,12 +300,15 @@ class _MobileProfileState extends State<MobileProfile>
                           .uploadProfilePhotoAndGetUrl(picked);
                       final toSave = url ?? picked.path;
                       await StorageService.saveProfilePhoto(toSave);
-                      PaintingBinding.instance.imageCache.clear();
-                      PaintingBinding.instance.imageCache.clearLiveImages();
-                      if (mounted) {
-                        setState(() => _profilePhotoPath = toSave);
-                        setSheetState(() {});
-                      }
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+      if (_profilePhotoPath != null) {
+        await NetworkImage(_profilePhotoPath!).evict();
+      }
+      if (mounted) {
+        setState(() => _profilePhotoPath = toSave);
+        setSheetState(() {});
+      }
                     },
                     child: Stack(
                       children: [
@@ -304,7 +324,8 @@ class _MobileProfileState extends State<MobileProfile>
                             child: _profilePhotoPath != null
                                 ? (_profilePhotoPath!.startsWith('http')
                                     ? Image.network(_profilePhotoPath!,
-                                        fit: BoxFit.cover)
+                        key: ValueKey(_profilePhotoPath),
+                        fit: BoxFit.cover)
                                     : Image.file(File(_profilePhotoPath!),
                                         fit: BoxFit.cover))
                                 : Container(
@@ -384,20 +405,29 @@ class _MobileProfileState extends State<MobileProfile>
                 // Save button
                 GestureDetector(
                   onTap: () async {
-                    await StorageService.updateUserField(
-                        'name', nameCtrl.text.trim());
-                    await StorageService.updateUserField(
-                        'weight',
-                        double.tryParse(weightCtrl.text) ??
-                            AppData.userWeight);
-                    await StorageService.updateUserField(
-                        'height',
-                        double.tryParse(heightCtrl.text) ??
-                            AppData.userHeight);
-                    await StorageService.updateUserField('age',
-                        int.tryParse(ageCtrl.text) ?? AppData.userAge);
-                    final info = await StorageService.getUserInfo();
-                    if (info != null) AppData.loadFromMap(info);
+                    final name = nameCtrl.text.trim();
+                    final weight = double.tryParse(weightCtrl.text) ?? AppData.userWeight;
+                    final height = double.tryParse(heightCtrl.text) ?? AppData.userHeight;
+                    final age = int.tryParse(ageCtrl.text) ?? AppData.userAge;
+
+                    // Save to SharedPreferences (local fallback)
+                    await StorageService.updateUserField('name', name);
+                    await StorageService.updateUserField('weight', weight);
+                    await StorageService.updateUserField('height', height);
+                    await StorageService.updateUserField('age', age);
+
+                    // Save to Supabase (syncs to web)
+                    await SupabaseService.updateProfileField('name', name);
+                    await SupabaseService.updateProfileField('weight', weight);
+                    await SupabaseService.updateProfileField('height', height);
+                    await SupabaseService.updateProfileField('age', age);
+
+                    // Update in-memory AppData
+                    AppData.userName = name;
+                    AppData.userWeight = weight;
+                    AppData.userHeight = height;
+                    AppData.userAge = age;
+
                     if (mounted) {
                       Navigator.pop(ctx);
                       setState(() {});
@@ -855,10 +885,11 @@ class _MobileProfileState extends State<MobileProfile>
                           child: _profilePhotoPath != null
                               ? (_profilePhotoPath!.startsWith('http')
                                   ? Image.network(
-                                      _profilePhotoPath!,
-                                      fit: BoxFit.cover,
-                                      width: 64,
-                                      height: 64,
+                      _profilePhotoPath!,
+                      key: ValueKey(_profilePhotoPath),
+                      fit: BoxFit.cover,
+                      width: 64,
+                      height: 64,
                                       errorBuilder: (_, __, ___) => Stack(
                                         fit: StackFit.expand,
                                         children: [

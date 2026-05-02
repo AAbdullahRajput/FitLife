@@ -8,6 +8,7 @@ import '../../../core/utils/helpers.dart';
 import '../../../services/storage_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/painting.dart';
+import '../../../services/supabase_service.dart';
 
 
 class _Imgs {
@@ -251,6 +252,20 @@ class _WebProfileState extends State<WebProfile>
 Future<void> _loadProfilePhoto() async {
     final path = await StorageService.getProfilePhoto();
     if (mounted) setState(() => _profilePhotoPath = path);
+    // Also sync profile fields from Supabase
+    await _syncProfileFromSupabase();
+  }
+
+  Future<void> _syncProfileFromSupabase() async {
+    final profile = await SupabaseService.getProfile();
+    if (profile != null && mounted) {
+      AppData.loadFromMap(profile);
+      await StorageService.updateUserField('name', AppData.userName);
+      await StorageService.updateUserField('weight', AppData.userWeight);
+      await StorageService.updateUserField('height', AppData.userHeight);
+      await StorageService.updateUserField('age', AppData.userAge);
+      setState(() {});
+    }
   }
 
   @override
@@ -451,16 +466,29 @@ Future<void> _loadProfilePhoto() async {
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
                     onTap: () async {
-                      await StorageService.updateUserField(
-                          'name', nameCtrl.text.trim());
-                      await StorageService.updateUserField('weight',
-                          double.tryParse(weightCtrl.text) ?? AppData.userWeight);
-                      await StorageService.updateUserField('height',
-                          double.tryParse(heightCtrl.text) ?? AppData.userHeight);
-                      await StorageService.updateUserField(
-                          'age', int.tryParse(ageCtrl.text) ?? AppData.userAge);
-                      final info = await StorageService.getUserInfo();
-                      if (info != null) AppData.loadFromMap(info);
+                      final name = nameCtrl.text.trim();
+                      final weight = double.tryParse(weightCtrl.text) ?? AppData.userWeight;
+                      final height = double.tryParse(heightCtrl.text) ?? AppData.userHeight;
+                      final age = int.tryParse(ageCtrl.text) ?? AppData.userAge;
+
+                      // Save to SharedPreferences (local fallback)
+                      await StorageService.updateUserField('name', name);
+                      await StorageService.updateUserField('weight', weight);
+                      await StorageService.updateUserField('height', height);
+                      await StorageService.updateUserField('age', age);
+
+                      // Save to Supabase (syncs to mobile)
+                      await SupabaseService.updateProfileField('name', name);
+                      await SupabaseService.updateProfileField('weight', weight);
+                      await SupabaseService.updateProfileField('height', height);
+                      await SupabaseService.updateProfileField('age', age);
+
+                      // Update in-memory AppData
+                      AppData.userName = name;
+                      AppData.userWeight = weight;
+                      AppData.userHeight = height;
+                      AppData.userAge = age;
+
                       if (mounted) {
                         Navigator.pop(ctx);
                         setState(() {});
