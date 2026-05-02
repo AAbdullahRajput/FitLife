@@ -14,7 +14,7 @@ import 'screens/home/home_screen.dart';
 import 'screens/workout/exercise_detail_screen.dart';
 import 'screens/workout/workout_screen.dart';
 import 'screens/meals/meals_screen.dart';
-import 'screens/meals/meal_detail_screen.dart';
+import 'screens/meals/detail/meal_detail_screen.dart';
 import 'screens/progress/progress_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/auth/login_screen.dart';
