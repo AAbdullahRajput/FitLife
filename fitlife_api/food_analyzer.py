@@ -215,7 +215,7 @@ async def analyze_food(
 
         # Call Groq Vision
         response = client.chat.completions.create(
-            model="grok-2-vision-latest",
+            model="grok-2-vision-1212",
             messages=[
                 {
                     "role": "user",
