@@ -1,7 +1,7 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import google.generativeai as genai
+from google import genai
 from PIL import Image
 import io
 import json
@@ -20,8 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel("gemini-1.5-flash")
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 
 def build_prompt(goal: str) -> str:
@@ -206,7 +205,11 @@ async def analyze_food(
         prompt = build_prompt(goal)
 
         # Call Gemini Vision
-        response = model.generate_content([prompt, image])
+        import PIL.Image
+        response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=[prompt, image]
+        )
         raw = response.text.strip()
 
         # Clean markdown code blocks if model adds them
@@ -274,4 +277,4 @@ if __name__ == "__main__":
     print("Visit: http://localhost:8000")
     print("Docs:  http://localhost:8000/docs")
     print("=" * 50)
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
