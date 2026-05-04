@@ -17,6 +17,7 @@ dependencies:
   url_launcher: ^6.2.5
   youtube_player_iframe: 5.2.2
   image_picker: ^1.0.7
+  http: ^1.2.0
 
 dev_dependencies:
   flutter_test:

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../services/supabase_service.dart';
 import '../detail/meal_detail_screen.dart';
+import '../scan/food_scan_screen.dart';
 
 class WebMeals extends StatefulWidget {
   final String userTier;
@@ -325,6 +326,39 @@ class _WebMealsState extends State<WebMeals>
         ),
         const Spacer(),
 
+// ── AI Scan Button ───────────────────────────────
+MouseRegion(
+  cursor: SystemMouseCursors.click,
+  child: GestureDetector(
+    onTap: () {
+      Navigator.push(context, MaterialPageRoute(
+        builder: (_) => FoodScanScreen(
+          userGoal: _userGoal ?? 'Improve Fitness',
+          userTier: _userTier,
+        ),
+      ));
+    },
+    child: Container(
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: AppColors.primary,
+        boxShadow: [BoxShadow(
+          color: AppColors.primary.withOpacity(0.3),
+          blurRadius: 10, offset: const Offset(0, 3),
+        )],
+      ),
+      child: const Row(children: [
+        Icon(Icons.camera_alt_rounded, size: 15, color: Colors.black),
+        SizedBox(width: 8),
+        Text('🤖  Scan Food with AI', style: TextStyle(
+            fontSize: 12, color: Colors.black,
+            fontWeight: FontWeight.w700)),
+      ]),
+    ),
+  ),
+),
         // Tier badge
         Container(
           margin: const EdgeInsets.only(right: 16),

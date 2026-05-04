@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../services/supabase_service.dart';
 import '../detail/meal_detail_screen.dart';
+import '../scan/food_scan_screen.dart';
 
 class MobileMeals extends StatefulWidget {
   final String userTier;
@@ -261,42 +262,72 @@ class _MobileMealsState extends State<MobileMeals>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Nutrition',
-                      style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w900,
-                          color: textPrimary,
-                          letterSpacing: -0.5)),
-                  Text('Track your daily fuel',
-                      style:
-                          TextStyle(fontSize: 12, color: textSecondary)),
-                ],
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: _tierColor(_userTier).withOpacity(0.12),
-                  border: Border.all(
-                      color: _tierColor(_userTier).withOpacity(0.3)),
-                ),
-                child: Text(
-                  _tierLabel(_userTier),
-                  style: TextStyle(
-                      fontSize: 10,
-                      color: _tierColor(_userTier),
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5),
-                ),
-              ),
-            ],
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Nutrition',
+            style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
+                color: textPrimary,
+                letterSpacing: -0.5)),
+        Text('Track your daily fuel',
+            style: TextStyle(fontSize: 12, color: textSecondary)),
+      ],
+    ),
+    Row(children: [
+      // ── AI Scan Button ──────────────────────
+      GestureDetector(
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => FoodScanScreen(
+              userGoal: _userGoal ?? 'Improve Fitness',
+              userTier: _userTier,
+            ),
+          ));
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: AppColors.primary,
+            boxShadow: [BoxShadow(
+              color: AppColors.primary.withOpacity(0.3),
+              blurRadius: 8, offset: const Offset(0, 3),
+            )],
           ),
+          child: const Row(children: [
+            Icon(Icons.camera_alt_rounded, size: 14, color: Colors.black),
+            SizedBox(width: 5),
+            Text('Scan Food', style: TextStyle(
+                fontSize: 11, color: Colors.black,
+                fontWeight: FontWeight.w700)),
+          ]),
+        ),
+      ),
+      const SizedBox(width: 10),
+      // ── Tier badge ──────────────────────────
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: _tierColor(_userTier).withOpacity(0.12),
+          border: Border.all(color: _tierColor(_userTier).withOpacity(0.3)),
+        ),
+        child: Text(
+          _tierLabel(_userTier),
+          style: TextStyle(
+              fontSize: 10,
+              color: _tierColor(_userTier),
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5),
+        ),
+      ),
+    ]),
+  ],
+),
           const SizedBox(height: 14),
 
           // ── Suggestions strip (shown above tabs if goal set) ──────────
