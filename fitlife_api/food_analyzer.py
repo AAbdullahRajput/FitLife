@@ -207,7 +207,7 @@ async def analyze_food(
         # Call Gemini Vision
         import PIL.Image
         response = client.models.generate_content(
-        model="gemini-2.0-flash",
+        model="gemini-1.5-flash",
         contents=[prompt, image]
         )
         raw = response.text.strip()
