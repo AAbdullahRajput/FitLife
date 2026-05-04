@@ -213,7 +213,7 @@ async def analyze_food(
         img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
         response = client.chat.completions.create(
-            model="qwen/qwen2.5-vl-72b-instruct:free",
+            model="nvidia/nemotron-nano-12b-v2-vl:free",
             messages=[{
                 "role": "user",
                 "content": [
