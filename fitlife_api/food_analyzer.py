@@ -1,7 +1,8 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from google import genai
+from openai import OpenAI
+import base64
 from PIL import Image
 import io
 import json
@@ -20,7 +21,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+client = OpenAI(
+    api_key=os.getenv("XAI_API_KEY"),
+    base_url="https://api.x.ai/v1"
+)
 
 
 def build_prompt(goal: str) -> str:
@@ -204,13 +208,34 @@ async def analyze_food(
 
         prompt = build_prompt(goal)
 
-        # Call Gemini Vision
-        import PIL.Image
-        response = client.models.generate_content(
-        model="gemini-1.5-flash",
-        contents=[prompt, image]
+        # Convert image to base64 for Groq
+        buffer = io.BytesIO()
+        image.save(buffer, format="JPEG")
+        img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+        # Call Groq Vision
+        response = client.chat.completions.create(
+            model="grok-2-vision-latest",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{img_base64}"
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": prompt
+                        }
+                    ]
+                }
+            ],
+            max_tokens=2000,
         )
-        raw = response.text.strip()
+        raw = response.choices[0].message.content.strip()
 
         # Clean markdown code blocks if model adds them
         if "```json" in raw:
