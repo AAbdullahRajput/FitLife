@@ -236,6 +236,8 @@ async def analyze_food(
             detail=f"AI returned invalid JSON. Try again. Error: {str(e)}"
         )
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         error_msg = str(e)
         if "API_KEY" in error_msg.upper():
             raise HTTPException(
