@@ -378,4 +378,3 @@ class SupabaseService {
   static String _dateString(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 }
-123467
