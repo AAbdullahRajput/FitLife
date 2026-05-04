@@ -2,7 +2,6 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from openai import OpenAI
-import base64
 from PIL import Image
 import io
 import json
@@ -22,8 +21,8 @@ app.add_middleware(
 )
 
 client = OpenAI(
-    api_key=os.getenv("XAI_API_KEY"),
-    base_url="https://api.x.ai/v1"
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+    base_url="https://openrouter.ai/api/v1"
 )
 
 
@@ -208,31 +207,20 @@ async def analyze_food(
 
         prompt = build_prompt(goal)
 
-        # Convert image to base64 for Groq
+        import base64
         buffer = io.BytesIO()
         image.save(buffer, format="JPEG")
         img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
-        # Call Groq Vision
         response = client.chat.completions.create(
-            model="grok-2-vision-1212",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{img_base64}"
-                            }
-                        },
-                        {
-                            "type": "text",
-                            "text": prompt
-                        }
-                    ]
-                }
-            ],
+            model="qwen/qwen2.5-vl-72b-instruct:free",
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_base64}"}},
+                    {"type": "text", "text": prompt}
+                ]
+            }],
             max_tokens=2000,
         )
         raw = response.choices[0].message.content.strip()
