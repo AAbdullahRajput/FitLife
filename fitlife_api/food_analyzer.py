@@ -174,9 +174,9 @@ async def analyze_food(
     goal: str = Form(default="Improve Fitness")
 ):
     # Validate file type
-    allowed_types = ["image/jpeg", "image/jpg", "image/png",
-                     "image/webp", "image/heic", "image/heif"]
-    if file.content_type not in allowed_types:
+    # Accept any image type or unknown (mobile cameras sometimes send application/octet-stream)
+    if file.content_type and not file.content_type.startswith("image/") \
+            and file.content_type != "application/octet-stream":
         raise HTTPException(
             status_code=400,
             detail=f"Only image files supported. Got: {file.content_type}"

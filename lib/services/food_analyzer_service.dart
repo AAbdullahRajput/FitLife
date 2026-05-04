@@ -11,7 +11,7 @@ class FoodAnalyzerService {
   // Web (same machine) → localhost
   static String get _baseUrl {
     if (kIsWeb) return 'http://localhost:8000';
-    if (Platform.isAndroid) return 'http://10.0.2.2:8000';
+    if (Platform.isAndroid) return 'http://192.168.0.103:8000';
     return 'http://localhost:8000'; // iOS simulator
   }
 
